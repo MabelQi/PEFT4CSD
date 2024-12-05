@@ -53,10 +53,10 @@ Replication package for our paper, "A Comprehensive Evaluation of Parameter-Effi
 ``` 
 CUDA_VISIBLE_DEVICES=0 python train/prompt_tuning.py \
 	--seed 42 \
-  --model_name_or_path ../CLMs/codebert-base \
-  --train_file dataset/trainset_CC.csv \
-  --valid_file dataset/validset_CC.csv \
-  --max_seq_length 1024 \
+  	--model_name_or_path ../CLMs/codebert-base \
+  	--train_file dataset/trainset_CC.csv \
+  	--valid_file dataset/validset_CC.csv \
+  	--max_seq_length 1024 \
 	--batch_size 1 \
 	--num_epochs 10 \
 	--output_dir output/RQ1/CC
