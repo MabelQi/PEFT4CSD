@@ -1,0 +1,8 @@
+{
+    "Model": "deepseek-coder-1.3b-base",
+    "Model path": "output/RQ2/CC/r1280/deepseek-coder-1.3b-base/lora_seed_42/best_model",
+    "Precision": 0.7495993781392012,
+    "Recall": 0.6891459590741849,
+    "F1": 0.7113278365739601,
+    "MCC": 0.4345605309388294
+}

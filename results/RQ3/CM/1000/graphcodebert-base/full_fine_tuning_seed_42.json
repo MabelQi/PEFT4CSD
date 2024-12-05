@@ -1,0 +1,8 @@
+{
+    "Model": "graphcodebert-base",
+    "Model path": "output/RQ3/CM/1000/graphcodebert-base/full_fine_tuning_seed_42/best_model",
+    "Precision": 0.8463737390097736,
+    "Recall": 0.8934070640952423,
+    "F1": 0.8548511096304648,
+    "MCC": 0.7382841614000039
+}

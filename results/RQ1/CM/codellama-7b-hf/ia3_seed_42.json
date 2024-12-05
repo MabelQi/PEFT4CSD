@@ -1,0 +1,8 @@
+{
+    "Model": "codellama-7b-hf",
+    "Model path": "output/RQ1/CM/codellama-7b-hf/ia3_seed_42/best_model",
+    "Precision": 0.8407154776550263,
+    "Recall": 0.884016825550235,
+    "F1": 0.8504672897196262,
+    "MCC": 0.7234375609405838
+}

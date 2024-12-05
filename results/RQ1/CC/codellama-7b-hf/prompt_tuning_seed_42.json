@@ -1,0 +1,8 @@
+{
+    "Model": "codellama-7b-hf",
+    "Model path": "output/RQ1/CC/codellama-7b-hf/prompt_tuning_seed_42/best_model",
+    "Precision": 0.7409554546178978,
+    "Recall": 0.7192195457923259,
+    "F1": 0.7290137505926979,
+    "MCC": 0.4596613767438764
+}

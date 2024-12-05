@@ -1,0 +1,1658 @@
+text,label,text_label
+"public ViewTabPanel getTabPanel(final IAddress priFunctionAddr,final IAddress secFunctionAddr,final Diff diff){
+  for (  final TabPanel panel : tabPanels) {
+    if (panel instanceof ViewTabPanel) {
+      final ViewData view=((ViewTabPanel)panel).getView();
+      if (view.getGraphs().getDiff() != diff) {
+        continue;
+      }
+      final IAddress priAddr=view.getAddress(ESide.PRIMARY);
+      final IAddress secAddr=view.getAddress(ESide.SECONDARY);
+      if (view.isCallGraphView() && priAddr == null && secAddr == null && priFunctionAddr == null && secFunctionAddr == null) {
+        return (ViewTabPanel)panel;
+      }
+ else       if (view.isFlowGraphView()) {
+        boolean priIsEqual=priAddr == null && priFunctionAddr == null;
+        if (priAddr != null && priFunctionAddr != null) {
+          priIsEqual=priAddr.equals(priFunctionAddr);
+        }
+        boolean secIsEqual=secAddr == null && secFunctionAddr == null;
+        if (secAddr != null && secFunctionAddr != null) {
+          secIsEqual=secAddr.equals(secFunctionAddr);
+        }
+        if (priIsEqual && secIsEqual) {
+          return (ViewTabPanel)panel;
+        }
+      }
+    }
+  }
+  return null;
+}
+",1,Code Smell
+"@VisibleForTesting @NonNull static List<ActivityManager.RunningAppProcessInfo> parseRunningAppProcesses(@NonNull List<String> appProcessesDump){
+  List<ActivityManager.RunningAppProcessInfo> runningAppProcessInfos=new ArrayList<>();
+  Matcher aprMatcher;
+  Matcher pkgrMatcher;
+  String line;
+  ListIterator<String> it=appProcessesDump.listIterator();
+  if (!it.hasNext())   return runningAppProcessInfos;
+  aprMatcher=APP_PROCESS_REGEX.matcher(it.next());
+  while (it.hasNext()) {
+    if (!aprMatcher.find(0)) {
+      aprMatcher=APP_PROCESS_REGEX.matcher(it.next());
+      continue;
+    }
+    String uid=aprMatcher.group(1);
+    String pid=aprMatcher.group(2);
+    String processName=aprMatcher.group(3);
+    if (uid == null || pid == null || processName == null) {
+      aprMatcher=APP_PROCESS_REGEX.matcher(it.next());
+      continue;
+    }
+    line=it.next();
+    aprMatcher=APP_PROCESS_REGEX.matcher(line);
+    while (it.hasNext()) {
+      if (aprMatcher.find(0)) {
+        break;
+      }
+      pkgrMatcher=PKG_LIST_REGEX.matcher(line);
+      if (!pkgrMatcher.find(0)) {
+        line=it.next();
+        aprMatcher=APP_PROCESS_REGEX.matcher(line);
+        continue;
+      }
+      String pkgList=pkgrMatcher.group(1);
+      if (pkgList != null) {
+        ActivityManager.RunningAppProcessInfo info=new ActivityManager.RunningAppProcessInfo();
+        info.uid=Integer.decode(uid);
+        info.pid=Integer.decode(pid);
+        info.processName=processName;
+        String[] split=pkgList.split("", "");
+        info.pkgList=new String[split.length];
+        System.arraycopy(split,0,info.pkgList,0,split.length);
+        runningAppProcessInfos.add(info);
+      }
+      line=it.next();
+      aprMatcher=APP_PROCESS_REGEX.matcher(line);
+    }
+  }
+  return runningAppProcessInfos;
+}",1,Code Smell
+"@Override public BeanFactoryInitializationAotContribution processAheadOfTime(ConfigurableListableBeanFactory beanFactory){
+  boolean hasJobSchedulerOrDashboardEnabled=hasJobSchedulerOrDashboardEnabled(beanFactory);
+  Set<String> recurringJobClassNames=findAllRecurringJobClassNames(beanFactory);
+  Set<String> jobRequestHandlerClassNames=findAllJobRequestHandlerClassNames(beanFactory);
+  if (hasJobSchedulerOrDashboardEnabled || isNotNullOrEmpty(recurringJobClassNames) || isNotNullOrEmpty(jobRequestHandlerClassNames)) {
+    return (ctx,code) -> {
+      var hints=ctx.getRuntimeHints();
+      registerAllJobRunrClasses(hints);
+      registerAllRecurringJobs(hints,recurringJobClassNames);
+      registerAllJobRequestHandlers(hints,jobRequestHandlerClassNames);
+    }
+;
+  }
+  return null;
+}
+",1,Code Smell
+"private void updateBottomTabContainerPosition(){
+  View parent=(View)getParent();
+  if (parent != null) {
+    float y=getY();
+    if (getLayoutParams().height > 0) {
+      y+=getLayoutParams().height;
+    }
+ else {
+      y+=getMeasuredHeight();
+    }
+    if (!AndroidUtilities.isInMultiwindow && (fragment == null || !fragment.isInBubbleMode())) {
+      y-=parent.getHeight();
+    }
+ else {
+      y-=AndroidUtilities.dp(1);
+    }
+    if (bottomTabContainer.getTop() - y < 0 || !fixBottomTabContainerTranslation) {
+      y=0;
+    }
+    bottomTabMainTranslation=-y;
+    bottomTabContainer.setTranslationY(bottomTabMainTranslation + bottomTabAdditionalTranslation);
+    if (needEmojiSearch) {
+      bulletinContainer.setTranslationY(bottomTabMainTranslation + bottomTabAdditionalTranslation);
+    }
+  }
+}",1,Code Smell
+"public void saveScrollPosition(boolean fromTop){
+  if (chatListView != null && chatLayoutManager != null && chatListView.getChildCount() > 0) {
+    View view=null;
+    int position=-1;
+    int top=fromTop ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    for (int i=0; i < chatListView.getChildCount(); i++) {
+      View child=chatListView.getChildAt(i);
+      int childPosition=chatListView.getChildAdapterPosition(child);
+      if (childPosition >= 0 && (fromTop ? child.getTop() < top : child.getTop() > top)) {
+        view=child;
+        position=childPosition;
+        top=child.getTop();
+      }
+    }
+    if (view != null) {
+      long eventId=0;
+      if (view instanceof ChatMessageCell) {
+        eventId=((ChatMessageCell)view).getMessageObject().eventId;
+      }
+ else       if (view instanceof ChatActionCell) {
+        eventId=((ChatActionCell)view).getMessageObject().eventId;
+      }
+      savedScrollEventId=eventId;
+      savedScrollPosition=position;
+      savedScrollOffset=getScrollingOffsetForView(view);
+    }
+  }
+}",1,Code Smell
+"/** 
+ * parseInlongId
+ */
+private Map<String,List<InLongIdObject>> parseInlongId(Map<String,InlongGroupId> groupIdMap,Map<String,Map<String,String>> groupParams,Map<String,InlongStreamId> streamIdMap,Map<String,Map<String,String>> streamParams,Map<String,Map<String,String>> clusterTagParams){
+  Map<String,List<InLongIdObject>> inlongIdMap=new HashMap<>();
+  for (  Entry<String,InlongStreamId> entry : streamIdMap.entrySet()) {
+    InlongStreamId streamIdObj=entry.getValue();
+    String groupId=streamIdObj.getInlongGroupId();
+    InlongGroupId groupIdObj=groupIdMap.get(groupId);
+    if (groupId == null || groupIdObj == null) {
+      LOGGER.debug(""groupId {} or groupIdObj {} is null, ignored"",groupId,groupIdObj);
+      continue;
+    }
+    InLongIdObject obj=new InLongIdObject();
+    String inlongId=entry.getKey();
+    obj.setInlongId(inlongId);
+    Optional.ofNullable(groupParams.get(groupId)).ifPresent(v -> obj.getParams().putAll(v));
+    Optional.ofNullable(streamParams.get(inlongId)).ifPresent(v -> obj.getParams().putAll(v));
+    if (StringUtils.isBlank(streamIdObj.getTopic())) {
+      obj.setTopic(groupIdObj.getTopic());
+    }
+ else {
+      obj.setTopic(streamIdObj.getTopic());
+      obj.getParams().put(KEY_NAMESPACE,groupIdObj.getTopic());
+    }
+    Map<String,String> tagParamMap=clusterTagParams.get(groupIdObj.getClusterTag());
+    if (tagParamMap != null && StringUtils.isNotBlank(tagParamMap.get(KEY_INLONG_COMPRESS_TYPE))) {
+      obj.getParams().put(KEY_INLONG_COMPRESS_TYPE,tagParamMap.get(KEY_INLONG_COMPRESS_TYPE));
+    }
+    inlongIdMap.computeIfAbsent(groupIdObj.getClusterTag(),k -> new ArrayList<>()).add(obj);
+    InLongIdObject backupObj=new InLongIdObject();
+    backupObj.setInlongId(inlongId);
+    backupObj.getParams().putAll(obj.getParams());
+    Map<String,String> groupParam=groupParams.get(groupId);
+    if (groupParam != null && groupParam.containsKey(ClusterSwitch.BACKUP_CLUSTER_TAG) && groupParam.containsKey(ClusterSwitch.BACKUP_MQ_RESOURCE)) {
+      String clusterTag=groupParam.get(ClusterSwitch.BACKUP_CLUSTER_TAG);
+      String groupMqResource=groupParam.get(ClusterSwitch.BACKUP_MQ_RESOURCE);
+      Map<String,String> streamParam=streamParams.get(inlongId);
+      if (streamParam != null && !StringUtils.isBlank(streamParam.get(ClusterSwitch.BACKUP_MQ_RESOURCE))) {
+        backupObj.setTopic(streamParam.get(ClusterSwitch.BACKUP_MQ_RESOURCE));
+        backupObj.getParams().put(KEY_NAMESPACE,groupMqResource);
+      }
+ else {
+        backupObj.setTopic(groupMqResource);
+      }
+      Map<String,String> backUpTagParamMap=clusterTagParams.get(groupIdObj.getClusterTag());
+      if (backUpTagParamMap != null && StringUtils.isNotBlank(backUpTagParamMap.get(KEY_INLONG_COMPRESS_TYPE))) {
+        backupObj.getParams().put(KEY_INLONG_COMPRESS_TYPE,backUpTagParamMap.get(KEY_INLONG_COMPRESS_TYPE));
+      }
+      inlongIdMap.computeIfAbsent(clusterTag,k -> new ArrayList<>()).add(backupObj);
+    }
+  }
+  return inlongIdMap;
+}
+",1,Code Smell
+"/** 
+ * 鑾峰彇璺敱鍦板潃
+ * @param menu 鑿滃崟淇℃伅
+ * @return 璺敱鍦板潃
+ */
+public String getRouterPath(SysMenuEntity menu){
+  String routerPath=menu.getPath();
+  if (menu.getParentId().intValue() != 0 && isInnerLink(menu)) {
+    routerPath=innerLinkReplaceEach(routerPath);
+  }
+  if (0 == menu.getParentId().intValue() && UserConstants.TYPE_DIR.equals(menu.getMenuType()) && UserConstants.NO_FRAME.equals(menu.getIsFrame())) {
+    routerPath=""/"" + menu.getPath();
+  }
+ else   if (isMenuFrame(menu)) {
+    routerPath=""/"";
+  }
+  return routerPath;
+}",1,Code Smell
+"public TranslucentData getTranslucentData(TranslucentData oldData,BuiltSectionMeshParts translucentMesh,CombinedCameraPos cameraPos){
+  if (translucentMesh == null) {
+    return NoData.forNoTranslucent(this.sectionPos);
+  }
+  if (oldData != null) {
+    if (this.sortType == SortType.NONE && oldData instanceof AnyOrderData && oldAnyData.getQuadCount() == this.quads.length && Arrays.equals(oldAnyData.getVertexRanges(),translucentMesh.getVertexRanges())) {
+      return oldAnyData;
+    }
+    if (oldData instanceof PresentTranslucentData) {
+      if (oldPresentData.getQuadCount() == this.quads.length && oldPresentData.getQuadHash() == getQuadHash(this.quads)) {
+        return oldPresentData;
+      }
+    }
+  }
+  var newData=makeNewTranslucentData(translucentMesh,cameraPos,oldData);
+  if (newData instanceof PresentTranslucentData) {
+    presentData.setQuadHash(getQuadHash(this.quads));
+  }
+  return newData;
+}
+",1,Code Smell
+"private void loadSendAsPeers(boolean animatedUpdate){
+  if (sendAsPeersObj != null || currentChat == null || !ChatObject.canSendAsPeers(currentChat) || chatActivityEnterView == null) {
+    return;
+  }
+  sendAsPeersObj=getMessagesController().getSendAsPeers(dialog_id);
+  if (sendAsPeersObj != null) {
+    if (NekoConfig.disableTrending.Bool()) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        sendAsPeersObj.peers.removeIf(peer -> peer.premium_required);
+      }
+    }
+    chatActivityEnterView.updateSendAsButton(animatedUpdate);
+  }
+}
+",1,Code Smell
+"/** 
+ * Check whether the management status change is legal
+ * @param newEntity  the entity to be updated
+ * @param curEntity  the current entity
+ * @param strBuff    string buffer
+ * @param result     check result of parameter value
+ * @return  true for valid, false for invalid
+ */
+private boolean isValidMngStatusChange(BrokerConfEntity newEntity,BrokerConfEntity curEntity,StringBuilder strBuff,ProcessResult result){
+  if (newEntity.getManageStatus() == curEntity.getManageStatus()) {
+    return true;
+  }
+  if (((newEntity.getManageStatus().getCode() < ManageStatus.STATUS_MANAGE_ONLINE.getCode()) && (curEntity.getManageStatus().getCode() >= ManageStatus.STATUS_MANAGE_ONLINE.getCode())) || ((newEntity.getManageStatus().getCode() > ManageStatus.STATUS_MANAGE_ONLINE.getCode()) && (curEntity.getManageStatus().getCode() < ManageStatus.STATUS_MANAGE_ONLINE.getCode()))) {
+    result.setFailResult(DataOpErrCode.DERR_ILLEGAL_VALUE.getCode(),strBuff.append(""Illegal manage status, cannot reverse "").append(WebFieldDef.MANAGESTATUS.name).append("" from "").append(curEntity.getManageStatus().getDescription()).append("" to "").append(newEntity.getManageStatus().getDescription()).append("" for the broker("").append(WebFieldDef.BROKERID.name).append(""="").append(curEntity.getBrokerId()).append("")!"").toString());
+    strBuff.delete(0,strBuff.length());
+    return result.isSuccess();
+  }
+  return true;
+}",1,Code Smell
+"@Override public void seek(long position,long timeUs){
+  boolean hasNotEncounteredFirstTimestamp=timestampAdjuster.getTimestampOffsetUs() == C.TIME_UNSET;
+  if (hasNotEncounteredFirstTimestamp || (timestampAdjuster.getFirstSampleTimestampUs() != 0 && timestampAdjuster.getFirstSampleTimestampUs() != timeUs)) {
+    timestampAdjuster.reset();
+    timestampAdjuster.setFirstSampleTimestampUs(timeUs);
+  }
+  if (psBinarySearchSeeker != null) {
+    psBinarySearchSeeker.setSeekTargetUs(timeUs);
+  }
+  for (int i=0; i < psPayloadReaders.size(); i++) {
+    psPayloadReaders.valueAt(i).seek();
+  }
+}
+/** 
+ * Notifies the reader that a seek has occurred. <p> Following a call to this method, the data passed to the next invocation of {@link #consume(ParsableByteArray)} will not be a continuation of the data that waspreviously passed. Hence the reader should reset any internal state.
+ */
+public void seek(){
+  seenFirstDts=false;
+  pesPayloadReader.seek();
+}",1,Code Smell
+"/** 
+ * Updates the stored track metadata to reflect the contents of the specified moov atom.
+ */
+private void processMoovAtom(ContainerAtom moov) throws ParserException {
+  int firstVideoTrackIndex=C.INDEX_UNSET;
+  long durationUs=C.TIME_UNSET;
+  List<Mp4Track> tracks=new ArrayList<>();
+  Metadata udtaMetadata=null;
+  GaplessInfoHolder gaplessInfoHolder=new GaplessInfoHolder();
+  Atom.LeafAtom udta=moov.getLeafAtomOfType(Atom.TYPE_udta);
+  if (udta != null) {
+    udtaMetadata=AtomParsers.parseUdta(udta,isQuickTime);
+    if (udtaMetadata != null) {
+      gaplessInfoHolder.setFromMetadata(udtaMetadata);
+    }
+  }
+  Metadata mdtaMetadata=null;
+  Atom.ContainerAtom meta=moov.getContainerAtomOfType(Atom.TYPE_meta);
+  if (meta != null) {
+    mdtaMetadata=AtomParsers.parseMdtaFromMeta(meta);
+  }
+  boolean ignoreEditLists=(flags & FLAG_WORKAROUND_IGNORE_EDIT_LISTS) != 0;
+  ArrayList<TrackSampleTable> trackSampleTables=getTrackSampleTables(moov,gaplessInfoHolder,ignoreEditLists);
+  int trackCount=trackSampleTables.size();
+  for (int i=0; i < trackCount; i++) {
+    TrackSampleTable trackSampleTable=trackSampleTables.get(i);
+    Track track=trackSampleTable.track;
+    long trackDurationUs=track.durationUs != C.TIME_UNSET ? track.durationUs : trackSampleTable.durationUs;
+    durationUs=Math.max(durationUs,trackDurationUs);
+    Mp4Track mp4Track=new Mp4Track(track,trackSampleTable,extractorOutput.track(i,track.type));
+    int maxInputSize=trackSampleTable.maximumSize + 3 * 10;
+    Format format=track.format.copyWithMaxInputSize(maxInputSize);
+    if (track.type == C.TRACK_TYPE_VIDEO && trackDurationUs > 0 && trackSampleTable.sampleCount > 1) {
+      float frameRate=trackSampleTable.sampleCount / (trackDurationUs / 1000000f);
+      format=format.copyWithFrameRate(frameRate);
+    }
+    format=MetadataUtil.getFormatWithMetadata(track.type,format,udtaMetadata,mdtaMetadata,gaplessInfoHolder);
+    mp4Track.trackOutput.format(format);
+    if (track.type == C.TRACK_TYPE_VIDEO && firstVideoTrackIndex == C.INDEX_UNSET) {
+      firstVideoTrackIndex=tracks.size();
+    }
+    tracks.add(mp4Track);
+  }
+  this.firstVideoTrackIndex=firstVideoTrackIndex;
+  this.durationUs=durationUs;
+  this.tracks=tracks.toArray(new Mp4Track[0]);
+  accumulatedSampleSizes=calculateAccumulatedSampleSizes(this.tracks);
+  extractorOutput.endTracks();
+  extractorOutput.seekMap(this);
+}",1,Code Smell
+"@Override protected void onPanTranslationUpdate(float y,float progress,boolean keyboardVisible){
+  super.onPanTranslationUpdate(y,progress,keyboardVisible);
+  for (int i=0; i < containerView.getChildCount(); i++) {
+    if (containerView.getChildAt(i) != pickerBottomLayout && containerView.getChildAt(i) != shadow[1] && containerView.getChildAt(i) != sharesCountLayout && containerView.getChildAt(i) != frameLayout2 && containerView.getChildAt(i) != writeButtonContainer && containerView.getChildAt(i) != selectedCountView) {
+      containerView.getChildAt(i).setTranslationY(y);
+    }
+  }
+  currentPanTranslationY=y;
+  if (fromScrollY != -1) {
+    float p=keyboardVisible ? progress : (1f - progress);
+    scrollOffsetY=(int)(fromScrollY * (1f - p) + toScrollY * p);
+    float translationY=currentPanTranslationY + (fromScrollY - toScrollY) * (1f - p);
+    gridView.setTranslationY(translationY);
+    if (keyboardVisible) {
+      searchGridView.setTranslationY(translationY);
+    }
+ else {
+      searchGridView.setTranslationY(translationY + gridView.getPaddingTop());
+    }
+  }
+ else   if (fromOffsetTop != -1) {
+    scrollOffsetY=(int)(fromOffsetTop * (1f - progress) + toOffsetTop * progress);
+    float p=keyboardVisible ? (1f - progress) : progress;
+    if (keyboardVisible) {
+      gridView.setTranslationY(currentPanTranslationY - (fromOffsetTop - toOffsetTop) * progress);
+    }
+ else {
+      gridView.setTranslationY(currentPanTranslationY + (toOffsetTop - fromOffsetTop) * p);
+    }
+  }
+  gridView.setTopGlowOffset((int)(scrollOffsetY + currentPanTranslationY));
+  frameLayout.setTranslationY(scrollOffsetY + currentPanTranslationY);
+  searchEmptyView.setTranslationY(scrollOffsetY + currentPanTranslationY);
+  frameLayout2.invalidate();
+  setCurrentPanTranslationY(currentPanTranslationY);
+  invalidate();
+}",1,Code Smell
+"private void ClassesFunctionsReference(){
+  Lexer classCheckLexer=new Lexer(className + "".jack"");
+  classCheckLexer.initLocalFile();
+  while (classCheckLexer.getReadIndex() < classCheckLexer.getTextContent().length() - 2) {
+    if (classCheckLexer.PeekNextToken().Token.equals(""var"") || classCheckLexer.PeekNextToken().Token.equals(""field"") || classCheckLexer.PeekNextToken().Token.equals(""static"")) {
+      classCheckLexer.GetNextToken();
+      boolean jackLibrariesOrNot=false;
+      for (      String library : jackClasses.jackLibraries) {
+        if (classCheckLexer.PeekNextToken().Token.equals(library)) {
+          jackLibrariesOrNot=true;
+          break;
+        }
+      }
+      if (!jackLibrariesOrNot) {
+        Type+=(""|"" + classCheckLexer.PeekNextToken().Token);
+        otherClassType+=(""|"" + classCheckLexer.PeekNextToken().Token);
+        if (!classCheckLexer.PeekNextToken().Token.equals(className)) {
+          classFunctionsCheck(classCheckLexer.PeekNextToken().Token);
+          classStaticDeclarCheck(classCheckLexer.PeekNextToken().Token);
+        }
+      }
+    }
+    classCheckLexer.GetNextToken();
+  }
+  classFunctionsCheck(className);
+  classStaticDeclarCheck(className);
+}",1,Code Smell
+"@Override public ExprCode doGenCode(CodegenContext ctx){
+  Class<?> javaType=getRawType(type);
+  if (isPrimitive(javaType)) {
+    javaType=boxedType(javaType);
+  }
+  if (value == null) {
+    LiteralValue defaultLiteral=new LiteralValue(javaType,defaultValue(javaType));
+    return new ExprCode(null,TrueLiteral,defaultLiteral);
+  }
+ else {
+    if (javaType == String.class) {
+      return new ExprCode(FalseLiteral,new LiteralValue(""\"""" + value + ""\""""));
+    }
+ else     if (javaType == Boolean.class || javaType == Integer.class) {
+      return new ExprCode(null,FalseLiteral,new LiteralValue(javaType,value.toString()));
+    }
+ else     if (javaType == Float.class) {
+      Float f=(Float)value;
+      if (f.isNaN()) {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,""Float.NaN""));
+      }
+ else       if (f.equals(Float.POSITIVE_INFINITY)) {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,""Float.POSITIVE_INFINITY""));
+      }
+ else       if (f.equals(Float.NEGATIVE_INFINITY)) {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,""Float.NEGATIVE_INFINITY""));
+      }
+ else {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,String.format(""%fF"",f)));
+      }
+    }
+ else     if (javaType == Double.class) {
+      Double d=(Double)value;
+      if (d.isNaN()) {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,""Double.NaN""));
+      }
+ else       if (d.equals(Double.POSITIVE_INFINITY)) {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,""Double.POSITIVE_INFINITY""));
+      }
+ else       if (d.equals(Double.NEGATIVE_INFINITY)) {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,""Double.NEGATIVE_INFINITY""));
+      }
+ else {
+        return new ExprCode(FalseLiteral,new LiteralValue(javaType,String.format(""%fD"",d)));
+      }
+    }
+ else     if (javaType == Byte.class) {
+      return new ExprCode(FalseLiteral,Code.exprValue(javaType,String.format(""(%s)%s"",""byte"",value)));
+    }
+ else     if (javaType == Short.class) {
+      return new ExprCode(FalseLiteral,Code.exprValue(javaType,String.format(""(%s)%s"",""short"",value)));
+    }
+ else     if (javaType == Long.class) {
+      return new ExprCode(FalseLiteral,new LiteralValue(javaType,String.format(""%dL"",((Number)(value)).longValue())));
+    }
+ else     if (isPrimitive(javaType)) {
+      return new ExprCode(FalseLiteral,new LiteralValue(javaType,String.valueOf(value)));
+    }
+ else     if (javaType == Class.class) {
+      String v;
+      Class<?> valueClass=(Class<?>)value;
+      if (valueClass.isArray()) {
+        v=String.format(""%s.class"",TypeUtils.getArrayType((Class<?>)value));
+      }
+ else {
+        v=String.format(""%s.class"",ReflectionUtils.getCanonicalName((Class<?>)(value)));
+      }
+      return new ExprCode(FalseLiteral,new LiteralValue(javaType,v));
+    }
+ else {
+      throw new UnsupportedOperationException(""Unsupported type "" + javaType);
+    }
+  }
+}
+",1,Code Smell
+"public int translateNum(int num){
+  if (num < 0) {
+    return 0;
+  }
+  if (num < 10) {
+    return 1;
+  }
+  int n=num, k=0;
+  while (n != 0) {
+    k++;
+    n/=10;
+  }
+  k--;
+  int dp[]=new int[k + 1];
+  dp[0]=1;
+  StringBuilder sb=new StringBuilder();
+  for (int i=k; i >= 0; i--) {
+    int x=(int)((num / Math.pow(10,i)) % 10);
+    sb.append(x);
+  }
+  if (k >= 1) {
+    if (sb.charAt(0) == '1' || (sb.charAt(0) == '2' && sb.charAt(1) < '6'))     dp[1]=2;
+ else     dp[1]=1;
+  }
+ else {
+    dp[1]=1;
+  }
+  for (int i=2; i <= k; i++) {
+    if (i > 1) {
+      if (sb.charAt(i - 1) == '0' || sb.charAt(i - 1) > '2') {
+        dp[i]=dp[i - 1];
+      }
+ else       if (sb.charAt(i - 1) == '2' && sb.charAt(i) >= '6') {
+        dp[i]=dp[i - 1];
+      }
+ else {
+        dp[i]=dp[i - 2] + dp[i - 1];
+      }
+    }
+  }
+  return dp[k];
+}",1,Code Smell
+"/** 
+ * Constructs bootstrap pipeline as streaming. The bootstrap operator loads the existing data index (primary key to file id mapping), then sends the indexing data set to subsequent operator(usually the bucket assign operator).
+ */
+public static DataStream<HoodieRecord> bootstrap(Configuration conf,RowType rowType,DataStream<RowData> dataStream){
+  return bootstrap(conf,rowType,dataStream,false,false);
+}
+/** 
+ * Constructs bootstrap pipeline. The bootstrap operator loads the existing data index (primary key to file id mapping), then send the indexing data set to subsequent operator(usually the bucket assign operator).
+ * @param conf       The configuration
+ * @param rowType    The row type
+ * @param dataStream The data stream
+ * @param bounded    Whether the source is bounded
+ * @param overwrite  Whether it is insert overwrite
+ */
+public static DataStream<HoodieRecord> bootstrap(Configuration conf,RowType rowType,DataStream<RowData> dataStream,boolean bounded,boolean overwrite){
+  final boolean globalIndex=conf.getBoolean(FlinkOptions.INDEX_GLOBAL_ENABLED);
+  if (overwrite || OptionsResolver.isBucketIndexType(conf)) {
+    return rowDataToHoodieRecord(conf,rowType,dataStream);
+  }
+ else   if (bounded && !globalIndex && OptionsResolver.isPartitionedTable(conf)) {
+    return boundedBootstrap(conf,rowType,dataStream);
+  }
+ else {
+    return streamBootstrap(conf,rowType,dataStream,bounded);
+  }
+}
+",1,Code Smell
+"@Override public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,ExecutionContext ctx){
+  if (purpose == null) {
+    return new RepositoryVisitor().visitMethodInvocation(method,ctx);
+  }
+ else {
+    boolean isPluginBlock=pluginManagementMatcher.matches(method) || buildscriptMatcher.matches(method);
+    if ((purpose == Purpose.Project && !isPluginBlock) || (purpose == Purpose.Plugin && isPluginBlock)) {
+      return new RepositoryVisitor().visitMethodInvocation(method,ctx);
+    }
+  }
+  return method;
+}
+@Override public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,ExecutionContext ctx){
+  J.MethodInvocation m=super.visitMethodInvocation(method,ctx);
+  if (!repositoryMatcher.matches(m)) {
+    return m;
+  }
+  boolean match=type == null || m.getSimpleName().equals(type);
+  if (url != null && !urlMatches(m,url)) {
+    match=false;
+  }
+  if (!match) {
+    return m;
+  }
+  return SearchResult.found(m);
+}
+",1,Code Smell
+"public String getHost(){
+  return host;
+}
+",0,Clean Code
+"@Override public List<CombinedViewEdge<? extends CombinedViewNode>> getOutgoingEdges(){
+  return super.getOutgoingEdges();
+}
+",0,Clean Code
+"public static String getConfigPrefix(){
+  return CONFIG_PREFIX;
+}
+",0,Clean Code
+"/** 
+ * <code>optional int64 last_set_nickname_time = 10;</code>
+ * @param value the lastSetNicknameTime to set
+ * @return this
+ */
+public GetBasicInfoScRsp setLastSetNicknameTime(final long value){
+  bitField0_|=0x00000001;
+  lastSetNicknameTime=value;
+  return this;
+}",0,Clean Code
+"/** 
+ * <code>optional uint32 base_avatar_id = 9;</code>
+ * @return this
+ */
+public RankUpAvatarCsReq clearBaseAvatarId(){
+  bitField0_&=~0x00000001;
+  baseAvatarId=0;
+  return this;
+}",0,Clean Code
+"/** 
+ * Remove observer.
+ * @param observer
+ */
+public static void remove(Observer observer){
+  remove(SubjectType.SPRING_CONTENT_REFRESHED.name(),observer);
+}
+/** 
+ * Remove observer.
+ * @param subject
+ * @param observer
+ */
+public static void remove(String subject,Observer observer){
+  List<Observer> observers=OBSERVERS_MAP.get(subject);
+  if (StringUtil.isBlank(subject) || CollectionUtil.isEmpty(observers) || observer == null) {
+    log.warn(""Remove observer. A string whose subject or observer is empty or empty."");
+    return;
+  }
+  observers.remove(observer);
+}
+",0,Clean Code
+"private void chekDestroyDecoder(){
+  if (loadFrameRunnable == null && destroyWhenDone && nativePtr != 0 && !generatingCache) {
+    destroyDecoder(nativePtr);
+    nativePtr=0;
+  }
+  if (!canLoadFrames()) {
+    if (renderingBitmap != null) {
+      renderingBitmap.recycle();
+      renderingBitmap=null;
+    }
+    if (backgroundBitmap != null) {
+      backgroundBitmap.recycle();
+      backgroundBitmap=null;
+    }
+    if (decodeQueue != null) {
+      decodeQueue.recycle();
+      decodeQueue=null;
+    }
+    for (int i=0; i < unusedBitmaps.size(); i++) {
+      unusedBitmaps.get(i).recycle();
+    }
+    unusedBitmaps.clear();
+    invalidateInternal();
+  }
+}",0,Clean Code
+"/** 
+ * Execute the command for the given binary with the actual guess.
+ * @param guess containing the guess
+ * @param fileName of the executable to be used (pre-defined, make sure it is never user inputcontrolled)
+ * @return the actual answer
+ */
+public String executeCommand(String guess,String fileName){
+  BinaryInstructionForFile binaryInstructionForFile;
+  if (Strings.isNullOrEmpty(guess)) {
+    binaryInstructionForFile=BinaryInstructionForFile.Spoil;
+  }
+ else {
+    binaryInstructionForFile=BinaryInstructionForFile.Guess;
+  }
+  try {
+    File execFile=createTempExecutable(fileName);
+    String result=executeCommand(execFile,binaryInstructionForFile,guess);
+    deleteFile(execFile);
+    log.info(""stdout challenge {}: {}"",challengeNumber,result.lines().collect(Collectors.joining("""")));
+    return result;
+  }
+ catch (  Exception e) {
+    log.warn(""Error executing:"",e);
+    executionException=e;
+    return ERROR_EXECUTION;
+  }
+}
+@SuppressFBWarnings(value=""COMMAND_INJECTION"",justification=""We check for various injection methods and counter those"") private String executeCommand(File execFile,BinaryInstructionForFile binaryInstructionForFile,String guess) throws IOException, InterruptedException {
+  ProcessBuilder ps;
+  if (!execFile.getPath().contains(""wrongsecrets"") || stringContainsCommandChainToken(execFile.getPath()) || stringContainsCommandChainToken(guess)) {
+    return BinaryExecutionHelper.ERROR_EXECUTION;
+  }
+  if (binaryInstructionForFile.equals(BinaryInstructionForFile.Spoil)) {
+    ps=new ProcessBuilder(execFile.getPath(),""spoil"");
+  }
+ else {
+    if (execFile.getPath().contains(""golang"")) {
+      ps=new ProcessBuilder(execFile.getPath(),""guess"",guess);
+    }
+ else {
+      ps=new ProcessBuilder(execFile.getPath(),guess);
+    }
+  }
+  ps.redirectErrorStream(true);
+  Process pr=ps.start();
+  try (BufferedReader in=new BufferedReader(new InputStreamReader(pr.getInputStream(),StandardCharsets.UTF_8))){
+    String result=in.readLine();
+    pr.waitFor();
+    return result;
+  }
+ }",0,Clean Code
+"@SuppressLint(""SetTextI18n"") private void updateSlider(){
+  if (mSeekBar == null || mRightText == null || mLeftText == null || mSize <= 0 || mCurrentIndex < 0) {
+    return;
+  }
+  TextView start;
+  TextView end;
+  if (mLayoutMode == GalleryView.LAYOUT_RIGHT_TO_LEFT) {
+    start=mRightText;
+    end=mLeftText;
+    mSeekBar.setReverse(true);
+  }
+ else {
+    start=mLeftText;
+    end=mRightText;
+    mSeekBar.setReverse(false);
+  }
+  start.setText(Integer.toString(mCurrentIndex + 1));
+  end.setText(Integer.toString(mSize));
+  mSeekBar.setMax(mSize - 1);
+  mSeekBar.setProgress(mCurrentIndex);
+}",0,Clean Code
+"@Override @TruffleBoundary public VmSet build(){
+  if (elementOrderBuilder.isEmpty())   return EMPTY;
+  return VmSet.create(setBuilder.immutable(),elementOrderBuilder.immutable());
+}
+",0,Clean Code
+"public abstract T build();
+",0,Clean Code
+"private boolean handleShortsNavigation(int keyCode){
+  if (getPlayer().isOverlayShown() || getPlayer().getVideo() == null || !getPlayer().getVideo().isShorts || !mPlayerTweaksData.isQuickShortsSkipEnabled()) {
+    return false;
+  }
+  if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+    getMainController().onNextClicked();
+    return true;
+  }
+  if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+    getMainController().onPreviousClicked();
+    return true;
+  }
+  return false;
+}
+",0,Clean Code
+"public static Broker buildFrom(Long clusterPhyId,Node node,Long startTimestamp){
+  Broker metadata=new Broker();
+  metadata.setClusterPhyId(clusterPhyId);
+  metadata.setBrokerId(node.id());
+  metadata.setHost(node.host());
+  metadata.setPort(node.port());
+  metadata.setJmxPort(JmxEnum.UNKNOWN.getPort());
+  metadata.setStartTimestamp(startTimestamp);
+  metadata.setRack(node.rack());
+  metadata.setStatus(Constant.ALIVE);
+  return metadata;
+}
+public static Broker buildFrom(BrokerPO brokerPO){
+  Broker broker=ConvertUtil.obj2Obj(brokerPO,Broker.class);
+  String endpointMapStr=brokerPO.getEndpointMap();
+  if (broker == null || endpointMapStr == null || endpointMapStr.equals("""")) {
+    return broker;
+  }
+  Map<String,IpPortData> endpointMap=ConvertUtil.str2ObjByJson(endpointMapStr,new TypeReference<Map<String,IpPortData>>(){
+  }
+);
+  broker.setEndpointMap(endpointMap);
+  return broker;
+}",0,Clean Code
+"@Experimental public Filter filter(){
+  return filter;
+}
+",0,Clean Code
+"@Generated public static Interval of(int month,String expression){
+  return new Interval(new BigDecimal(month),expression);
+}
+public static Interval of(String expr){
+  char[] chars=expr.toCharArray();
+  int numIndex=0;
+  for (  char c : expr.toCharArray()) {
+    if (c == '-' || c == '.' || (c >= '0' && c <= '9')) {
+      numIndex++;
+    }
+ else {
+      BigDecimal val=new BigDecimal(chars,0,numIndex);
+      return new Interval(val,expr.substring(numIndex));
+    }
+  }
+  throw new IllegalArgumentException(""can not parse interval expression:"" + expr);
+}",0,Clean Code
+"@PostMapping(""/addFile"") @ApiOperation(""娣诲姞闄勪欢"") public Result addFile(@RequestBody AddFileBO addFileBO){
+  employeeFileService.addFile(addFileBO);
+  return Result.ok();
+}
+",0,Clean Code
+"/** 
+ * <code>optional uint64 server_time_ms = 15;</code>
+ * @param value the serverTimeMs to set
+ * @return this
+ */
+public PlayerHeartbeatScRsp setServerTimeMs(final long value){
+  bitField0_|=0x00000002;
+  serverTimeMs=value;
+  return this;
+}",0,Clean Code
+"public MastodonErrorResponse(String error,int httpStatus,Throwable exception){
+  this.error=error;
+  this.httpStatus=httpStatus;
+  this.underlyingException=exception;
+  if (exception instanceof UnknownHostException) {
+    this.messageResource=R.string.could_not_reach_server;
+  }
+ else   if (exception instanceof SocketTimeoutException) {
+    this.messageResource=R.string.connection_timed_out;
+  }
+ else   if (exception instanceof JsonSyntaxException || exception instanceof JsonIOException || httpStatus >= 500) {
+    this.messageResource=R.string.server_error;
+  }
+ else   if (httpStatus == 404) {
+    this.messageResource=R.string.not_found;
+  }
+ else {
+    this.messageResource=0;
+  }
+}",0,Clean Code
+"@Override public void setEdgeType(final EdgeType type){
+  Preconditions.checkNotNull(type,""Error: Type argument can't be null"");
+  if (type == m_type) {
+    return;
+  }
+  m_type=type;
+  for (  final IViewEdgeListener listener : m_listeners) {
+    listener.changedType(this,type);
+  }
+}
+",0,Clean Code
+"public Map<K,V> delegate(){
+  Map<K,V> m=this.map;
+  if (m == null) {
+    List<Entry<? extends K,? extends V>> e=this.entries;
+    m=new HashMap<>(e.size());
+    for (    Entry<? extends K,? extends V> entry : e) {
+      m.put(entry.getKey(),entry.getValue());
+    }
+    this.map=m;
+  }
+  return m;
+}
+",0,Clean Code
+"/** 
+ * <code>optional uint32 max_difficulty = 14;</code>
+ * @param value the maxDifficulty to set
+ * @return this
+ */
+public ChessRogueNousDiceInfo setMaxDifficulty(final int value){
+  bitField0_|=0x00000004;
+  maxDifficulty=value;
+  return this;
+}",0,Clean Code
+"public String getWinRate(){
+  return this.winRate;
+}
+",0,Clean Code
+"public String getLabel(){
+  return label;
+}
+",0,Clean Code
+"@Nullable private static Cookie getCookie(Cursor cursor,long now){
+  String name=SqlUtils.getString(cursor,COLUMN_NAME,null);
+  String value=SqlUtils.getString(cursor,COLUMN_VALUE,null);
+  long expiresAt=SqlUtils.getLong(cursor,COLUMN_EXPIRES_AT,0);
+  String domain=SqlUtils.getString(cursor,COLUMN_DOMAIN,null);
+  String path=SqlUtils.getString(cursor,COLUMN_PATH,null);
+  boolean secure=SqlUtils.getBoolean(cursor,COLUMN_SECURE,false);
+  boolean httpOnly=SqlUtils.getBoolean(cursor,COLUMN_HTTP_ONLY,false);
+  boolean persistent=SqlUtils.getBoolean(cursor,COLUMN_PERSISTENT,false);
+  boolean hostOnly=SqlUtils.getBoolean(cursor,COLUMN_HOST_ONLY,false);
+  if (name == null || domain == null || path == null) {
+    return null;
+  }
+  if (!persistent || expiresAt <= now) {
+    return null;
+  }
+  Cookie.Builder builder=new Cookie.Builder();
+  builder.name(name);
+  builder.value(value);
+  if (hostOnly) {
+    builder.hostOnlyDomain(domain);
+  }
+ else {
+    builder.domain(domain);
+  }
+  builder.path(path);
+  builder.expiresAt(expiresAt);
+  if (secure)   builder.secure();
+  if (httpOnly)   builder.httpOnly();
+  return builder.build();
+}",0,Clean Code
+"/** 
+ * <code>optional uint32 equipment_unique_id = 3;</code>
+ * @return the equipmentUniqueId
+ */
+public int getEquipmentUniqueId(){
+  return equipmentUniqueId;
+}",0,Clean Code
+"/** 
+ * <code>optional uint32 base_avatar_id = 7;</code>
+ * @return the baseAvatarId
+ */
+public int getBaseAvatarId(){
+  return baseAvatarId;
+}",0,Clean Code
+"@Override public boolean equals(Object another){
+  if (this == another)   return true;
+  return another instanceof ToolExecutionRequest && equalTo((ToolExecutionRequest)another);
+}
+",0,Clean Code
+"@SuppressWarnings(""UnusedAssignment"") @Test void genericsAndAnyParameters(){
+  rewriteRun(spec -> spec.recipe(toRecipe(() -> new JavaVisitor<>(){
+    @Override public J visitLiteral(    J.Literal literal,    ExecutionContext executionContext){
+      if (literal.getMarkers().findFirst(SearchResult.class).isEmpty() && (Objects.equals(literal.getValue(),1) || Objects.requireNonNull(literal.getValue()).equals(""s""))) {
+        return JavaTemplate.apply(""java.util.List.of(#{any()})"",getCursor(),literal.getCoordinates().replace(),SearchResult.found(literal));
+      }
+      return super.visitLiteral(literal,executionContext);
+    }
+  }
+)),java(null,null,sourceSpecs -> sourceSpecs.afterRecipe(cu -> new JavaIsoVisitor<>(){
+    @SuppressWarnings(""DataFlowIssue"") @Override public <M extends Marker>M visitMarker(    Marker marker,    Object o){
+      if (marker instanceof SearchResult) {
+        J.Literal literal=getCursor().getValue();
+        Expression parent=getCursor().getParentTreeCursor().getValue();
+        if (literal.getType() == JavaType.Primitive.Int) {
+          assertThat(parent.getType().toString()).isEqualTo(""java.util.List<java.lang.Integer>"");
+        }
+ else         if (literal.getType() == JavaType.Primitive.String) {
+          assertThat(parent.getType().toString()).isEqualTo(""java.util.List<java.lang.String>"");
+        }
+      }
+      return super.visitMarker(marker,o);
+    }
+  }
+.visit(cu,0))));
+}",0,Clean Code
+"public MySQLMetadataDAO(RetryTemplate retryTemplate,ObjectMapper objectMapper,DataSource dataSource,MySQLProperties properties){
+  super(retryTemplate,objectMapper,dataSource);
+  long cacheRefreshTime=properties.getTaskDefCacheRefreshInterval().getSeconds();
+  Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this::refreshTaskDefs,cacheRefreshTime,cacheRefreshTime,TimeUnit.SECONDS);
+}
+",0,Clean Code
+"private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+  in.defaultReadObject();
+  String tribuoVersion=(String)provenance.getTrainerProvenance().getInstanceValues().get(TrainerProvenance.TRIBUO_VERSION_STRING).getValue();
+  if (provenance.getTrainerProvenance().getClassName().equals(""org.tribuo.regression.slm.ElasticNetCDTrainer"") && !enet41MappingFix && (tribuoVersion.startsWith(""4.0.0"") || tribuoVersion.startsWith(""4.0.1"") || tribuoVersion.startsWith(""4.0.2"")|| tribuoVersion.startsWith(""4.1.0"")|| tribuoVersion.equals(""4.1.1-SNAPSHOT""))) {
+    enet41MappingFix=true;
+    int[] mapping=((ImmutableRegressionInfo)outputIDInfo).getIDtoNaturalOrderMapping();
+    SparseVector[] newWeights=new SparseVector[weights.length];
+    double[] newYMeans=new double[weights.length];
+    double[] newYVariances=new double[weights.length];
+    for (int i=0; i < mapping.length; i++) {
+      newWeights[i]=this.weights[mapping[i]];
+      newYMeans[i]=this.yMean[mapping[i]];
+      newYVariances[i]=this.yVariance[mapping[i]];
+    }
+    this.yMean=newYMeans;
+    this.yVariance=newYVariances;
+    this.weights=newWeights;
+  }
+}",0,Clean Code
+"@Override public GroupStateChangeCsReq clone(){
+  return new GroupStateChangeCsReq().copyFrom(this);
+}
+",0,Clean Code
+"/** 
+ * Front-end template settings
+ * @return
+ */
+@GetMapping(value={""/"",""/web/"",""/web/**"",""/login"",""/workspace"",""/dashboard"",""/connections"",""/team""}) public String index(){
+  return ""index"";
+}
+",0,Clean Code
+"public boolean isPartSubscribable(String partitionKey){
+  Tuple2<Partition,Integer> partConfig=configuredPartInfoMap.get(partitionKey);
+  if (partConfig == null || partConfig.getF0() == null || partConfig.getF1() == null) {
+    return false;
+  }
+  return (partConfig.getF1() == 1);
+}",0,Clean Code
+"@Override public BattleTarget create(){
+  return BattleTarget.newInstance();
+}
+",0,Clean Code
+"private static boolean canLaunchService(@NonNull ServiceInfo info){
+  if (info.exported && info.permission == null) {
+    return true;
+  }
+  int uid=Users.getSelfOrRemoteUid();
+  if (uid == Ops.ROOT_UID || (uid == Ops.SYSTEM_UID && info.permission == null)) {
+    return true;
+  }
+  if (info.permission == null) {
+    return false;
+  }
+  return SelfPermissions.checkSelfOrRemotePermission(info.permission,uid);
+}
+",0,Clean Code
+"@Override public String toString(){
+  return ""("" + expression + "")"";
+}
+",0,Clean Code
+"private void startCapture(){
+  if (captureBuffer == null) {
+    captureBuffer=new StringBuilder();
+  }
+  captureStart=index - 1;
+}",0,Clean Code
+"/** 
+ * 涓嬭浇杞懠鏂囦欢
+ * @return
+ */
+@PostMapping(""/crmCall/callFileTask"") Result callFileTask();
+",0,Clean Code
+"public ExtraAction(int actionType,String displayText,JumpInfo jumpInfo){
+  this(actionType,displayText,null,jumpInfo);
+}
+public ExtraAction(int actionType,String displayText,String displayTitle,JumpInfo jumpInfo){
+  if (jumpInfo == null && (actionType == ActionType.DOUBLE_CLICK_JUMP || actionType == ActionType.JUMP_FILE)) {
+    throw new IllegalArgumentException(""jumpInfo can't be null in DOUBLE_CLICK_JUMP or JUMP_FILE mode"");
+  }
+  mActionType=actionType;
+  mDisplayText=displayText;
+  mDisplayTitle=displayTitle;
+  mJumpInfo=jumpInfo;
+}
+",0,Clean Code
+"public ResetDefaultPerspectiveAction(final ViewTabPanelFunctions controller){
+  this.controller=checkNotNull(controller);
+}
+",0,Clean Code
+"public String getButtonMsg(){
+  return this.mInfo.getButtonMsg();
+}
+",0,Clean Code
+"public GProEnterAVChannelPermissionInfo(){
+}
+public GProEnterAVChannelPermissionInfo(int i2){
+  this.roleType=i2;
+}",0,Clean Code
+"private int computeHeight(){
+  int height;
+  if (isForumCell() && !isTransitionSupport && !collapsed) {
+    height=dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 86 : 91);
+    if (useSeparator) {
+      height+=1;
+    }
+    if (hasTags()) {
+      height+=dp(addForumHeightForTags);
+    }
+  }
+ else {
+    height=getCollapsedHeight();
+  }
+  return height;
+}",0,Clean Code
+"@Override public void onPreMeasure(int availableWidth,int availableHeight){
+  int padding;
+  if (parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20) || emojiViewVisible || isAnimatePopupClosing) {
+    padding=AndroidUtilities.dp(52);
+    parentAlert.setAllowNestedScroll(false);
+  }
+ else {
+    if (!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
+      padding=(int)(availableHeight / 3.5f);
+    }
+ else {
+      padding=(availableHeight / 5 * 2);
+    }
+    padding-=AndroidUtilities.dp(13);
+    if (padding < 0) {
+      padding=0;
+    }
+    parentAlert.setAllowNestedScroll(allowNesterScroll);
+  }
+  ignoreLayout=true;
+  if (topPadding != padding) {
+    topPadding=padding;
+    listView.setItemAnimator(null);
+    listAdapter.notifyItemChanged(paddingRow);
+  }
+  ignoreLayout=false;
+}",0,Clean Code
+"int getTemplateType();
+",0,Clean Code
+"@TruffleBoundary @Specialization protected String eval(String self){
+  return ByteArrayUtils.md5(self.getBytes(StandardCharsets.UTF_8));
+}",0,Clean Code
+"@Override public TypeNode execute(VirtualFrame frame){
+  CompilerDirectives.transferToInterpreter();
+  var type=resolveTypeNode.executeGeneric(frame);
+  if (type instanceof VmClass) {
+    if (clazz.getModuleName().equals(""pkl.base"")) {
+switch (clazz.getSimpleName()) {
+case ""String"":
+        return new StringTypeNode(sourceSection);
+case ""Boolean"":
+      return new BooleanTypeNode(sourceSection);
+case ""Int"":
+    return new IntTypeNode(sourceSection);
+case ""Float"":
+  return new FloatTypeNode(sourceSection);
+case ""Number"":
+return new NumberTypeNode(sourceSection);
+case ""Any"":
+return new AnyTypeNode(sourceSection);
+case ""Typed"":
+return new TypedTypeNode(sourceSection);
+case ""Dynamic"":
+return new DynamicTypeNode(sourceSection);
+}
+}
+return TypeNode.forClass(sourceSection,clazz);
+}
+if (type instanceof VmTypeAlias) {
+if (alias.getModuleName().equals(""pkl.base"")) {
+switch (alias.getSimpleName()) {
+case ""NonNull"":
+return new NonNullTypeAliasTypeNode();
+case ""Int8"":
+return new Int8TypeAliasTypeNode();
+case ""UInt8"":
+return new UIntTypeAliasTypeNode(alias,0x00000000000000FFL);
+case ""Int16"":
+return new Int16TypeAliasTypeNode();
+case ""UInt16"":
+return new UIntTypeAliasTypeNode(alias,0x000000000000FFFFL);
+case ""Int32"":
+return new Int32TypeAliasTypeNode();
+case ""UInt32"":
+return new UIntTypeAliasTypeNode(alias,0x00000000FFFFFFFFL);
+case ""UInt"":
+return new UIntTypeAliasTypeNode(alias,0x7FFFFFFFFFFFFFFFL);
+}
+}
+return new TypeAliasTypeNode(sourceSection,alias,new TypeNode[0]);
+}
+var module=(VmTyped)type;
+assert module.isModuleObject();
+var clazz=module.getVmClass();
+if (!module.isPrototype()) {
+throw exceptionBuilder().evalError(""notAModuleType"",clazz.getModuleName()).build();
+}
+return TypeNode.forClass(sourceSection,module.getVmClass());
+}",0,Clean Code
+"private void writeKey(){
+  var isFollowing=new MutableBoolean(false);
+  currPath.descendingIterator().forEachRemaining(path -> {
+    if (path == VmValueConverter.TOP_LEVEL_VALUE) {
+      return;
+    }
+    if (isFollowing.get()) {
+      builder.append('.');
+    }
+    if (VmUtils.isRenderDirective(path)) {
+      builder.append(VmUtils.readTextProperty(path));
+    }
+ else {
+      builder.append(PropertiesUtils.renderPropertiesKeyOrValue(path.toString(),true,restrictCharset));
+    }
+    isFollowing.set(true);
+  }
+);
+}
+",0,Clean Code
+"void yposChanged(IViewNode<?> node,double ypos);
+",0,Clean Code
+"/** 
+ * A resource reader for HTTP resources. If this resource reader is present, Pkl code can read HTTP resource  {@code http://apple.com/foo/bar.txt} with {@code read(""http://apple.com/foo/bar.txt"")}, provided that resource URI  {@code ""http://apple.com/foo/bar.txt""} matches an entry in the resource allowlist ({@code --allowed-resources}).
+ */
+public static ResourceReader http(){
+  return HttpResource.INSTANCE;
+}
+",0,Clean Code
+"/** 
+ * Returns true if the intent is a valid launch intent for a launcher activity of an app. This is used to identify shortcuts which are different from the ones exposed by the applications' manifest file.
+ * @param launchIntent The intent that will be launched when the shortcut is clicked.
+ */
+public static boolean isLauncherAppTarget(Intent launchIntent){
+  if (launchIntent != null && Intent.ACTION_MAIN.equals(launchIntent.getAction()) && launchIntent.getComponent() != null && launchIntent.getCategories() != null && launchIntent.getCategories().size() == 1 && launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER) && TextUtils.isEmpty(launchIntent.getDataString())) {
+    Bundle extras=launchIntent.getExtras();
+    return extras == null || extras.keySet().isEmpty();
+  }
+  return false;
+}",0,Clean Code
+"@Override protected void afterHookedMethod(MethodHookParam param){
+  String path=param.args[0].toString();
+  if (path.contains(""/system/framework/services.jar"")) {
+    try {
+      servicesClassLoader=(PathClassLoader)param.thisObject;
+      SecurityManagerServiceClazz=XposedHelpers.findClass(SecurityManagerServiceName,servicesClassLoader);
+      XposedHelpers.findAndHookMethod(SecurityManagerServiceClazz,""run"",new XC_MethodReplacement(){
+        @Override protected Object replaceHookedMethod(        MethodHookParam unused){
+          return null;
+        }
+      }
+);
+    }
+ catch (    Exception e) {
+      XposedBridge.log(""[HyperCeiler][E][android][AllowUninstall]: AllowUninstall Exception! "" + e);
+    }
+ finally {
+      for (      Unhook hook : pathClassLoaderHook) {
+        hook.unhook();
+      }
+    }
+  }
+}",0,Clean Code
+"/** 
+ * <code>repeated .DisplayAvatarDetailInfo display_avatar_list = 13;</code>
+ * @return whether the displayAvatarList field is set
+ */
+public boolean hasDisplayAvatarList(){
+  return (bitField0_ & 0x00000400) != 0;
+}",0,Clean Code
+"private void hideFloatingButton(boolean hide){
+  if (rightSlidingDialogContainer.hasFragment()) {
+    hide=true;
+  }
+  if (floatingHidden == hide || hide && floatingForceVisible) {
+    return;
+  }
+  floatingHidden=hide;
+  AnimatorSet animatorSet=new AnimatorSet();
+  ValueAnimator valueAnimator=ValueAnimator.ofFloat(floatingButtonHideProgress,floatingHidden ? 1f : 0f);
+  valueAnimator.addUpdateListener(animation -> {
+    floatingButtonHideProgress=(float)animation.getAnimatedValue();
+    floatingButtonTranslation=AndroidUtilities.dp(100) * floatingButtonHideProgress;
+    updateFloatingButtonOffset();
+  }
+);
+  animatorSet.playTogether(valueAnimator);
+  animatorSet.setDuration(300);
+  animatorSet.setInterpolator(floatingInterpolator);
+  floatingButtonContainer.setClickable(!hide);
+  animatorSet.start();
+}",0,Clean Code
+"private static List<CopyCommand> consolidateCopies(PriorityQueue<CopyCommand> queue){
+  List<CopyCommand> merged=new ArrayList<>();
+  CopyCommand last=null;
+  while (!queue.isEmpty()) {
+    CopyCommand command=queue.dequeue();
+    if (last != null) {
+      if (last.buffer == command.buffer && last.writeOffset + last.bytes == command.writeOffset && last.readOffset + last.bytes == command.readOffset) {
+        last.bytes+=command.bytes;
+        continue;
+      }
+    }
+    merged.add(last=new CopyCommand(command));
+  }
+  return merged;
+}
+",0,Clean Code
+"/** 
+ * 浠庡乏鍏ユ爤
+ * @param key   key
+ * @param value value
+ */
+@Override public void lpush(String key,Object value){
+  redisTemplate.opsForList().leftPush(appendKeyPrefix(key),value);
+}
+",0,Clean Code
+"private void maybeUpdateShortcuts(){
+  if (Build.VERSION.SDK_INT < 26)   return;
+  ShortcutManager sm=MastodonApp.context.getSystemService(ShortcutManager.class);
+  if ((sm.getDynamicShortcuts().isEmpty() || BuildConfig.DEBUG) && !sessions.isEmpty()) {
+    ShortcutInfo info=new ShortcutInfo.Builder(MastodonApp.context,""compose"").setActivity(ComponentName.createRelative(MastodonApp.context,MainActivity.class.getName())).setShortLabel(MastodonApp.context.getString(R.string.new_post)).setIcon(Icon.createWithResource(MastodonApp.context,R.mipmap.ic_shortcut_compose)).setIntent(new Intent(MastodonApp.context,MainActivity.class).setAction(Intent.ACTION_MAIN).putExtra(""compose"",true)).build();
+    sm.setDynamicShortcuts(Collections.singletonList(info));
+  }
+ else   if (sessions.isEmpty()) {
+    sm.disableShortcuts(Collections.singletonList(""compose""),MastodonApp.context.getString(R.string.err_not_logged_in));
+  }
+ else {
+    sm.enableShortcuts(Collections.singletonList(""compose""));
+  }
+}",0,Clean Code
+"@Override protected void fillItems(ArrayList<UItem> items,UniversalAdapter adapter){
+  items.add(UItem.asTopView(getString(R.string.BusinessLinksInfo),R.raw.biz_links));
+  adapter.whiteSectionStart();
+  if (BusinessLinksController.getInstance(currentAccount).canAddNew()) {
+    items.add(UItem.asButton(BUTTON_ADD,R.drawable.menu_link_create,getString(R.string.BusinessLinksAdd)).accent());
+  }
+  for (  TLRPC.TL_businessChatLink businessLink : BusinessLinksController.getInstance(currentAccount).links) {
+    UItem item=UItem.asBusinessChatLink(new BusinessLinkWrapper(businessLink));
+    items.add(item);
+  }
+  adapter.whiteSectionEnd();
+  TLRPC.User user=UserConfig.getInstance(currentAccount).getCurrentUser();
+  String linkPrefix=MessagesController.getInstance(currentAccount).linkPrefix + ""/"";
+  ArrayList<String> links=new ArrayList<>(2);
+  String publicUsername=UserObject.getPublicUsername(user);
+  if (publicUsername != null) {
+    links.add(linkPrefix + publicUsername);
+  }
+  ArrayList<TLRPC.PrivacyRule> phoneRules=ContactsController.getInstance(currentAccount).getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_PHONE);
+  ArrayList<TLRPC.PrivacyRule> addedByPhoneRules=ContactsController.getInstance(currentAccount).getPrivacyRules(ContactsController.PRIVACY_RULES_TYPE_ADDED_BY_PHONE);
+  if (!TextUtils.isEmpty(user.phone) && phoneRules != null && addedByPhoneRules != null) {
+    if (getPrivacyType(phoneRules) != PrivacyControlActivity.TYPE_NOBODY || getPrivacyType(addedByPhoneRules) != PrivacyControlActivity.TYPE_CONTACTS) {
+      links.add(linkPrefix + ""+"" + user.phone);
+    }
+  }
+  if (!links.isEmpty()) {
+    String text;
+    if (links.size() == 2) {
+      text=formatString(R.string.BusinessLinksFooterTwoLinks,links.get(0),links.get(1));
+    }
+ else {
+      text=formatString(R.string.BusinessLinksFooterOneLink,links.get(0));
+    }
+    SpannableString spanned=new SpannableString(text);
+    for (    String link : links) {
+      int index=text.indexOf(link);
+      if (index > -1) {
+        spanned.setSpan(new URLSpanCopyToClipboard(""https://"" + link,this),index,index + link.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      }
+    }
+    items.add(UItem.asShadow(spanned));
+  }
+}",0,Clean Code
+"/** 
+ * <code>optional uint32 level = 3;</code>
+ * @return whether the level field is set
+ */
+public boolean hasLevel(){
+  return (bitField0_ & 0x00000002) != 0;
+}",0,Clean Code
+"@SuppressLint(""DiscouragedApi"") @Override public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpParam) throws Throwable {
+  int call_recording_starting_voice=mContext.getResources().getIdentifier(""call_recording_starting_voice"",""string"",mContext.getPackageName());
+  int call_recording_ending_voice=mContext.getResources().getIdentifier(""call_recording_ending_voice"",""string"",mContext.getPackageName());
+  hookAllMethods(Resources.class,""getString"",new XC_MethodHook(){
+    @Override protected void beforeHookedMethod(    MethodHookParam param) throws Throwable {
+      if (removeRecodingMessage && (param.args[0].equals(call_recording_starting_voice) || param.args[0].equals(call_recording_ending_voice))) {
+        param.setResult("""");
+      }
+    }
+  }
+);
+}",0,Clean Code
+"private void callEnded(){
+  if (BuildVars.LOGS_ENABLED) {
+    FileLog.d(""Call "" + getCallID() + "" ended"");
+  }
+  if (groupCall != null && (!playedConnectedSound || onDestroyRunnable != null)) {
+    needPlayEndSound=false;
+  }
+  AndroidUtilities.runOnUIThread(() -> dispatchStateChanged(STATE_ENDED));
+  int delay=700;
+  Utilities.globalQueue.postRunnable(() -> {
+    if (spPlayId != 0) {
+      soundPool.stop(spPlayId);
+      spPlayId=0;
+    }
+  }
+);
+  if (connectingSoundRunnable != null) {
+    AndroidUtilities.cancelRunOnUIThread(connectingSoundRunnable);
+    connectingSoundRunnable=null;
+  }
+  if (needPlayEndSound) {
+    playingSound=true;
+    if (groupCall == null) {
+      Utilities.globalQueue.postRunnable(() -> soundPool.play(spEndId,1,1,0,0,1));
+    }
+ else {
+      Utilities.globalQueue.postRunnable(() -> soundPool.play(spVoiceChatEndId,1.0f,1.0f,0,0,1),100);
+      delay=500;
+    }
+    AndroidUtilities.runOnUIThread(afterSoundRunnable,delay);
+  }
+  if (timeoutRunnable != null) {
+    AndroidUtilities.cancelRunOnUIThread(timeoutRunnable);
+    timeoutRunnable=null;
+  }
+  endConnectionServiceCall(needPlayEndSound ? delay : 0);
+  stopSelf();
+}",0,Clean Code
+"/** 
+ * @param password Redis Stack password (optional)
+ */
+public Builder password(String password){
+  this.password=password;
+  return this;
+}
+",0,Clean Code
+"@Override public TakeChallengeRewardScRsp clearQuick(){
+  if (isEmpty()) {
+    return this;
+  }
+  cachedSize=-1;
+  bitField0_=0;
+  takenRewardList.clearQuick();
+  return this;
+}",0,Clean Code
+"@Override public String getCriterionDescription(){
+  return ""Select Nodes by Recursion"";
+}
+",0,Clean Code
+"public ZyEdgeData<EdgeType> getUserData(){
+  return m_edgeData;
+}
+",0,Clean Code
+"public int setBirthday(int birthday){
+  if (this.birthday == 0) {
+    int month=birthday / 100;
+    int day=birthday % 100;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      this.birthday=birthday;
+      this.save();
+      return this.birthday;
+    }
+  }
+  return 0;
+}",0,Clean Code
+"private static List<String> packagesToTypeDeclarations(ScanResult scanResult){
+  List<String> result=new ArrayList<>();
+  for (  ClassInfo classInfo : scanResult.getAllClasses()) {
+    if (classInfo.isAnonymousInnerClass() || classInfo.isPrivate() || classInfo.isSynthetic()|| classInfo.getName().contains("".enum."")) {
+      continue;
+    }
+    if (classInfo.isStandardClass() && !classInfo.getName().startsWith(""java."")) {
+      continue;
+    }
+    if (classInfo.getPackageName().startsWith(""kotlin.reflect.jvm.internal.impl.resolve.jvm"")) {
+      continue;
+    }
+    String typeDeclaration=declarableFullyQualifiedName(classInfo);
+    if (typeDeclaration == null) {
+      continue;
+    }
+    result.add(typeDeclaration);
+  }
+  return result;
+}
+",0,Clean Code
+"/** 
+ * Get attributes from decoder
+ * @param decoder the decode object
+ * @param reqAttrs the attributes
+ */
+private void getAttrsFromDecoder(QueryStringDecoder decoder,Map<String,String> reqAttrs){
+  for (  Map.Entry<String,List<String>> attr : decoder.parameters().entrySet()) {
+    if (attr == null || attr.getKey() == null || attr.getValue() == null || attr.getValue().isEmpty()) {
+      continue;
+    }
+    reqAttrs.put(attr.getKey(),attr.getValue().get(0));
+  }
+}",0,Clean Code
+"@Override public void componentMoved(final ComponentEvent event){
+}
+",0,Clean Code
+"/** 
+ * 璐拱杞︾エV2楂樻�ц兘鐗堟湰
+ * @param requestParam 杞︾エ璐拱璇锋眰鍙傛暟
+ * @return 璁㈠崟鍙�
+ */
+TicketPurchaseRespDTO purchaseTicketsV2(@RequestBody PurchaseTicketReqDTO requestParam);",0,Clean Code
+"@Override public String getIconUrl(){
+  return ""this.mChannel.getIconUrl()"";
+}
+",0,Clean Code
+"/** 
+ * <code>optional uint32 daily_active_point = 6;</code>
+ * @return whether the dailyActivePoint field is set
+ */
+public boolean hasDailyActivePoint(){
+  return (bitField0_ & 0x00000001) != 0;
+}",0,Clean Code
+"/** 
+ * <code>optional bool is_set_mark = 6;</code>
+ * @return whether the isSetMark field is set
+ */
+public boolean hasIsSetMark(){
+  return (bitField0_ & 0x00000002) != 0;
+}",0,Clean Code
+"public String getGiftName(){
+  return this.giftName;
+}
+",0,Clean Code
+"@SuppressLint(""NewApi"") private void updateLayout(){
+  if (gridView.getChildCount() <= 0) {
+    setScrollOffsetY(gridView.getPaddingTop());
+    return;
+  }
+  View child=gridView.getChildAt(0);
+  RecyclerListView.Holder holder=(RecyclerListView.Holder)gridView.findContainingViewHolder(child);
+  int top=child.getTop();
+  int newOffset=0;
+  if (top >= 0 && holder != null && holder.getAdapterPosition() == 0) {
+    newOffset=top;
+    runShadowAnimation(0,false);
+  }
+ else {
+    runShadowAnimation(0,true);
+  }
+  runShadowAnimation(1,true);
+  if (scrollOffsetY != newOffset) {
+    setScrollOffsetY(newOffset);
+  }
+}",0,Clean Code
+"public static Set<Integer> toSet(String tagStr){
+  Set<Integer> tag=new HashSet<>();
+  if (null == tagStr) {
+    return tag;
+  }
+  for (  String str : tagStr.split(SEPARATOR)) {
+    if (StrUtil.isEmpty(str)) {
+      continue;
+    }
+    tag.add(Integer.valueOf(str));
+  }
+  return tag;
+}
+",0,Clean Code
+"private void replaceMainFragment(Fragment fragment){
+  Object currentFragment=Helpers.getField(this,""mMainFragment"");
+  if (currentFragment != null && fragment != null && currentFragment != fragment) {
+    Helpers.setField(this,""mMainFragment"",fragment);
+    FragmentTransaction ft=getChildFragmentManager().beginTransaction();
+    ft.replace(R.id.scale_frame,fragment);
+    mFocusOnContent=hasFocus();
+    ft.runOnCommit(this::focusOnContentIfNeeded);
+    ft.commitAllowingStateLoss();
+  }
+}
+",0,Clean Code
+"/** 
+ * <code>repeated .BattleBuff buff_list = 12;</code>
+ * @return this
+ */
+public SceneBattleInfo clearBuffList(){
+  bitField0_&=~0x00000040;
+  buffList.clear();
+  return this;
+}",0,Clean Code
+"@Test public void chatMultiCompletion(){
+  MediaContent anthropicInitialMessage=new MediaContent(""Name 3 famous pirates"");
+  ChatCompletionMessage chatCompletionInitialMessage=new ChatCompletionMessage(List.of(anthropicInitialMessage),Role.USER);
+  MediaContent anthropicAssistantMessage=new MediaContent(""Here are 3 famous pirates: Blackbeard, Calico Jack, Henry Morgan"");
+  ChatCompletionMessage chatCompletionAssistantMessage=new ChatCompletionMessage(List.of(anthropicAssistantMessage),Role.ASSISTANT);
+  MediaContent anthropicFollowupMessage=new MediaContent(""Why are they famous?"");
+  ChatCompletionMessage chatCompletionFollowupMessage=new ChatCompletionMessage(List.of(anthropicFollowupMessage),Role.USER);
+  AnthropicChatRequest request=AnthropicChatRequest.builder(List.of(chatCompletionInitialMessage,chatCompletionAssistantMessage,chatCompletionFollowupMessage)).withTemperature(0.8f).withMaxTokens(400).withTopK(10).withAnthropicVersion(DEFAULT_ANTHROPIC_VERSION).build();
+  AnthropicChatResponse response=anthropicChatApi.chatCompletion(request);
+  logger.info("""" + response.content());
+  assertThat(response).isNotNull();
+  assertThat(response.content().get(0).text()).isNotEmpty();
+  assertThat(response.content().get(0).text()).contains(""Blackbeard"");
+  assertThat(response.stopReason()).isEqualTo(""end_turn"");
+  assertThat(response.stopSequence()).isNull();
+  assertThat(response.usage().inputTokens()).isGreaterThan(30);
+  assertThat(response.usage().outputTokens()).isGreaterThan(200);
+  logger.info("""" + response);
+}",0,Clean Code
+"/** 
+ * <code>optional .RotatorEnergyInfo energy_info = 11;</code>
+ * @return this
+ */
+public UpdateEnergyScNotify clearEnergyInfo(){
+  bitField0_&=~0x00000001;
+  energyInfo.clear();
+  return this;
+}",0,Clean Code
+"@Override public void onFragmentDestroy(){
+  super.onFragmentDestroy();
+  if (searchString == null) {
+    getNotificationCenter().removeObserver(this,NotificationCenter.dialogsNeedReload);
+    NotificationCenter.getGlobalInstance().removeObserver(this,NotificationCenter.emojiLoaded);
+    if ((initialDialogsType == 3 && NekoConfig.showTabsOnForward.Bool()) || !onlySelect) {
+      NotificationCenter.getGlobalInstance().removeObserver(this,NotificationCenter.closeSearchByActiveAction);
+      NotificationCenter.getGlobalInstance().removeObserver(this,NotificationCenter.proxySettingsChanged);
+      getNotificationCenter().removeObserver(this,NotificationCenter.filterSettingsUpdated);
+      getNotificationCenter().removeObserver(this,NotificationCenter.dialogFiltersUpdated);
+      getNotificationCenter().removeObserver(this,NotificationCenter.dialogsUnreadCounterChanged);
+    }
+    getNotificationCenter().removeObserver(this,NotificationCenter.updateInterfaces);
+    getNotificationCenter().removeObserver(this,NotificationCenter.encryptedChatUpdated);
+    getNotificationCenter().removeObserver(this,NotificationCenter.contactsDidLoad);
+    getNotificationCenter().removeObserver(this,NotificationCenter.appDidLogout);
+    getNotificationCenter().removeObserver(this,NotificationCenter.openedChatChanged);
+    getNotificationCenter().removeObserver(this,NotificationCenter.notificationsSettingsUpdated);
+    getNotificationCenter().removeObserver(this,NotificationCenter.messageReceivedByAck);
+    getNotificationCenter().removeObserver(this,NotificationCenter.messageReceivedByServer);
+    getNotificationCenter().removeObserver(this,NotificationCenter.messageSendError);
+    getNotificationCenter().removeObserver(this,NotificationCenter.needReloadRecentDialogsSearch);
+    getNotificationCenter().removeObserver(this,NotificationCenter.replyMessagesDidLoad);
+    getNotificationCenter().removeObserver(this,NotificationCenter.reloadHints);
+    getNotificationCenter().removeObserver(this,NotificationCenter.didUpdateConnectionState);
+    getNotificationCenter().removeObserver(this,NotificationCenter.onDownloadingFilesChanged);
+    getNotificationCenter().removeObserver(this,NotificationCenter.needDeleteDialog);
+    getNotificationCenter().removeObserver(this,NotificationCenter.folderBecomeEmpty);
+    getNotificationCenter().removeObserver(this,NotificationCenter.newSuggestionsAvailable);
+    getNotificationCenter().removeObserver(this,NotificationCenter.fileLoaded);
+    getNotificationCenter().removeObserver(this,NotificationCenter.fileLoadFailed);
+    getNotificationCenter().removeObserver(this,NotificationCenter.fileLoadProgressChanged);
+    getNotificationCenter().removeObserver(this,NotificationCenter.dialogsUnreadReactionsCounterChanged);
+    getNotificationCenter().removeObserver(this,NotificationCenter.forceImportContactsStart);
+    getNotificationCenter().removeObserver(this,NotificationCenter.userEmojiStatusUpdated);
+    getNotificationCenter().removeObserver(this,NotificationCenter.currentUserPremiumStatusChanged);
+    NotificationCenter.getGlobalInstance().removeObserver(this,NotificationCenter.didSetPasscode);
+    NotificationCenter.getGlobalInstance().removeObserver(this,NotificationCenter.appUpdateAvailable);
+  }
+  getNotificationCenter().removeObserver(this,NotificationCenter.messagesDeleted);
+  getNotificationCenter().removeObserver(this,NotificationCenter.onDatabaseMigration);
+  getNotificationCenter().removeObserver(this,NotificationCenter.onDatabaseOpened);
+  getNotificationCenter().removeObserver(this,NotificationCenter.didClearDatabase);
+  getNotificationCenter().removeObserver(this,NotificationCenter.onDatabaseReset);
+  if (commentView != null) {
+    commentView.onDestroy();
+  }
+  if (undoView[0] != null) {
+    undoView[0].hide(true,0);
+  }
+  getNotificationCenter().onAnimationFinish(animationIndex);
+  delegate=null;
+  SuggestClearDatabaseBottomSheet.dismissDialog();
+}",0,Clean Code
+"/** 
+ * Sets the internal progress and updates the UI accordingly for progress <= 0: - icon is pending - progress track is not visible - progress bar is not visible for progress < 1: - icon without pending motion - progress track is visible - progress bar is visible. Progress bar is drawn as a fraction of {@link #mScaledTrackPath}.
+ * @see PathMeasure#getSegment(float,float,Path,boolean) for progress > 1: - scale the icon back to full size
+ */
+private void setInternalProgress(float progress){
+  if (ENABLE_DOWNLOAD_APP_UX_V2.get() && progress > 0 && mInternalStateProgress == 0) {
+    Animator iconScaleAnimator=mIconScaleMultiplier.animateToValue(1);
+    iconScaleAnimator.setDuration(SCALE_AND_ALPHA_ANIM_DURATION);
+    iconScaleAnimator.setInterpolator(EMPHASIZED);
+    iconScaleAnimator.start();
+  }
+  mInternalStateProgress=progress;
+  if (progress <= 0) {
+    if (!ENABLE_DOWNLOAD_APP_UX_V2.get()) {
+      mScaledTrackPath.reset();
+    }
+    mIconScaleMultiplier.updateValue(0);
+  }
+ else {
+    mPathMeasure.getSegment(0,Math.min(progress,1) * mTrackLength,mScaledProgressPath,true);
+    if (progress > 1 && ENABLE_DOWNLOAD_APP_UX_V2.get()) {
+      mIconScaleMultiplier.updateValue(Utilities.mapBoundToRange(progress - 1,0,COMPLETE_ANIM_FRACTION,1,0,EMPHASIZED));
+    }
+  }
+  invalidateSelf();
+}",0,Clean Code

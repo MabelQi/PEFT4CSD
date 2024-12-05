@@ -1,0 +1,8 @@
+{
+    "Model": "starcoderbase-3b",
+    "Model path": "output/RQ1/CM/starcoderbase-3b/ia3_seed_42/best_model",
+    "Precision": 0.8645738518555225,
+    "Recall": 0.8838081535825683,
+    "F1": 0.8727618686330677,
+    "MCC": 0.7481347924676485
+}

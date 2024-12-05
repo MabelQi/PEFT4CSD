@@ -1,0 +1,8 @@
+{
+    "Model": "graphcodebert-base",
+    "Model path": "output/RQ3/CM/200/graphcodebert-base/ia3_seed_42/best_model",
+    "Precision": 0.8333891406029278,
+    "Recall": 0.8499209243069894,
+    "F1": 0.8404620008081802,
+    "MCC": 0.6831100533111465
+}
