@@ -1,0 +1,8 @@
+{
+    "Model": "deepseek-coder-1.3b-base",
+    "Model path": "/home/liangpeng/project/Mabel/PEFTonCodeSmellDetection/output/1st/RQ2/CM/r640/deepseek-coder-1.3b-base/lora_seed_42/best_model",
+    "Precision": 0.8236788617886179,
+    "Recall": 0.8170731707317074,
+    "F1": 0.8161350844277674,
+    "MCC": 0.6407179816616578
+}

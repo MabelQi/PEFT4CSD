@@ -1,0 +1,8 @@
+{
+    "Model": "codet5-base",
+    "Model path": "RQ1/FE/codet5-base/ia3_seed_42/best_model",
+    "Precision": 0.5492063492063493,
+    "Recall": 0.5483870967741935,
+    "F1": 0.5464994775339602,
+    "MCC": 0.09759000729485333
+}

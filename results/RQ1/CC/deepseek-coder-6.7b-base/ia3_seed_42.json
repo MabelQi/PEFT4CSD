@@ -1,0 +1,8 @@
+{
+    "Model": "deepseek-coder-6.7b-base",
+    "Model path": "/home/nas2/path/20_JP/Beiqi/PEFTonCodeSmellDetection/output/1st/CC/deepseek-coder-6.7b-base/ia3_seed_42/best_model",
+    "Precision": 0.7137927380786107,
+    "Recall": 0.7097826086956521,
+    "F1": 0.7084152886111741,
+    "MCC": 0.42355636373128536
+}

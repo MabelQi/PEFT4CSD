@@ -1,0 +1,8 @@
+{
+    "Model": "unixcoder-base",
+    "Model path": "RQ1/CM/unixcoder-base/prefix_tuning_seed_42/best_model",
+    "Precision": 0.8309047198508488,
+    "Recall": 0.8275261324041812,
+    "F1": 0.8270847596877995,
+    "MCC": 0.658422183973285
+}

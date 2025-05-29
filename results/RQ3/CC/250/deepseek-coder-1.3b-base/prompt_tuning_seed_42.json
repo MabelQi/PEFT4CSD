@@ -1,0 +1,8 @@
+{
+    "Model": "deepseek-coder-1.3b-base",
+    "Model path": "RQ3/CC/250/deepseek-coder-1.3b-base/prompt_tuning_seed_42/best_model",
+    "Precision": 0.6109031086907193,
+    "Recall": 0.6108695652173912,
+    "F1": 0.6108401391409558,
+    "MCC": 0.22177267137135848
+}

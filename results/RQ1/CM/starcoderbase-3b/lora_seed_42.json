@@ -1,0 +1,8 @@
+{
+    "Model": "starcoderbase-3b",
+    "Model path": "RQ1/CM/starcoderbase-3b/lora_seed_42/best_model",
+    "Precision": 0.7617295597484277,
+    "Recall": 0.7020905923344948,
+    "F1": 0.6840946615299945,
+    "MCC": 0.45996991971652357
+}

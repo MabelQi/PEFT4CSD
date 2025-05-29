@@ -1,0 +1,8 @@
+{
+    "Model": "codet5-base",
+    "Model path": "RQ1/CC/codet5-base/lora_seed_42/best_model",
+    "Precision": 0.75,
+    "Recall": 0.5,
+    "F1": 0.3333333333333333,
+    "MCC": 0.0
+}

@@ -1,0 +1,8 @@
+{
+    "Model": "deepseek-coder-1.3b-base",
+    "Model path": "RQ3/CM/500/deepseek-coder-1.3b-base/ia3_seed_42/best_model",
+    "Precision": 0.7181230484667014,
+    "Recall": 0.7168989547038327,
+    "F1": 0.7165012100558106,
+    "MCC": 0.4350202809490196
+}

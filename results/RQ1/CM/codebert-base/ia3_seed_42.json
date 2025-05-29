@@ -1,0 +1,8 @@
+{
+    "Model": "codebert-base",
+    "Model path": "RQ1/CM/codebert-base/ia3_seed_42/best_model",
+    "Precision": 0.8159864944216089,
+    "Recall": 0.813588850174216,
+    "F1": 0.8132345651982205,
+    "MCC": 0.6295707790431626
+}

@@ -1,0 +1,8 @@
+{
+    "Model": "codet5-base",
+    "Model path": "RQ1/CC/codet5-base/full_fine_tuning_seed_42/best_model",
+    "Precision": 0.7314190792596109,
+    "Recall": 0.7304347826086957,
+    "F1": 0.7301478415138971,
+    "MCC": 0.461852813007317
+}

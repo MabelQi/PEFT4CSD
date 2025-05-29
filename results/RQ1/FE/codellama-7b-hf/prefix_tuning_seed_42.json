@@ -1,0 +1,8 @@
+{
+    "Model": "codellama-7b-hf",
+    "Model path": "/home/nas2/path/20_JP/Beiqi/PEFTonCodeSmellDetection/output/1st/FE/codellama-7b-hf/prefix_tuning_seed_42/best_model",
+    "Precision": 0.662020905923345,
+    "Recall": 0.6451612903225806,
+    "F1": 0.6356837606837606,
+    "MCC": 0.3067191794659486
+}

@@ -1,0 +1,8 @@
+{
+    "Model": "graphcodebert-base",
+    "Model path": "RQ3/CC/100/graphcodebert-base/prompt_tuning_seed_42/best_model",
+    "Precision": 0.5195744680851064,
+    "Recall": 0.5195652173913043,
+    "F1": 0.5195084485407067,
+    "MCC": 0.03913968438320653
+}

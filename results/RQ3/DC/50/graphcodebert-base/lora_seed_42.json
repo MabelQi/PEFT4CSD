@@ -1,0 +1,8 @@
+{
+    "Model": "graphcodebert-base",
+    "Model path": "RQ3/DC/50/graphcodebert-base/lora_seed_42/best_model",
+    "Precision": 0.816673918588426,
+    "Recall": 0.8085260115606936,
+    "F1": 0.8072863984951146,
+    "MCC": 0.625146834167407
+}

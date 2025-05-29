@@ -1,0 +1,8 @@
+{
+    "Model": "unixcoder-base",
+    "Model path": "RQ1/CM/unixcoder-base/prompt_tuning_seed_42/best_model",
+    "Precision": 0.7920516078102451,
+    "Recall": 0.7874564459930313,
+    "F1": 0.7866171003717473,
+    "MCC": 0.5794898350365904
+}

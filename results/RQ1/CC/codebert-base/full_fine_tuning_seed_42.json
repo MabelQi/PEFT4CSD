@@ -1,0 +1,8 @@
+{
+    "Model": "codebert-base",
+    "Model path": "RQ1/CC/codebert-base/full_fine_tuning_seed_42/best_model",
+    "Precision": 0.732587084026946,
+    "Recall": 0.7119565217391304,
+    "F1": 0.7054242772443275,
+    "MCC": 0.44406463192557144
+}

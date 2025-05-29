@@ -1,0 +1,8 @@
+{
+    "Model": "codebert-base",
+    "Model path": "RQ1/FE/codebert-base/lora_seed_42/best_model",
+    "Precision": 0.6843243243243243,
+    "Recall": 0.6774193548387097,
+    "F1": 0.6743697478991596,
+    "MCC": 0.36167777207178603
+}

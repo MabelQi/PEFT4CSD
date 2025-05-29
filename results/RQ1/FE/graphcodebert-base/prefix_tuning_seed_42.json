@@ -1,0 +1,8 @@
+{
+    "Model": "graphcodebert-base",
+    "Model path": "RQ1/FE/graphcodebert-base/prefix_tuning_seed_42/best_model",
+    "Precision": 0.7419354838709677,
+    "Recall": 0.7419354838709677,
+    "F1": 0.7419354838709677,
+    "MCC": 0.4838709677419355
+}

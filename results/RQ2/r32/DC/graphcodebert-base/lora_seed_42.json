@@ -1,0 +1,8 @@
+{
+    "Model": "graphcodebert-base",
+    "Model path": "/home/liangpeng/project/Mabel/PEFTonCodeSmellDetection/output/1st/RQ2/DC/r32/graphcodebert-base/lora_seed_42/best_model",
+    "Precision": 0.8484892086330935,
+    "Recall": 0.8338150289017341,
+    "F1": 0.8320469880102908,
+    "MCC": 0.6821464219705284
+}
