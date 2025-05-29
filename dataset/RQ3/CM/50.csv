@@ -1,0 +1,1993 @@
+text,label,text_label
+"public static String processProxyListFile(Context ctx,File proxyListFile){
+  try {
+    if (proxyListFile.length() > 2 * 1024 * 1024L) {
+      throw new IllegalArgumentException(""file too large."");
+    }
+    JSONObject proxyRootObject=new JSONObject(FileUtil.readUtf8String(proxyListFile));
+    int version=proxyRootObject.optInt(""nekox_proxy_list_version"",1);
+    if (version == 1) {
+      if (proxyRootObject.isNull(""proxies"")) {
+        throw new IllegalArgumentException(""proxies array not found."");
+      }
+      JSONArray proxyArray=proxyRootObject.getJSONArray(""proxies"");
+      if (proxyArray.length() == 0) {
+        throw new IllegalArgumentException(""Empty proxy list."");
+      }
+      LinkedList<String> imported=new LinkedList<>();
+      LinkedHashMap<String,String> errors=new LinkedHashMap<>();
+      for (int index=0; index < proxyArray.length(); index++) {
+        String proxyUrl=proxyArray.getString(index);
+        try {
+          imported.add(ProxyUtil.importInBackground(proxyUrl).getTitle());
+        }
+ catch (        Exception ex) {
+          errors.put(proxyUrl.length() < 15 ? proxyUrl : (proxyUrl.substring(0,15) + ""...""),ex.getMessage());
+        }
+      }
+      StringBuilder status=new StringBuilder();
+      if (!imported.isEmpty()) {
+        status.append(LocaleController.getString(""ImportedProxies"",R.string.ImportedProxies));
+        for (        String success : imported) {
+          status.append(""\n"").append(success);
+        }
+        if (!errors.isEmpty()) {
+          status.append(""\n\n"");
+        }
+      }
+      if (!errors.isEmpty()) {
+        status.append(LocaleController.getString(""ErrorsInImport"",R.string.ErrorsInImport));
+        for (        Map.Entry<String,String> error : errors.entrySet()) {
+          status.append(""\n"").append(error.getKey()).append("": "").append(error.getValue());
+        }
+      }
+      if (imported.isEmpty()) {
+        AlertUtil.showSimpleAlert(ctx,status.toString());
+      }
+ else {
+        return status.toString();
+      }
+    }
+ else {
+      throw new IllegalArgumentException(""invalid proxy list version "" + version + ""."");
+    }
+  }
+ catch (  Exception e) {
+    AlertUtil.showSimpleAlert(ctx,LocaleController.getString(""InvalidProxyFile"",R.string.InvalidProxyFile) + proxyListFile.getPath() + ""\n\n""+ e.getMessage());
+  }
+  return null;
+}",1,Code Smell
+"public void setTextAndValueAndTypeAndThumb(String text,String value,String type,String thumb,int resId,boolean divider){
+  nameTextView.setText(text);
+  dateTextView.setText(value);
+  if (type != null) {
+    extTextView.setVisibility(VISIBLE);
+    extTextView.setText(type.toLowerCase());
+  }
+ else {
+    extTextView.setVisibility(INVISIBLE);
+  }
+  needDivider=divider;
+  if (resId == 0) {
+    placeholderImageView.setImageResource(AndroidUtilities.getThumbForNameOrMime(text,type,false));
+    placeholderImageView.setVisibility(VISIBLE);
+  }
+ else {
+    placeholderImageView.setVisibility(INVISIBLE);
+  }
+  if (thumb != null || resId != 0) {
+    if (thumb != null) {
+      if (viewType != VIEW_TYPE_CACHE) {
+        thumbImageView.setImage(thumb,""42_42"",null);
+      }
+    }
+ else {
+      Drawable drawable=Theme.createCircleDrawableWithIcon(AndroidUtilities.dp(42),resId);
+      int iconKey;
+      int backKey;
+      if (resId == R.drawable.files_storage) {
+        backKey=Theme.key_chat_attachLocationBackground;
+        iconKey=Theme.key_chat_attachIcon;
+      }
+ else       if (resId == R.drawable.files_gallery) {
+        backKey=Theme.key_chat_attachContactBackground;
+        iconKey=Theme.key_chat_attachIcon;
+      }
+ else       if (resId == R.drawable.files_music) {
+        backKey=Theme.key_chat_attachAudioBackground;
+        iconKey=Theme.key_chat_attachIcon;
+      }
+ else       if (resId == R.drawable.files_internal) {
+        backKey=Theme.key_chat_attachGalleryBackground;
+        iconKey=Theme.key_chat_attachIcon;
+      }
+ else {
+        backKey=Theme.key_files_folderIconBackground;
+        iconKey=Theme.key_files_folderIcon;
+      }
+      Theme.setCombinedDrawableColor(drawable,getThemedColor(backKey),false);
+      Theme.setCombinedDrawableColor(drawable,getThemedColor(iconKey),true);
+      thumbImageView.setImageDrawable(drawable);
+    }
+    thumbImageView.setVisibility(VISIBLE);
+  }
+ else {
+    extTextView.setAlpha(1.0f);
+    placeholderImageView.setAlpha(1.0f);
+    if (viewType != VIEW_TYPE_CACHE) {
+      thumbImageView.setImageBitmap(null);
+      thumbImageView.setVisibility(INVISIBLE);
+    }
+  }
+  setWillNotDraw(!needDivider);
+}",0,Clean Code
+"private static FakeExtractorOutput consumeTestData(Extractor extractor,FakeExtractorInput input,long timeUs,boolean retryFromStartIfLive) throws IOException, InterruptedException {
+  FakeExtractorOutput output=new FakeExtractorOutput();
+  extractor.init(output);
+  consumeTestData(extractor,input,timeUs,output,retryFromStartIfLive);
+  return output;
+}
+private static void consumeTestData(Extractor extractor,FakeExtractorInput input,long timeUs,FakeExtractorOutput output,boolean retryFromStartIfLive) throws IOException, InterruptedException {
+  extractor.seek(input.getPosition(),timeUs);
+  PositionHolder seekPositionHolder=new PositionHolder();
+  int readResult=Extractor.RESULT_CONTINUE;
+  while (readResult != Extractor.RESULT_END_OF_INPUT) {
+    try {
+      seekPositionHolder.position=Long.MIN_VALUE;
+      readResult=extractor.read(input,seekPositionHolder);
+      if (readResult == Extractor.RESULT_SEEK) {
+        long seekPosition=seekPositionHolder.position;
+        Assertions.checkState(0 <= seekPosition && seekPosition <= Integer.MAX_VALUE);
+        input.setPosition((int)seekPosition);
+      }
+    }
+ catch (    SimulatedIOException e) {
+      if (!retryFromStartIfLive) {
+        continue;
+      }
+      boolean isOnDemand=input.getLength() != C.LENGTH_UNSET || (output.seekMap != null && output.seekMap.getDurationUs() != C.TIME_UNSET);
+      if (isOnDemand) {
+        continue;
+      }
+      input.setPosition(0);
+      for (int i=0; i < output.numberOfTracks; i++) {
+        output.trackOutputs.valueAt(i).clear();
+      }
+      extractor.seek(0,0);
+    }
+  }
+}",0,Clean Code
+"@Override public void nodeClicked(final CombinedDiffNode node,final MouseEvent event,final double x,final double y){
+  if (SwingUtilities.isRightMouseButton(event)) {
+    if (node.getRawNode() instanceof RawCombinedFunction) {
+      final JPopupMenu menu=new CallGraphPopupMenu(controller,graph,node);
+      menu.show(graph.getView(),event.getX(),event.getY());
+    }
+ else     if (node.getRawNode() instanceof RawCombinedBasicBlock) {
+      final JPopupMenu menu=new FlowGraphPopupMenu(controller,graph,node);
+      menu.show(graph.getView(),event.getX(),event.getY());
+    }
+    return;
+  }
+  if (SwingUtilities.isLeftMouseButton(event) && event.getClickCount() == 2 && graph.getGraphType() == EGraphType.CALL_GRAPH) {
+    controller.openFlowgraphsViews(node);
+  }
+}",0,Clean Code
+"/** 
+ * Trying to filter languages preferred by the user
+ */
+private MediaTrack[][] filterByLanguage(MediaTrack[][] trackGroupList,MediaTrack originTrack){
+  if (!(originTrack instanceof AudioTrack) || trackGroupList.length <= 1) {
+    return trackGroupList;
+  }
+  String audioLanguage=PlayerData.instance(mContext).getAudioLanguage();
+  String resultLanguage=null;
+  String originLanguage=null;
+  if (!TextUtils.isEmpty(audioLanguage) && originTrack.isSaved) {
+    resultLanguage=audioLanguage;
+  }
+  if (originTrack.format != null && !TextUtils.isEmpty(originTrack.format.language)) {
+    originLanguage=originTrack.format.language;
+  }
+  if (resultLanguage == null && originLanguage == null) {
+    return trackGroupList;
+  }
+  List<MediaTrack[]> resultTracks=null;
+  List<MediaTrack[]> originTracks=null;
+  List<MediaTrack[]> resultTracksFallback=null;
+  for (  MediaTrack[] trackGroup : trackGroupList) {
+    if (trackGroup != null && trackGroup.length >= 1) {
+      MediaTrack mediaTrack=trackGroup[0];
+      if (mediaTrack != null && mediaTrack.format != null) {
+        if (Helpers.startsWith(mediaTrack.format.language,resultLanguage)) {
+          if (resultTracks == null) {
+            resultTracks=new ArrayList<>();
+          }
+          resultTracks.add(trackGroup);
+        }
+ else         if (Helpers.startsWith(mediaTrack.format.language,originLanguage)) {
+          if (originTracks == null) {
+            originTracks=new ArrayList<>();
+          }
+          originTracks.add(trackGroup);
+        }
+ else         if (Helpers.startsWith(mediaTrack.format.language,DEFAULT_LANGUAGE)) {
+          if (resultTracksFallback == null) {
+            resultTracksFallback=new ArrayList<>();
+          }
+          resultTracksFallback.add(trackGroup);
+        }
+      }
+    }
+  }
+  if (resultTracks != null && !resultTracks.isEmpty()) {
+    return resultTracks.toArray(new MediaTrack[0][]);
+  }
+  if (originTracks != null && !originTracks.isEmpty()) {
+    return originTracks.toArray(new MediaTrack[0][]);
+  }
+  if (resultTracksFallback != null && !resultTracksFallback.isEmpty()) {
+    return resultTracksFallback.toArray(new MediaTrack[0][]);
+  }
+  return trackGroupList;
+}",1,Code Smell
+"public Drawable getThemeDrawable(Context context,int themeDrawableId){
+  Drawable drawable=null;
+  if (mLastThemeDrawableState != null && mLastThemeDrawableId == themeDrawableId) {
+    Drawable.ConstantState drawableState=mLastThemeDrawableState.get();
+    if (DEBUG)     Log.v(TAG,""got cached theme drawable state "" + drawableState);
+    if (drawableState != null) {
+      drawable=drawableState.newDrawable();
+    }
+  }
+  if (drawable == null) {
+    drawable=ContextCompat.getDrawable(context,themeDrawableId);
+    if (DEBUG)     Log.v(TAG,""loaded theme drawable "" + drawable);
+    mLastThemeDrawableState=new WeakReference<Drawable.ConstantState>(drawable.getConstantState());
+    mLastThemeDrawableId=themeDrawableId;
+  }
+  return drawable;
+}
+private Drawable getThemeDrawable(){
+  Drawable drawable=null;
+  if (mThemeDrawableResourceId != -1) {
+    drawable=mService.getThemeDrawable(mContext,mThemeDrawableResourceId);
+  }
+  if (drawable == null) {
+    drawable=createEmptyDrawable(mContext);
+  }
+  return drawable;
+}",0,Clean Code
+"public Criteria andGmtModifiedNotEqualTo(Date value){
+  addCriterion(""gmt_modified <>"",value,""gmtModified"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedNotEqualTo(Date value){
+  addCriterion(""gmt_modified <>"",value,""gmtModified"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedNotEqualTo(Date value){
+  addCriterion(""gmt_modified <>"",value,""gmtModified"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedNotEqualTo(Date value){
+  addCriterion(""gmt_modified <>"",value,""gmtModified"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedNotEqualTo(Date value){
+  addCriterion(""gmt_modified <>"",value,""gmtModified"");
+  return (Criteria)this;
+}
+",0,Clean Code
+"private ComponentPackageDOExample buildExample(ComponentPackageQueryCondition condition){
+  ComponentPackageDOExample example=new ComponentPackageDOExample();
+  ComponentPackageDOExample.Criteria criteria=example.createCriteria();
+  if (Objects.nonNull(condition.getId())) {
+    criteria.andIdEqualTo(condition.getId());
+  }
+  if (CollectionUtils.isNotEmpty(condition.getIdList())) {
+    criteria.andIdIn(condition.getIdList());
+  }
+  if (StringUtils.isNotBlank(condition.getAppId())) {
+    criteria.andAppIdEqualTo(condition.getAppId());
+  }
+  if (StringUtils.isNotBlank(condition.getComponentType())) {
+    criteria.andComponentTypeEqualTo(condition.getComponentType());
+  }
+  if (StringUtils.isNotBlank(condition.getComponentName())) {
+    criteria.andComponentNameEqualTo(condition.getComponentName());
+  }
+  if (StringUtils.isNotBlank(condition.getPackageCreator())) {
+    criteria.andPackageCreatorEqualTo(condition.getPackageCreator());
+  }
+  if (StringUtils.isNotBlank(condition.getPackageVersion())) {
+    criteria.andPackageVersionEqualTo(condition.getPackageVersion());
+  }
+  if (StringUtils.isNotBlank(condition.getNamespaceId())) {
+    criteria.andNamespaceIdEqualTo(condition.getNamespaceId());
+  }
+  if (StringUtils.isNotBlank(condition.getStageId())) {
+    criteria.andStageIdEqualTo(condition.getStageId());
+  }
+  return example;
+}
+",0,Clean Code
+"@Override Duration increment(Duration time,int steps){
+  return checkBounds(time,time.plusDays(steps));
+}
+@Override Duration increment(Duration time,int steps){
+  return checkBounds(time,time.plusHours(steps));
+}
+@Override Duration increment(Duration time,int steps){
+  return checkBounds(time,time.plusMinutes(steps * TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT / 60));
+}
+@Override Duration increment(Duration time,int steps){
+  return time.plusSeconds(steps * TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT);
+}
+abstract Duration increment(Duration time,int steps);
+@Override public void increment(int steps){
+  checkMode();
+  setValue(mode.get().increment(getValue(),steps));
+  mode.get().select(RelativeTimelockSpinner.this);
+}",0,Clean Code
+"@Override protected void decode(ChannelHandlerContext ctx,ByteBuf buffer,List<Object> out) throws Exception {
+  buffer.markReaderIndex();
+  int totalLen=buffer.readInt();
+  LOGGER.debug(""decode totalLen : {}"",totalLen);
+  if (totalLen != buffer.readableBytes()) {
+    LOGGER.error(""totalLen is not equal readableBytes.total:"" + totalLen + "";readableBytes:""+ buffer.readableBytes());
+    buffer.resetReaderIndex();
+    throw new Exception(""totalLen is not equal readableBytes.total"");
+  }
+  int msgType=buffer.readByte() & 0x1f;
+  if (msgType == 4) {
+    LOGGER.info(""debug decode"");
+  }
+  if (msgType == 3 | msgType == 5) {
+    int bodyLength=buffer.readInt();
+    if (bodyLength >= totalLen) {
+      LOGGER.error(""bodyLen is greater than totalLen.totalLen:"" + totalLen + "";bodyLen:""+ bodyLength);
+      buffer.resetReaderIndex();
+      throw new Exception(""bodyLen is greater than totalLen.totalLen"");
+    }
+    byte[] bodyBytes=null;
+    if (bodyLength > 0) {
+      bodyBytes=new byte[bodyLength];
+      buffer.readBytes(bodyBytes);
+    }
+    int attrLength=buffer.readInt();
+    byte[] attrBytes=null;
+    if (attrLength > 0) {
+      attrBytes=new byte[attrLength];
+      buffer.readBytes(attrBytes);
+    }
+    EncodeObject object=new EncodeObject(bodyBytes,new String(attrBytes,StandardCharsets.UTF_8));
+    object.setMsgtype(5);
+    out.add(object);
+  }
+ else   if (msgType == 7) {
+    int seqId=buffer.readInt();
+    int attrLen=buffer.readShort();
+    byte[] attrBytes=null;
+    if (attrLen > 0) {
+      attrBytes=new byte[attrLen];
+      buffer.readBytes(attrBytes);
+    }
+    EncodeObject object=new EncodeObject(new String(attrBytes,StandardCharsets.UTF_8));
+    object.setMessageId(String.valueOf(seqId));
+    buffer.readShort();
+    object.setMsgtype(msgType);
+    out.add(object);
+  }
+ else   if (msgType == 8) {
+    buffer.skipBytes(4 + 1 + 4);
+    final short load=buffer.readShort();
+    int attrLen=buffer.readShort();
+    byte[] attrBytes=null;
+    if (attrLen > 0) {
+      attrBytes=new byte[attrLen];
+      buffer.readBytes(attrBytes);
+    }
+    buffer.skipBytes(2);
+    String attrs=(attrBytes == null ? """" : new String(attrBytes,StandardCharsets.UTF_8));
+    EncodeObject object=new EncodeObject(attrs);
+    object.setMsgtype(8);
+    object.setLoad(load);
+    out.add(object);
+  }
+}",1,Code Smell
+"public static void init(String[] args) throws Exception {
+  final Options options=getOptions();
+  CommandLineParser parser=new DefaultParser();
+  try {
+    cmdLine=parser.parse(options,args);
+  }
+ catch (  Exception e) {
+    System.out.println(""[*] Parameter input error, please use -h for more information"");
+    System.exit(1);
+  }
+  if (cmdLine.hasOption(""inherit"")) {
+    Config.IS_INHERIT_ABSTRACT_TRANSLET=true;
+  }
+  if (cmdLine.hasOption(""obscure"")) {
+    Config.IS_OBSCURE=true;
+  }
+  if (cmdLine.hasOption(""cmd-header"")) {
+    Config.CMD_HEADER_STRING=cmdLine.getOptionValue(""cmd-header"");
+  }
+  if (cmdLine.hasOption(""url"")) {
+    String url=cmdLine.getOptionValue(""url"");
+    if (!url.startsWith(""/"")) {
+      url=""/"" + url;
+    }
+    Config.URL_PATTERN=url;
+  }
+  if (cmdLine.hasOption(""define-class-from-parameter"")) {
+    Config.PARAMETER=cmdLine.getOptionValue(""define-class-from-parameter"");
+  }
+  if (cmdLine.hasOption(""file"")) {
+    Config.WRITE_FILE=true;
+    Config.FILE=cmdLine.getOptionValue(""file"");
+  }
+  if (cmdLine.hasOption(""password"")) {
+    Config.PASSWORD_ORI=cmdLine.getOptionValue(""password"");
+    Config.PASSWORD=generatePassword(Config.PASSWORD_ORI);
+  }
+  if (cmdLine.hasOption(""godzilla-key"")) {
+    Config.GODZILLA_KEY=generatePassword(cmdLine.getOptionValue(""godzilla-key""));
+  }
+  if (cmdLine.hasOption(""header-key"")) {
+    Config.HEADER_KEY=cmdLine.getOptionValue(""header-key"");
+  }
+  if (cmdLine.hasOption(""header-value"")) {
+    Config.HEADER_VALUE=cmdLine.getOptionValue(""header-value"");
+  }
+  if (cmdLine.hasOption(""no-com-sun"")) {
+    Config.FORCE_USING_ORG_APACHE_TEMPLATESIMPL=true;
+  }
+  if (cmdLine.hasOption(""mozilla-class-loader"")) {
+    Config.USING_MOZILLA_DEFININGCLASSLOADER=true;
+  }
+  if (cmdLine.hasOption(""rhino"")) {
+    Config.USING_RHINO=true;
+  }
+  if (cmdLine.hasOption(""utf8-Overlong-Encoding"")) {
+    Config.IS_UTF_Bypass=true;
+  }
+  if (cmdLine.hasOption(""gen-mem-shell"")) {
+    Config.GEN_MEM_SHELL=true;
+    if (cmdLine.hasOption(""gen-mem-shell-name"")) {
+      Config.GEN_MEM_SHELL_FILENAME=cmdLine.getOptionValue(""gen-mem-shell-name"");
+    }
+  }
+  if (cmdLine.hasOption(""hide-mem-shell"")) {
+    Config.HIDE_MEMORY_SHELL=true;
+    if (cmdLine.hasOption(""hide-type"")) {
+      Config.HIDE_MEMORY_SHELL_TYPE=Integer.parseInt(cmdLine.getOptionValue(""hide-type""));
+    }
+  }
+}",1,Code Smell
+"private void updateVideoPlayerTime(){
+  Arrays.fill(videoPlayerCurrentTime,0);
+  Arrays.fill(videoPlayerTotalTime,0);
+  if (videoPlayer != null) {
+    long current=Math.max(0,videoPlayer.getCurrentPosition());
+    if (shownControlsByEnd && !actionBarWasShownBeforeByEnd) {
+      current=0;
+    }
+    long total=Math.max(0,videoPlayer.getDuration());
+    if (!inPreview && videoTimelineViewContainer.getVisibility() == View.VISIBLE) {
+      total*=(videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress());
+      current-=videoTimelineView.getLeftProgress() * total;
+      if (current > total) {
+        current=total;
+      }
+    }
+    current/=1000;
+    total/=1000;
+    videoPlayerCurrentTime[0]=(int)(current / 60);
+    videoPlayerCurrentTime[1]=(int)(current % 60);
+    videoPlayerTotalTime[0]=(int)(total / 60);
+    videoPlayerTotalTime[1]=(int)(total % 60);
+  }
+ else   if (photoViewerWebView != null && photoViewerWebView.isControllable()) {
+    long current=Math.max(0,photoViewerWebView.getCurrentPosition());
+    if (shownControlsByEnd && !actionBarWasShownBeforeByEnd) {
+      current=0;
+    }
+    long total=Math.max(0,photoViewerWebView.getVideoDuration());
+    if (!inPreview && videoTimelineViewContainer.getVisibility() == View.VISIBLE) {
+      total*=(videoTimelineView.getRightProgress() - videoTimelineView.getLeftProgress());
+      current-=videoTimelineView.getLeftProgress() * total;
+      if (current > total) {
+        current=total;
+      }
+    }
+    current/=1000;
+    total/=1000;
+    videoPlayerCurrentTime[0]=(int)(current / 60);
+    videoPlayerCurrentTime[1]=(int)(current % 60);
+    videoPlayerTotalTime[0]=(int)(total / 60);
+    videoPlayerTotalTime[1]=(int)(total % 60);
+  }
+  String current, total;
+  if (videoPlayerCurrentTime[0] >= 60) {
+    current=format(videoPlayerCurrentTime[0] / 60,videoPlayerCurrentTime[0] % 60,videoPlayerCurrentTime[1]);
+  }
+ else {
+    current=format(videoPlayerCurrentTime[0],videoPlayerCurrentTime[1]);
+  }
+  if (videoPlayerTotalTime[0] >= 60) {
+    total=format(videoPlayerTotalTime[0] / 60,videoPlayerTotalTime[0] % 60,videoPlayerTotalTime[1]);
+  }
+ else {
+    total=format(videoPlayerTotalTime[0],videoPlayerTotalTime[1]);
+  }
+  videoPlayerTime.setText(current + "" / "" + total);
+  if (!Objects.equals(lastControlFrameDuration,total)) {
+    lastControlFrameDuration=total;
+    videoPlayerControlFrameLayout.requestLayout();
+  }
+}",1,Code Smell
+"private int readLastScrValue(ExtractorInput input,PositionHolder seekPositionHolder) throws IOException, InterruptedException {
+  long inputLength=input.getLength();
+  int bytesToSearch=(int)Math.min(TIMESTAMP_SEARCH_BYTES,inputLength);
+  long searchStartPosition=inputLength - bytesToSearch;
+  if (input.getPosition() != searchStartPosition) {
+    seekPositionHolder.position=searchStartPosition;
+    return Extractor.RESULT_SEEK;
+  }
+  packetBuffer.reset(bytesToSearch);
+  input.resetPeekPosition();
+  input.peekFully(packetBuffer.data,0,bytesToSearch);
+  lastScrValue=readLastScrValueFromBuffer(packetBuffer);
+  isLastScrValueRead=true;
+  return Extractor.RESULT_CONTINUE;
+}",0,Clean Code
+"@Override public void sendResult(InMemoryInterceptedSearchResult result,String base) throws Exception {
+  System.out.println(""[+] Sending LDAP ResourceRef result for "" + base + "" with javax.el.ELProcessor payload"");
+  Entry e=new Entry(base);
+  e.addAttribute(""javaClassName"",""java.lang.String"");
+  ResourceRef ref=new ResourceRef(""javax.el.ELProcessor"",null,"""","""",true,""org.apache.naming.factory.BeanFactory"",null);
+  ref.add(new StringRefAddr(""forceString"",""x=eval""));
+  TomcatBypassHelper helper=new TomcatBypassHelper();
+  String code=null;
+switch (type) {
+case dnslog:
+    code=helper.getDnsRequestCode(params[0]);
+  break;
+case command:
+code=helper.getExecCode(params[0]);
+break;
+case reverseshell:
+code=helper.getReverseShellCode(params[0],params[1]);
+break;
+case tomcatecho:
+code=helper.injectTomcatEcho();
+break;
+case springecho:
+code=helper.injectSpringEcho();
+break;
+case tomcatmemshell1:
+code=helper.injectTomcatMemshell1();
+break;
+case tomcatmemshell2:
+code=helper.injectTomcatMemshell2();
+break;
+case springmemshell:
+code=helper.injectSpringMemshell();
+break;
+case tomcatmemshell3:
+code=helper.injectmemshell3();
+break;
+case issuccess:
+code=helper.injectSuccess();
+break;
+case godzillamemshell:
+code=helper.injectGodzilla();
+break;
+case meterpreter:
+code=helper.injectMeterpreter();
+break;
+}
+String finalPayload=payloadTemplate.replace(""{replacement}"",code);
+ref.add(new StringRefAddr(""x"",finalPayload));
+e.addAttribute(""javaSerializedData"",Util.serialize(ref));
+result.sendSearchEntry(e);
+result.setResult(new LDAPResult(0,ResultCode.SUCCESS));
+}",1,Code Smell
+"/** 
+ * Query group's offset records stored in broker.
+ * @param msgStore       history offset store
+ * @param groupName      group name
+ * @param requestOffset  request offset
+ * @param recordStamp    record timestamp
+ * @param msgCount       at most record count
+ * @param maxRetryCnt    max query turns
+ * @param strBuff        string buffer
+ */
+private void queryGroupStoredOffsets(MessageStore msgStore,String groupName,long requestOffset,long recordStamp,int msgCount,int maxRetryCnt,StringBuilder strBuff){
+  int msgTypeCode;
+  int partitionId;
+  int msgAccCnt=0;
+  boolean msgMatched;
+  Throwable qryThrow;
+  GetMessageResult getMessageResult;
+  msgTypeCode=groupName.hashCode();
+  partitionId=Math.abs(msgTypeCode) % TServerConstants.OFFSET_HISTORY_NUMPARTS;
+  Set<String> filterCodes=new HashSet<>();
+  filterCodes.add(groupName);
+  ConsumerNodeInfo consumerNodeInfo=new ConsumerNodeInfo(broker.getStoreManager(),groupName,""offsetConsumer"",filterCodes,"""",System.currentTimeMillis(),"""","""");
+  int qryRetryCount=0;
+  long itemInitOffset=requestOffset;
+  int maxTransferSize=broker.getStoreManager().getMaxMsgTransferSize();
+  do {
+    qryThrow=null;
+    try {
+      getMessageResult=msgStore.getMessages(303,itemInitOffset,partitionId,consumerNodeInfo,TServerConstants.OFFSET_HISTORY_NAME,maxTransferSize,recordStamp);
+    }
+ catch (    Throwable e2) {
+      qryThrow=e2;
+      continue;
+    }
+    if (getMessageResult.transferedMessageList == null || getMessageResult.transferedMessageList.isEmpty()) {
+      itemInitOffset+=getMessageResult.lastReadOffset;
+      continue;
+    }
+    msgMatched=false;
+    List<Message> messageList=DataConverterUtil.convertMessage(TServerConstants.OFFSET_HISTORY_NAME,getMessageResult.transferedMessageList);
+    for (    Message message : messageList) {
+      if (message == null) {
+        continue;
+      }
+      if (!groupName.equals(message.getAttrValue(TServerConstants.TOKEN_OFFSET_GROUP))) {
+        continue;
+      }
+      msgMatched=true;
+      if (msgAccCnt++ == 0) {
+        strBuff.append(""{\""groupName\"":\"""").append(groupName).append(""\"",\""result\"":true,\""errMsg\"":\""ok\"",\""records\"":["").append(StringUtils.newStringUtf8(message.getData()));
+      }
+ else {
+        strBuff.append("","").append(StringUtils.newStringUtf8(message.getData()));
+      }
+      if (msgAccCnt >= msgCount) {
+        break;
+      }
+    }
+    if (msgMatched) {
+      break;
+    }
+    itemInitOffset+=getMessageResult.lastReadOffset;
+  }
+ while (++qryRetryCount < maxRetryCnt);
+  if (msgAccCnt > 0) {
+    strBuff.append(""],\""recordCount\"":"").append(msgAccCnt).append(""}"");
+  }
+ else {
+    if (qryThrow == null) {
+      strBuff.append(""{\""groupName\"":\"""").append(groupName).append(""\"",\""result\"":false,\""errMsg\"":\""Could not find record!\""}"");
+    }
+ else {
+      strBuff.append(""{\""groupName\"":\"""").append(groupName).append(""\"",\""result\"":false,\""errMsg\"":\""Get Message failure: "").append(qryThrow.getMessage()).append(""\""}"");
+    }
+  }
+}",1,Code Smell
+"private static void validateNoCyclesStep(Set<ClassQName> alreadySeen,MethodInfo method,boolean includeHolder){
+  Set<ClassQName> outgoing=new HashSet<>();
+  if (includeHolder) {
+    outgoing.add(new ClassQName(method.getDeclaringClass()));
+  }
+  for (  ParameterInfo ppi : method.getParameters()) {
+    outgoing.add(new ClassQName(ppi.getType()));
+  }
+  if (outgoing.isEmpty()) {
+    return;
+  }
+  Set<ClassQName> currentSeen=new HashSet<>();
+  currentSeen.addAll(alreadySeen);
+  for (  ClassQName ci : outgoing) {
+    if (!currentSeen.add(ci)) {
+      throw new GenerationException(""@"" + State.class.getSimpleName() + "" dependency cycle is detected: ""+ ci.ci.getQualifiedName()+ "" ""+ currentSeen,method);
+    }
+    Set<ClassQName> nextSeen=new HashSet<>();
+    nextSeen.addAll(alreadySeen);
+    nextSeen.add(ci);
+    for (    MethodInfo mi : BenchmarkGeneratorUtils.getAllMethods(ci.ci)) {
+      if (mi.getAnnotation(Setup.class) != null || mi.getAnnotation(TearDown.class) != null) {
+        validateNoCyclesStep(nextSeen,mi,false);
+      }
+    }
+  }
+}
+",1,Code Smell
+"/** 
+ * @hide 
+ */
+@Override public CharSequence getText(int id) throws NotFoundException {
+  Object replacement=getReplacement(id);
+  if (replacement instanceof CharSequence) {
+    return (CharSequence)replacement;
+  }
+ else   if (replacement instanceof XResForwarder) {
+    Resources repRes=((XResForwarder)replacement).getResources();
+    int repId=((XResForwarder)replacement).getId();
+    return repRes.getText(repId);
+  }
+  return super.getText(id);
+}
+/** 
+ * @hide 
+ */
+@Override public CharSequence getText(int id,CharSequence def){
+  Object replacement=getReplacement(id);
+  if (replacement instanceof CharSequence) {
+    return (CharSequence)replacement;
+  }
+ else   if (replacement instanceof XResForwarder) {
+    Resources repRes=((XResForwarder)replacement).getResources();
+    int repId=((XResForwarder)replacement).getId();
+    return repRes.getText(repId,def);
+  }
+  return super.getText(id,def);
+}
+@Override public CharSequence getText(int index){
+  Object replacement=((XResources)getResources()).getReplacement(getResourceId(index,0));
+  if (replacement instanceof CharSequence) {
+    return (CharSequence)replacement;
+  }
+ else   if (replacement instanceof XResForwarder) {
+    Resources repRes=((XResForwarder)replacement).getResources();
+    int repId=((XResForwarder)replacement).getId();
+    return repRes.getText(repId);
+  }
+  return super.getText(index);
+}",0,Clean Code
+"private static Class<?> hasType(Class<?> clz){
+  try {
+    if (clz.equals(Boolean.class)) {
+      return boolean.class;
+    }
+    if (clz.equals(Integer.class)) {
+      return int.class;
+    }
+    if (clz.equals(Long.class)) {
+      return long.class;
+    }
+    if (clz.equals(Byte.class)) {
+      return byte.class;
+    }
+    if (clz.equals(Short.class)) {
+      return short.class;
+    }
+    if (clz.equals(Float.class)) {
+      return float.class;
+    }
+    if (clz.equals(Double.class)) {
+      return double.class;
+    }
+    if (clz.equals(Character.class)) {
+      return char.class;
+    }
+    return null;
+  }
+ catch (  Exception e) {
+    return null;
+  }
+}
+",0,Clean Code
+"public int getMenuLeft(View content,int page){
+  if (mMode == SlidingMenu.LEFT) {
+switch (page) {
+case 0:
+      return content.getLeft() - getBehindWidth();
+case 2:
+    return content.getLeft();
+}
+}
+ else if (mMode == SlidingMenu.RIGHT) {
+switch (page) {
+case 0:
+  return content.getLeft();
+case 2:
+return content.getLeft() + getBehindWidth();
+}
+}
+ else if (mMode == SlidingMenu.LEFT_RIGHT) {
+switch (page) {
+case 0:
+return content.getLeft() - getBehindWidth();
+case 2:
+return content.getLeft() + getBehindWidth();
+}
+}
+return content.getLeft();
+}",0,Clean Code
+"public static void setupWithBottomNavigationView(@NonNull final BottomNavigationView bottomNavigationView,@NonNull final GroupScene groupScene,@IdRes final int containerId,@NonNull final LinkedHashMap<Integer,Scene> children){
+  setupWithBottomNavigationView(bottomNavigationView,groupScene,containerId,children,null);
+}
+public static void setupWithBottomNavigationView(@NonNull final BottomNavigationView bottomNavigationView,@NonNull final GroupScene groupScene,@IdRes final int containerId,@NonNull final LinkedHashMap<Integer,Scene> children,@Nullable final BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener){
+  if (children.size() == 0) {
+    throw new IllegalArgumentException(""children can't be empty"");
+  }
+  final List<String> menuIdList=new ArrayList<>();
+  int menuSize=bottomNavigationView.getMenu().size();
+  for (int i=0; i < menuSize; i++) {
+    menuIdList.add(String.valueOf(bottomNavigationView.getMenu().getItem(i).getItemId()));
+  }
+  bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener(){
+    @Override public boolean onNavigationItemSelected(    @NonNull MenuItem item){
+      if (onNavigationItemSelectedListener != null) {
+        onNavigationItemSelectedListener.onNavigationItemSelected(item);
+      }
+      item.setChecked(true);
+      String tag=String.valueOf(item.getItemId());
+      Scene scene=groupScene.findSceneByTag(tag);
+      if (scene == null) {
+        scene=children.get(item.getItemId());
+      }
+      if (!groupScene.isAdded(scene)) {
+        groupScene.add(containerId,scene,tag);
+      }
+ else       if (!groupScene.isShowing(scene)) {
+        groupScene.show(scene);
+      }
+      for (int i=0; i < menuIdList.size(); i++) {
+        Scene otherScene=groupScene.findSceneByTag(menuIdList.get(i));
+        if (otherScene != null && otherScene != scene && groupScene.isAdded(otherScene) && groupScene.isShowing(otherScene)) {
+          groupScene.hide(otherScene);
+        }
+      }
+      return true;
+    }
+  }
+);
+  Map.Entry<Integer,Scene> firstItem=children.entrySet().iterator().next();
+  String tag=String.valueOf(firstItem.getKey());
+  Scene scene=groupScene.findSceneByTag(tag);
+  if (scene == null) {
+    scene=firstItem.getValue();
+  }
+  if (!groupScene.isAdded(scene)) {
+    groupScene.add(containerId,scene,tag);
+  }
+ else   if (!groupScene.isShowing(scene)) {
+    groupScene.show(scene);
+  }
+  for (int i=0; i < menuIdList.size(); i++) {
+    Scene otherScene=groupScene.findSceneByTag(menuIdList.get(i));
+    if (otherScene != null && otherScene != scene && groupScene.isAdded(otherScene) && groupScene.isShowing(otherScene)) {
+      groupScene.hide(otherScene);
+    }
+  }
+  bottomNavigationView.getMenu().findItem(firstItem.getKey()).setChecked(true);
+}",1,Code Smell
+"private void openAddMember(){
+  Bundle args=new Bundle();
+  args.putBoolean(""addToGroup"",true);
+  args.putLong(""chatId"",currentChat.id);
+  GroupCreateActivity fragment=new GroupCreateActivity(args);
+  fragment.setInfo(chatInfo);
+  if (chatInfo != null && chatInfo.participants != null) {
+    LongSparseArray<TLObject> users=new LongSparseArray<>();
+    for (int a=0; a < chatInfo.participants.participants.size(); a++) {
+      users.put(chatInfo.participants.participants.get(a).user_id,null);
+    }
+    fragment.setIgnoreUsers(users);
+  }
+  fragment.setDelegate((users,fwdCount) -> {
+    HashSet<Long> currentParticipants=new HashSet<>();
+    ArrayList<TLRPC.User> addedUsers=new ArrayList<>();
+    if (chatInfo.participants.participants != null) {
+      for (int i=0; i < chatInfo.participants.participants.size(); i++) {
+        currentParticipants.add(chatInfo.participants.participants.get(i).user_id);
+      }
+    }
+    getMessagesController().addUsersToChat(currentChat,ProfileActivity.this,users,fwdCount,user -> {
+      addedUsers.add(user);
+    }
+,restrictedUser -> {
+      for (int i=0; i < chatInfo.participants.participants.size(); i++) {
+        if (chatInfo.participants.participants.get(i).user_id == restrictedUser.id) {
+          chatInfo.participants.participants.remove(i);
+          updateListAnimated(true);
+          break;
+        }
+      }
+    }
+,() -> {
+      int N=addedUsers.size();
+      int[] finished=new int[1];
+      for (int a=0; a < N; a++) {
+        TLRPC.User user=addedUsers.get(a);
+        if (!currentParticipants.contains(user.id)) {
+          if (chatInfo.participants == null) {
+            chatInfo.participants=new TLRPC.TL_chatParticipants();
+          }
+          if (ChatObject.isChannel(currentChat)) {
+            TLRPC.TL_chatChannelParticipant channelParticipant1=new TLRPC.TL_chatChannelParticipant();
+            channelParticipant1.channelParticipant=new TLRPC.TL_channelParticipant();
+            channelParticipant1.channelParticipant.inviter_id=getUserConfig().getClientUserId();
+            channelParticipant1.channelParticipant.peer=new TLRPC.TL_peerUser();
+            channelParticipant1.channelParticipant.peer.user_id=user.id;
+            channelParticipant1.channelParticipant.date=getConnectionsManager().getCurrentTime();
+            channelParticipant1.user_id=user.id;
+            chatInfo.participants.participants.add(channelParticipant1);
+          }
+ else {
+            TLRPC.ChatParticipant participant=new TLRPC.TL_chatParticipant();
+            participant.user_id=user.id;
+            participant.inviter_id=getAccountInstance().getUserConfig().clientUserId;
+            chatInfo.participants.participants.add(participant);
+          }
+          chatInfo.participants_count++;
+          getMessagesController().putUser(user,false);
+        }
+      }
+      updateListAnimated(true);
+    }
+);
+  }
+);
+  presentFragment(fragment);
+}",1,Code Smell
+"private static int cloneBlocks(BoundingBox sourceArea,ServerLevel world,BlockPos diffToTarget){
+  int blockPastes=0;
+  List<StructureTemplate.StructureBlockInfo> blocks=Lists.newArrayList();
+  List<StructureTemplate.StructureBlockInfo> beBlocks=Lists.newArrayList();
+  for (int z=sourceArea.minZ(); z <= sourceArea.maxZ(); ++z) {
+    for (int y=sourceArea.minY(); y <= sourceArea.maxY(); ++y) {
+      for (int x=sourceArea.minX(); x <= sourceArea.maxX(); ++x) {
+        BlockPos currentPos=new BlockPos(x,y,z);
+        BlockPos newPos=currentPos.offset(diffToTarget);
+        BlockInWorld cached=new BlockInWorld(world,currentPos,false);
+        BlockState state=cached.getState();
+        BlockEntity be=world.getBlockEntity(currentPos);
+        if (be != null) {
+          CompoundTag nbt=be.saveWithFullMetadata();
+          beBlocks.add(new StructureTemplate.StructureBlockInfo(newPos,state,nbt));
+        }
+ else {
+          blocks.add(new StructureTemplate.StructureBlockInfo(newPos,state,null));
+        }
+      }
+    }
+  }
+  List<StructureTemplate.StructureBlockInfo> allBlocks=Lists.newArrayList();
+  allBlocks.addAll(blocks);
+  allBlocks.addAll(beBlocks);
+  List<StructureTemplate.StructureBlockInfo> reverse=Lists.reverse(allBlocks);
+  for (  StructureTemplate.StructureBlockInfo info : reverse) {
+    BlockEntity be=world.getBlockEntity(info.pos());
+    Clearable.tryClear(be);
+    world.setBlock(info.pos(),Blocks.BARRIER.defaultBlockState(),2);
+  }
+  for (  StructureTemplate.StructureBlockInfo info : allBlocks) {
+    if (world.setBlock(info.pos(),info.state(),2))     blockPastes++;
+  }
+  for (  StructureTemplate.StructureBlockInfo info : beBlocks) {
+    BlockEntity be=world.getBlockEntity(info.pos());
+    if (be != null && info.nbt() != null) {
+      info.nbt().putInt(""x"",info.pos().getX());
+      info.nbt().putInt(""y"",info.pos().getY());
+      info.nbt().putInt(""z"",info.pos().getZ());
+      be.load(info.nbt());
+      be.setChanged();
+    }
+    world.setBlock(info.pos(),info.state(),2);
+  }
+  for (  StructureTemplate.StructureBlockInfo info : reverse) {
+    world.blockUpdated(info.pos(),info.state().getBlock());
+  }
+  world.getBlockTicks().copyArea(sourceArea,diffToTarget);
+  return blockPastes;
+}",1,Code Smell
+"/** 
+ * execute watch event
+ */
+private synchronized void watchIfNecessary() throws PluginLifeCycleException {
+  if (watched.compareAndSet(false,true)) {
+    List<EnhanceModel> enhanceModels=getEnhanceModels();
+    if (CollectionUtils.isEmpty(enhanceModels)) {
+      throw new PluginLifeCycleException(""enhance models is empty, plugin type is "" + identity());
+    }
+    for (    EnhanceModel em : enhanceModels) {
+      EventWatchBuilder.IBuildingForBehavior behavior=null;
+      EventWatchBuilder.IBuildingForClass builder4Class=new EventWatchBuilder(watcher).onClass(em.getClassPattern());
+      builder4Class.isIncludeBootstrap(em.isIncludeBootstrap());
+      if (em.isIncludeSubClasses()) {
+        builder4Class=builder4Class.includeSubClasses();
+      }
+      for (      EnhanceModel.MethodPattern mp : em.getMethodPatterns()) {
+        behavior=builder4Class.onBehavior(mp.getMethodName());
+        if (ArrayUtils.isNotEmpty(mp.getParameterType())) {
+          behavior.withParameterTypes(mp.getParameterType());
+        }
+        if (ArrayUtils.isNotEmpty(mp.getAnnotationTypes())) {
+          behavior.hasAnnotationTypes(mp.getAnnotationTypes());
+        }
+      }
+      if (behavior != null) {
+        int watchId=behavior.onWatch(getEventListener(listener),em.getWatchTypes()).getWatchId();
+        watchIds.add(watchId);
+        log.info(""add watcher success,type={},watcherId={}"",getType().name(),watchId);
+      }
+    }
+  }
+}",1,Code Smell
+"@Override public List<CrmStatisticsPoolSummaryByDateRespVO> getPoolSummaryByDate(CrmStatisticsCustomerReqVO reqVO){
+  reqVO.setUserIds(getUserIds(reqVO));
+  if (CollUtil.isEmpty(reqVO.getUserIds())) {
+    return Collections.emptyList();
+  }
+  List<CrmStatisticsPoolSummaryByDateRespVO> customerPutCountList=customerMapper.selectPoolCustomerPutCountByDate(reqVO);
+  List<CrmStatisticsPoolSummaryByDateRespVO> customerTakeCountList=customerMapper.selectPoolCustomerTakeCountByDate(reqVO);
+  List<LocalDateTime[]> timeRanges=LocalDateTimeUtils.getDateRangeList(reqVO.getTimes()[0],reqVO.getTimes()[1],reqVO.getInterval());
+  return convertList(timeRanges,times -> {
+    Integer customerPutCount=customerPutCountList.stream().filter(vo -> LocalDateTimeUtils.isBetween(times[0],times[1],vo.getTime())).mapToInt(CrmStatisticsPoolSummaryByDateRespVO::getCustomerPutCount).sum();
+    Integer customerTakeCount=customerTakeCountList.stream().filter(vo -> LocalDateTimeUtils.isBetween(times[0],times[1],vo.getTime())).mapToInt(CrmStatisticsPoolSummaryByDateRespVO::getCustomerTakeCount).sum();
+    return new CrmStatisticsPoolSummaryByDateRespVO().setTime(LocalDateTimeUtils.formatDateRange(times[0],times[1],reqVO.getInterval())).setCustomerPutCount(customerPutCount).setCustomerTakeCount(customerTakeCount);
+  }
+);
+}",0,Clean Code
+"private void createButtons(JPanel topPanel){
+  final JPanel buttonPanel=new JPanel(new GridBagLayout());
+  this.saveButton=new JButton(""Save"");
+  this.saveButton.setMnemonic(KeyEvent.VK_S);
+  final GridBagConstraints saveConstraints=createButtonConstraints(0,0);
+  this.saveButton.addActionListener(e -> saveConfigValues());
+  buttonPanel.add(this.saveButton,saveConstraints);
+  this.cancelButton=new JButton(""Cancel"");
+  this.cancelButton.setMnemonic(KeyEvent.VK_C);
+  this.cancelButton.addActionListener(e -> {
+    loadSavedFieldValues();
+    enableButtons(false);
+  }
+);
+  final GridBagConstraints cancelConstraints=createButtonConstraints(1,5);
+  buttonPanel.add(this.cancelButton,cancelConstraints);
+  final GridBagConstraints buttonPanelConstraints=new GridBagConstraints();
+  buttonPanelConstraints.gridx=1;
+  buttonPanelConstraints.gridwidth=2;
+  buttonPanelConstraints.gridy=this.configParameters.size() + 1;
+  buttonPanelConstraints.weightx=0.01;
+  buttonPanelConstraints.fill=GridBagConstraints.HORIZONTAL;
+  topPanel.add(buttonPanel,buttonPanelConstraints);
+}",0,Clean Code
+"public void onMatch(RelOptRuleCall call){
+  final Project topProject=call.rel(0);
+  final Project bottomProject=call.rel(1);
+  final RelBuilder relBuilder=call.builder();
+  final Permutation topPermutation=topProject.getPermutation();
+  if (topPermutation != null) {
+    if (topPermutation.isIdentity()) {
+      return;
+    }
+    final Permutation bottomPermutation=bottomProject.getPermutation();
+    if (bottomPermutation != null) {
+      if (bottomPermutation.isIdentity()) {
+        return;
+      }
+      final Permutation product=topPermutation.product(bottomPermutation);
+      relBuilder.push(bottomProject.getInput());
+      relBuilder.project(relBuilder.fields(product),topProject.getRowType().getFieldNames());
+      call.transformTo(relBuilder.build());
+      return;
+    }
+  }
+  if (!force) {
+    if (RexUtil.isIdentity(topProject.getProjects(),topProject.getInput().getRowType())) {
+      return;
+    }
+  }
+  final List<RexNode> newProjects=RelOptUtil.pushPastProject(topProject.getProjects(),bottomProject);
+  final RelNode input=bottomProject.getInput();
+  if (RexUtil.isIdentity(newProjects,input.getRowType())) {
+    if (force || input.getRowType().getFieldNames().equals(topProject.getRowType().getFieldNames())) {
+      call.transformTo(input);
+      return;
+    }
+  }
+  relBuilder.push(bottomProject.getInput());
+  relBuilder.project(newProjects,topProject.getRowType().getFieldNames());
+  call.transformTo(relBuilder.build());
+}",1,Code Smell
+"@Override public void onProcessMessage(V2TIMMessage v2TIMMessage){
+  String data=new String(v2TIMMessage.getCustomElem().getData());
+  if (!TextUtils.isEmpty(data)) {
+    invisibleBean=new InvisibleBean();
+    try {
+      JSONObject invisibleJson=new JSONObject(data);
+      invisibleBean.src=invisibleJson.optString(TUIConstants.TUICustomerServicePlugin.CUSTOMER_SERVICE_BUSINESS_ID_SRC_KEY);
+      JSONObject contentJson=invisibleJson.optJSONObject(TUICustomerServiceConstants.CUSTOMER_SERVICE_ITEM_CONTENT);
+      if (contentJson != null) {
+        invisibleBean.menuSendRuleFlag=contentJson.optInt(InvisibleBean.MENU_SEND_RULE_FLAG);
+      }
+    }
+ catch (    JSONException e) {
+      TUIChatLog.e(""InvisibleMessageBean"",""exception e = "" + e);
+    }
+  }
+  if (invisibleBean != null) {
+    if (invisibleBean.src.equals(TUIConstants.TUICustomerServicePlugin.BUSINESS_ID_SRC_CUSTOMER_SERVICE_EVALUATION_SELECTED)) {
+      setExtra(TUIChatService.getAppContext().getString(R.string.satisfaction_evaluation));
+    }
+ else     if (invisibleBean.src.equals(TUIConstants.TUICustomerServicePlugin.BUSINESS_ID_SRC_CUSTOMER_SERVICE_END)) {
+      setExtra(TUIChatService.getAppContext().getString(R.string.session_end));
+    }
+ else     if (invisibleBean.src.equals(TUIConstants.TUICustomerServicePlugin.BUSINESS_ID_SRC_CUSTOMER_SERVICE_TIMEOUT)) {
+      setExtra(TUIChatService.getAppContext().getString(R.string.session_timeout));
+    }
+ else     if (invisibleBean.src.equals(TUIConstants.TUICustomerServicePlugin.BUSINESS_ID_SRC_CUSTOMER_SERVICE_EVALUATION_SETTING)) {
+      int triggerResult=invisibleBean.menuSendRuleFlag & invisibleBean.RULE_USER_TRIGGER_EVALUATION;
+      TUICustomerServicePluginService.getInstance().setCanTriggerEvaluation(triggerResult > 0 ? true : false);
+    }
+ else     if (invisibleBean.src.equals(TUIConstants.TUICustomerServicePlugin.BUSINESS_ID_SRC_CUSTOMER_SERVICE_TRIGGER_EVALUATION)) {
+    }
+ else     if (invisibleBean.src.equals(TUIConstants.TUICustomerServicePlugin.BUSINESS_ID_SRC_CUSTOMER_SERVICE_SAY_HELLO)) {
+    }
+ else {
+      String text=TUICustomerServicePluginService.getAppContext().getString(com.tencent.qcloud.tuikit.timcommon.R.string.timcommon_no_support_msg);
+      setExtra(text);
+    }
+  }
+ else {
+    String text=TUICustomerServicePluginService.getAppContext().getString(com.tencent.qcloud.tuikit.timcommon.R.string.timcommon_no_support_msg);
+    setExtra(text);
+  }
+}",0,Clean Code
+"public static String getProtocolName(int protocol,int version,boolean brief){
+  String p=null;
+  String b=null;
+switch (protocol) {
+case 0:
+    p=""HOPO"";
+  b=""H"";
+break;
+case 2:
+p=""IGMP"";
+b=""G"";
+break;
+case 1:
+case 58:
+p=""ICMP"";
+b=""I"";
+break;
+case 6:
+p=""TCP"";
+b=""T"";
+break;
+case 17:
+p=""UDP"";
+b=""U"";
+break;
+case 50:
+p=""ESP"";
+b=""E"";
+break;
+}
+if (p == null) return Integer.toString(protocol) + ""/"" + version;
+return ((brief ? b : p) + (version > 0 ? version : """"));
+}",0,Clean Code
+"protected void buildExpression(String expression) throws ParseException {
+  expressionParsed=true;
+  try {
+    if (seconds == null) {
+      seconds=new TreeSet<Integer>();
+    }
+    if (minutes == null) {
+      minutes=new TreeSet<Integer>();
+    }
+    if (hours == null) {
+      hours=new TreeSet<Integer>();
+    }
+    if (daysOfMonth == null) {
+      daysOfMonth=new TreeSet<Integer>();
+    }
+    if (months == null) {
+      months=new TreeSet<Integer>();
+    }
+    if (daysOfWeek == null) {
+      daysOfWeek=new TreeSet<Integer>();
+    }
+    if (years == null) {
+      years=new TreeSet<Integer>();
+    }
+    int exprOn=SECOND;
+    StringTokenizer exprsTok=new StringTokenizer(expression,"" \t"",false);
+    while (exprsTok.hasMoreTokens() && exprOn <= YEAR) {
+      String expr=exprsTok.nextToken().trim();
+      if (exprOn == DAY_OF_MONTH && expr.indexOf('L') != -1 && expr.length() > 1 && expr.contains("","")) {
+        throw new ParseException(""Support for specifying 'L' and 'LW' with other days of the month is not implemented"",-1);
+      }
+      if (exprOn == DAY_OF_WEEK && expr.indexOf('L') != -1 && expr.length() > 1 && expr.contains("","")) {
+        throw new ParseException(""Support for specifying 'L' with other days of the week is not implemented"",-1);
+      }
+      if (exprOn == DAY_OF_WEEK && expr.indexOf('#') != -1 && expr.indexOf('#',expr.indexOf('#') + 1) != -1) {
+        throw new ParseException(""Support for specifying multiple \""nth\"" days is not implemented."",-1);
+      }
+      StringTokenizer vTok=new StringTokenizer(expr,"","");
+      while (vTok.hasMoreTokens()) {
+        String v=vTok.nextToken();
+        storeExpressionVals(0,v,exprOn);
+      }
+      exprOn++;
+    }
+    if (exprOn <= DAY_OF_WEEK) {
+      throw new ParseException(""Unexpected end of expression."",expression.length());
+    }
+    if (exprOn <= YEAR) {
+      storeExpressionVals(0,""*"",YEAR);
+    }
+    TreeSet<Integer> dow=getSet(DAY_OF_WEEK);
+    TreeSet<Integer> dom=getSet(DAY_OF_MONTH);
+    boolean dayOfMSpec=!dom.contains(NO_SPEC);
+    boolean dayOfWSpec=!dow.contains(NO_SPEC);
+    if (!dayOfMSpec || dayOfWSpec) {
+      if (!dayOfWSpec || dayOfMSpec) {
+        throw new ParseException(""Support for specifying both a day-of-week AND a day-of-month parameter is not implemented."",0);
+      }
+    }
+  }
+ catch (  ParseException pe) {
+    throw pe;
+  }
+catch (  Exception e) {
+    throw new ParseException(""Illegal cron expression format ("" + e.toString() + "")"",0);
+  }
+}",0,Clean Code
+"protected boolean computeScrollHelper(){
+  if (mScroller.computeScrollOffset()) {
+    int oldPos=mOrientationHandler.getPrimaryScroll(this);
+    int newPos=mScroller.getCurrX();
+    if (oldPos != newPos) {
+      mOrientationHandler.setPrimary(this,VIEW_SCROLL_TO,mScroller.getCurrX());
+    }
+    if (mAllowOverScroll) {
+      if (newPos < mMinScroll && oldPos >= mMinScroll) {
+        mEdgeGlowLeft.onAbsorb((int)mScroller.getCurrVelocity());
+        abortScrollerAnimation(false);
+        onEdgeAbsorbingScroll();
+      }
+ else       if (newPos > mMaxScroll && oldPos <= mMaxScroll) {
+        mEdgeGlowRight.onAbsorb((int)mScroller.getCurrVelocity());
+        abortScrollerAnimation(false);
+        onEdgeAbsorbingScroll();
+      }
+    }
+    int finalPos=mOrientationHandler.getPrimaryValue(mScroller.getFinalX(),mScroller.getFinalY());
+    if (newPos == finalPos && mEdgeGlowLeft.isFinished() && mEdgeGlowRight.isFinished()) {
+      abortScrollerAnimation(false);
+    }
+    invalidate();
+    return true;
+  }
+ else   if (mNextPage != INVALID_PAGE) {
+    sendScrollAccessibilityEvent();
+    int prevPage=mCurrentPage;
+    mCurrentPage=validateNewPage(mNextPage);
+    mCurrentScrollOverPage=mCurrentPage;
+    mNextPage=INVALID_PAGE;
+    notifyPageSwitchListener(prevPage);
+    if (!mIsBeingDragged) {
+      pageEndTransition();
+    }
+    if (canAnnouncePageDescription()) {
+      announcePageForAccessibility();
+    }
+  }
+  return false;
+}
+",1,Code Smell
+"public static String formatDistance(float distance,int type){
+  return formatDistance(distance,type,null);
+}
+!org.eclipse.jdt.core.dom.MethodDeclaration@7b4183e3",0,Clean Code
+"@Override public TreeVisitor<?,ExecutionContext> getVisitor(){
+  JavaIsoVisitor<ExecutionContext> condition=new JavaIsoVisitor<ExecutionContext>(){
+    @Override public @Nullable J preVisit(    J tree,    ExecutionContext ctx){
+      if (tree instanceof JavaSourceFile) {
+        JavaSourceFile cu=(JavaSourceFile)requireNonNull(tree);
+        if (cu.getPackageDeclaration() != null) {
+          String original=cu.getPackageDeclaration().getExpression().printTrimmed(getCursor()).replaceAll(""\\s"","""");
+          if (original.startsWith(oldPackageName)) {
+            return SearchResult.found(cu);
+          }
+        }
+        boolean recursive=Boolean.TRUE.equals(ChangePackage.this.recursive);
+        String recursivePackageNamePrefix=oldPackageName + ""."";
+        for (        J.Import anImport : cu.getImports()) {
+          String importedPackage=anImport.getPackageName();
+          if (importedPackage.equals(oldPackageName) || recursive && importedPackage.startsWith(recursivePackageNamePrefix)) {
+            return SearchResult.found(cu);
+          }
+        }
+        for (        JavaType type : cu.getTypesInUse().getTypesInUse()) {
+          if (type instanceof JavaType.FullyQualified) {
+            String packageName=((JavaType.FullyQualified)type).getPackageName();
+            if (packageName.equals(oldPackageName) || recursive && packageName.startsWith(recursivePackageNamePrefix)) {
+              return SearchResult.found(cu);
+            }
+          }
+        }
+        stopAfterPreVisit();
+      }
+      return super.preVisit(tree,ctx);
+    }
+  }
+;
+  return Preconditions.check(condition,new ChangePackageVisitor());
+}
+",1,Code Smell
+"public void drawDividers(Canvas canvas,int w,int h){
+  if (mDividerPaint == null && (mTopDividerHeight > 0 || mBottomDividerHeight > 0 || mLeftDividerWidth > 0 || mRightDividerWidth > 0)) {
+    mDividerPaint=new Paint();
+  }
+  if (mTopDividerHeight > 0) {
+    mDividerPaint.setStrokeWidth(mTopDividerHeight);
+    mDividerPaint.setColor(mTopDividerColor);
+    if (mTopDividerAlpha < 255) {
+      mDividerPaint.setAlpha(mTopDividerAlpha);
+    }
+    float y=mTopDividerHeight * 1f / 2;
+    canvas.drawLine(mTopDividerInsetLeft,y,w - mTopDividerInsetRight,y,mDividerPaint);
+  }
+  if (mBottomDividerHeight > 0) {
+    mDividerPaint.setStrokeWidth(mBottomDividerHeight);
+    mDividerPaint.setColor(mBottomDividerColor);
+    if (mBottomDividerAlpha < 255) {
+      mDividerPaint.setAlpha(mBottomDividerAlpha);
+    }
+    float y=(float)Math.floor(h - mBottomDividerHeight * 1f / 2);
+    canvas.drawLine(mBottomDividerInsetLeft,y,w - mBottomDividerInsetRight,y,mDividerPaint);
+  }
+  if (mLeftDividerWidth > 0) {
+    mDividerPaint.setStrokeWidth(mLeftDividerWidth);
+    mDividerPaint.setColor(mLeftDividerColor);
+    if (mLeftDividerAlpha < 255) {
+      mDividerPaint.setAlpha(mLeftDividerAlpha);
+    }
+    canvas.drawLine(0,mLeftDividerInsetTop,0,h - mLeftDividerInsetBottom,mDividerPaint);
+  }
+  if (mRightDividerWidth > 0) {
+    mDividerPaint.setStrokeWidth(mRightDividerWidth);
+    mDividerPaint.setColor(mRightDividerColor);
+    if (mRightDividerAlpha < 255) {
+      mDividerPaint.setAlpha(mRightDividerAlpha);
+    }
+    canvas.drawLine(w,mRightDividerInsetTop,w,h - mRightDividerInsetBottom,mDividerPaint);
+  }
+}",0,Clean Code
+"private void processLoadedFilterPeersInternal(TLRPC.messages_Dialogs pinnedDialogs,TLRPC.messages_Dialogs pinnedRemoteDialogs,ArrayList<TLRPC.User> users,ArrayList<TLRPC.Chat> chats,ArrayList<MessagesController.DialogFilter> filtersToSave,SparseArray<MessagesController.DialogFilter> filtersToDelete,ArrayList<Integer> filtersOrder,HashMap<Integer,HashSet<Long>> filterDialogRemovals,HashSet<Integer> filtersUnreadCounterReset,Runnable onDone){
+  boolean anythingChanged=false;
+  putUsersAndChats(users,chats,true,false);
+  for (int a=0, N=filtersToDelete.size(); a < N; a++) {
+    deleteDialogFilterInternal(filtersToDelete.valueAt(a));
+    anythingChanged=true;
+  }
+  for (  Integer id : filtersUnreadCounterReset) {
+    MessagesController.DialogFilter filter=dialogFiltersMap.get(id);
+    if (filter == null) {
+      continue;
+    }
+    filter.pendingUnreadCount=-1;
+  }
+  for (  HashMap.Entry<Integer,HashSet<Long>> entry : filterDialogRemovals.entrySet()) {
+    MessagesController.DialogFilter filter=dialogFiltersMap.get(entry.getKey());
+    if (filter == null) {
+      continue;
+    }
+    HashSet<Long> set=entry.getValue();
+    for (    Long id : set) {
+      filter.pinnedDialogs.delete(id);
+    }
+    anythingChanged=true;
+  }
+  for (int a=0, N=filtersToSave.size(); a < N; a++) {
+    saveDialogFilterInternal(filtersToSave.get(a),false,true);
+    anythingChanged=true;
+  }
+  boolean orderChanged=false;
+  for (int a=0, N=dialogFilters.size(); a < N; a++) {
+    MessagesController.DialogFilter filter=dialogFilters.get(a);
+    int order=filtersOrder.indexOf(filter.id);
+    if (filter.order != order) {
+      filter.order=order;
+      anythingChanged=true;
+      orderChanged=true;
+    }
+  }
+  if (orderChanged) {
+    Collections.sort(dialogFilters,(o1,o2) -> {
+      if (o1.order > o2.order) {
+        return 1;
+      }
+ else       if (o1.order < o2.order) {
+        return -1;
+      }
+      return 0;
+    }
+);
+    saveDialogFiltersOrderInternal();
+  }
+  int remote=anythingChanged ? 1 : 2;
+  calcUnreadCounters(true);
+  getMessagesController().processLoadedDialogFilters(new ArrayList<>(dialogFilters),pinnedDialogs,pinnedRemoteDialogs,users,chats,null,remote,onDone);
+}",1,Code Smell
+"@Override public SearchResult searchMod(SearchFilters searchFilters,SearchResult previousPageResult){
+  ModrinthSearchResult modrinthSearchResult=(ModrinthSearchResult)previousPageResult;
+  if (modrinthSearchResult != null && modrinthSearchResult.previousOffset >= modrinthSearchResult.totalResultCount) {
+    ModrinthSearchResult emptyResult=new ModrinthSearchResult();
+    emptyResult.results=new ModItem[0];
+    emptyResult.totalResultCount=modrinthSearchResult.totalResultCount;
+    emptyResult.previousOffset=modrinthSearchResult.previousOffset;
+    return emptyResult;
+  }
+  HashMap<String,Object> params=new HashMap<>();
+  StringBuilder facetString=new StringBuilder();
+  facetString.append(""["");
+  facetString.append(String.format(""[\""project_type:%s\""]"",searchFilters.isModpack ? ""modpack"" : ""mod""));
+  if (searchFilters.mcVersion != null && !searchFilters.mcVersion.isEmpty())   facetString.append(String.format("",[\""versions:%s\""]"",searchFilters.mcVersion));
+  facetString.append(""]"");
+  params.put(""facets"",facetString.toString());
+  params.put(""query"",searchFilters.name);
+  params.put(""limit"",50);
+  params.put(""index"",""relevance"");
+  if (modrinthSearchResult != null)   params.put(""offset"",modrinthSearchResult.previousOffset);
+  JsonObject response=mApiHandler.get(""search"",params,JsonObject.class);
+  if (response == null)   return null;
+  JsonArray responseHits=response.getAsJsonArray(""hits"");
+  if (responseHits == null)   return null;
+  ModItem[] items=new ModItem[responseHits.size()];
+  for (int i=0; i < responseHits.size(); ++i) {
+    JsonObject hit=responseHits.get(i).getAsJsonObject();
+    items[i]=new ModItem(Constants.SOURCE_MODRINTH,hit.get(""project_type"").getAsString().equals(""modpack""),hit.get(""project_id"").getAsString(),hit.get(""title"").getAsString(),hit.get(""description"").getAsString(),hit.get(""icon_url"").getAsString());
+  }
+  if (modrinthSearchResult == null)   modrinthSearchResult=new ModrinthSearchResult();
+  modrinthSearchResult.previousOffset+=responseHits.size();
+  modrinthSearchResult.results=items;
+  modrinthSearchResult.totalResultCount=response.get(""total_hits"").getAsInt();
+  return modrinthSearchResult;
+}",1,Code Smell
+"private Pair<List<List<ItemDescriptorWithCount>>,ItemData> combinations(GeyserSession session,RecipeDisplay display,List<SlotDisplay> ingredients){
+  Pair<Item,ItemData> pair=translateToOutput(session,display.result());
+  if (pair == null || !pair.right().isValid()) {
+    return null;
+  }
+  ItemData output=pair.right();
+  if (!(pair.left() instanceof BedrockRequiresTagItem)) {
+    output=output.toBuilder().tag(null).build();
+  }
+  boolean empty=true;
+  boolean complexInputs=false;
+  List<List<ItemDescriptorWithCount>> inputs=new ArrayList<>(ingredients.size());
+  for (  SlotDisplay input : ingredients) {
+    List<ItemDescriptorWithCount> translated=translateToInput(session,input);
+    if (translated == null) {
+      continue;
+    }
+    inputs.add(translated);
+    if (translated.size() != 1 || translated.get(0) != ItemDescriptorWithCount.EMPTY) {
+      empty=false;
+    }
+    complexInputs|=translated.size() > 1;
+  }
+  if (empty) {
+    return null;
+  }
+  if (complexInputs) {
+    long size=1;
+    for (    List<ItemDescriptorWithCount> list : inputs) {
+      size*=list.size();
+      if (size > 500) {
+        complexInputs=false;
+        break;
+      }
+    }
+    if (complexInputs) {
+      return Pair.of(Lists.cartesianProduct(inputs),output);
+    }
+  }
+  int totalSimpleRecipes=inputs.stream().mapToInt(List::size).max().orElse(1);
+  inputs=inputs.stream().map(descriptors -> descriptors.stream().sorted(ItemDescriptorWithCountComparator.INSTANCE).collect(Collectors.toList())).collect(Collectors.toList());
+  List<List<ItemDescriptorWithCount>> finalRecipes=new ArrayList<>(totalSimpleRecipes);
+  for (int i=0; i < totalSimpleRecipes; i++) {
+    int current=i;
+    finalRecipes.add(inputs.stream().map(descriptors -> {
+      if (descriptors.size() > current) {
+        return descriptors.get(current);
+      }
+      return descriptors.get(0);
+    }
+).toList());
+  }
+  return Pair.of(finalRecipes,output);
+}",1,Code Smell
+"/** 
+ * Selects a Row and perform an optional task on the Row.
+ */
+public void setSelectedPosition(int rowPosition,boolean smooth,final Presenter.ViewHolderTask rowHolderTask){
+}
+/** 
+ * Selects a Row.
+ */
+public void setSelectedPosition(int rowPosition,boolean smooth){
+}
+/** 
+ * Selects a Row and perform an optional task on the Row.
+ */
+public void setSelectedPosition(int rowPosition,boolean smooth,final Presenter.ViewHolderTask rowHolderTask){
+}
+/** 
+ * Selects a Row.
+ */
+public void setSelectedPosition(int rowPosition,boolean smooth){
+}
+@Override public void setSelectedPosition(int rowPosition,boolean smooth,final Presenter.ViewHolderTask rowHolderTask){
+  getFragment().setSelectedPosition(rowPosition,smooth,rowHolderTask);
+}
+@Override public void setSelectedPosition(int rowPosition,boolean smooth){
+  getFragment().setSelectedPosition(rowPosition,smooth);
+}
+@Override public void setSelectedPosition(int rowPosition,boolean smooth,final Presenter.ViewHolderTask rowHolderTask){
+  getFragment().setSelectedPosition(rowPosition,smooth,rowHolderTask);
+}
+@Override public void setSelectedPosition(int rowPosition,boolean smooth){
+  getFragment().setSelectedPosition(rowPosition,smooth);
+}
+",0,Clean Code
+"/** 
+ * 鐘舵��
+ * @return 鎴愬姛
+ */
+public static SysResult ok(){
+  return new SysResult(200,""ok"",null);
+}
+/** 
+ * 鐘舵��
+ * @param data vo瑕佸皝瑁呯殑鏁版嵁
+ * @return vo
+ */
+public static SysResult ok(Object data){
+  return new SysResult(200,""ok"",data);
+}",0,Clean Code
+"@Override public DatasourceDTO get(Long datasourceId) throws DEException {
+  DatasourceDTO datasourceDTO=new DatasourceDTO();
+  CoreDatasource datasource=datasourceMapper.selectById(datasourceId);
+  BeanUtils.copyBean(datasourceDTO,datasource);
+  TypeReference<List<ApiDefinition>> listTypeReference=new TypeReference<List<ApiDefinition>>(){
+  }
+;
+  if (datasourceDTO.getType().equalsIgnoreCase(DatasourceConfiguration.DatasourceType.API.toString())) {
+    List<ApiDefinition> apiDefinitionList=JsonUtil.parseList(datasourceDTO.getConfiguration(),listTypeReference);
+    List<ApiDefinition> apiDefinitionListWithStatus=new ArrayList<>();
+    int success=0;
+    for (    ApiDefinition apiDefinition : apiDefinitionList) {
+      String status=null;
+      if (StringUtils.isNotEmpty(datasourceDTO.getStatus())) {
+        JsonNode jsonNode=null;
+        try {
+          jsonNode=objectMapper.readTree(datasourceDTO.getStatus());
+        }
+ catch (        Exception e) {
+          DEException.throwException(e);
+        }
+        for (        JsonNode node : jsonNode) {
+          if (node.get(""name"").asText().equals(apiDefinition.getName())) {
+            status=node.get(""status"").asText();
+          }
+        }
+        apiDefinition.setStatus(status);
+      }
+      if (StringUtils.isNotEmpty(status) && status.equalsIgnoreCase(""Success"")) {
+        success++;
+      }
+      CoreDatasourceTaskLog log=datasourceTaskServer.lastSyncLogForTable(datasourceId,apiDefinition.getDeTableName());
+      if (log != null) {
+        apiDefinition.setUpdateTime(log.getStartTime());
+      }
+      apiDefinitionListWithStatus.add(apiDefinition);
+    }
+    datasourceDTO.setApiConfigurationStr(new String(Base64.getEncoder().encode(Objects.requireNonNull(JsonUtil.toJSONString(apiDefinitionListWithStatus)).toString().getBytes())));
+    if (success == apiDefinitionList.size()) {
+      datasourceDTO.setStatus(""Success"");
+    }
+ else {
+      if (success > 0 && success < apiDefinitionList.size()) {
+        datasourceDTO.setStatus(""Warning"");
+      }
+ else {
+        datasourceDTO.setStatus(""Error"");
+      }
+    }
+    CoreDatasourceTask coreDatasourceTask=datasourceTaskServer.selectByDSId(datasourceDTO.getId());
+    TaskDTO taskDTO=new TaskDTO();
+    BeanUtils.copyBean(taskDTO,coreDatasourceTask);
+    datasourceDTO.setSyncSetting(taskDTO);
+    CoreDatasourceTask task=datasourceTaskServer.selectByDSId(datasourceDTO.getId());
+    if (task != null) {
+      datasourceDTO.setLastSyncTime(task.getStartTime());
+    }
+  }
+  if (datasourceDTO.getType().equalsIgnoreCase(DatasourceConfiguration.DatasourceType.Excel.toString())) {
+    datasourceDTO.setFileName(ExcelUtils.getFileName(datasource));
+    datasourceDTO.setSize(ExcelUtils.getSize(datasource));
+  }
+  datasourceDTO.setConfiguration(new String(Base64.getEncoder().encode(datasourceDTO.getConfiguration().getBytes())));
+  datasourceDTO.setCreator(coreUserManage.getUserName(Long.valueOf(datasourceDTO.getCreateBy())));
+  return datasourceDTO;
+}",1,Code Smell
+"private void onSubscribe(int buttonState){
+  if (!mIsMetadataLoaded) {
+    MessageHelpers.showMessage(getContext(),R.string.wait_data_loading);
+    return;
+  }
+  if (!YouTubeSignInService.instance().isSigned()) {
+    MessageHelpers.showMessage(getContext(),R.string.msg_signed_users_only);
+    return;
+  }
+  if (buttonState == PlayerUI.BUTTON_OFF) {
+    callMediaItemObservable(mMediaItemService::subscribeObserve);
+  }
+ else {
+    callMediaItemObservable(mMediaItemService::unsubscribeObserve);
+  }
+  getPlayer().getVideo().isSubscribed=buttonState == PlayerUI.BUTTON_OFF;
+  getPlayer().setButtonState(R.id.action_subscribe,buttonState == PlayerUI.BUTTON_OFF ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
+}
+",0,Clean Code
+"private void copySoFile(){
+  String[] existLibPathArray=new String[3];
+  int arrayIndex=0;
+  for (  String libPath : APK_LIB_PATH_ARRAY) {
+    String apkSoFullPath=fullLibPath(libPath);
+    File apkSoFullPathFile=new File(apkSoFullPath);
+    if (apkSoFullPathFile.exists()) {
+      existLibPathArray[arrayIndex]=libPath;
+      arrayIndex++;
+    }
+  }
+  if (arrayIndex == 0) {
+    String libPath=APK_LIB_PATH_ARRAY[0];
+    String apkSoFullPath=fullLibPath(libPath);
+    File apkSoFullPathFile=new File(apkSoFullPath);
+    apkSoFullPathFile.mkdirs();
+    existLibPathArray[arrayIndex]=libPath;
+  }
+  for (  String libPath : existLibPathArray) {
+    if (libPath != null && !libPath.isEmpty()) {
+      String apkSoFullPath=fullLibPath(libPath);
+      copyLibFile(apkSoFullPath,mSoFilePathMap.get(libPath));
+    }
+  }
+  if (xposedModuleArray != null && xposedModuleArray.length > 0) {
+    int index=0;
+    for (    String modulePath : xposedModuleArray) {
+      modulePath=modulePath.trim();
+      if (modulePath == null || modulePath.length() == 0) {
+        continue;
+      }
+      File moduleFile=new File(modulePath);
+      if (!moduleFile.exists()) {
+        continue;
+      }
+      for (      String libPath : existLibPathArray) {
+        if (libPath != null && !libPath.isEmpty()) {
+          String apkSoFullPath=fullLibPath(libPath);
+          String outputModuleName=XPOSED_MODULE_FILE_NAME_PREFIX + index + SO_FILE_SUFFIX;
+          File outputModuleSoFile=new File(apkSoFullPath,outputModuleName);
+          FileUtils.copyFile(moduleFile,outputModuleSoFile);
+        }
+      }
+      index++;
+    }
+  }
+}",1,Code Smell
+"/** 
+ * 投影值分组
+ * @param result
+ * @param minPixelNum 最小像素累计值
+ * @param minSpace    最小间隔数
+ * @return
+ */
+public static List<int[]> groupResult(int[] result,int minPixelNum,int minSpace){
+  List<int[]> bwY=new ArrayList<>();
+  if (result.length > 0) {
+    int targetStart=-1;
+    int cal=0;
+    for (int i=0; i < result.length; i++) {
+      if (targetStart == -1 && result[i] > minPixelNum) {
+        targetStart=i;
+      }
+ else       if (targetStart != -1) {
+        if (result[i] <= minPixelNum) {
+          if (cal > minSpace) {
+            bwY.add(new int[]{targetStart,i - cal});
+            targetStart=-1;
+            cal=0;
+          }
+ else {
+            cal++;
+          }
+        }
+ else {
+          cal=0;
+        }
+      }
+    }
+    if (targetStart != -1 && cal <= minSpace) {
+      bwY.add(new int[]{targetStart,result.length - 1});
+    }
+  }
+  return bwY;
+}",1,Code Smell
+"private void addTaskEdge(List<WorkflowTaskRelation> workflowTaskRelations){
+  for (  WorkflowTaskRelation workflowTaskRelation : workflowTaskRelations) {
+    long pre=workflowTaskRelation.getPreTaskCode();
+    long post=workflowTaskRelation.getPostTaskCode();
+    if (pre > 0 && post > 0) {
+      if (!taskDefinitionCodeMap.containsKey(pre)) {
+        throw new IllegalArgumentException(""Cannot find task: "" + pre);
+      }
+      if (!taskDefinitionCodeMap.containsKey(post)) {
+        throw new IllegalArgumentException(""Cannot find task: "" + post);
+      }
+      TaskDefinition preTask=checkNotNull(taskDefinitionCodeMap.get(pre),""Cannot find task: "" + pre);
+      TaskDefinition postTask=checkNotNull(taskDefinitionCodeMap.get(post),""Cannot find task: "" + pre);
+      List<String> predecessorsTasks=predecessors.get(postTask.getName());
+      if (predecessorsTasks.contains(preTask.getName())) {
+        throw new IllegalArgumentException(""The task relation from "" + preTask.getName() + "" to ""+ postTask.getName()+ "" is already exists"");
+      }
+      predecessorsTasks.add(preTask.getName());
+      List<String> successTasks=successors.get(preTask.getName());
+      if (successTasks.contains(postTask.getName())) {
+        throw new IllegalArgumentException(""The task relation from "" + preTask.getName() + "" to ""+ postTask.getName()+ "" is already exists"");
+      }
+      successTasks.add(postTask.getName());
+    }
+    if (pre <= 0 && post <= 0) {
+      throw new IllegalArgumentException(""The task relation from "" + pre + "" to ""+ post+ "" is invalid"");
+    }
+  }
+}",1,Code Smell
+"private void insertTeslaUser(TeslaServiceUserDO teslaServiceUserDO){
+  UserDO userDo=new UserDO();
+  userDo.setEmpId(teslaServiceUserDO.getEmployeeId());
+  String bucUserId=teslaServiceUserDO.getBucUserId();
+  if (!StringUtils.isBlank(bucUserId)) {
+    if (bucUserId.endsWith("".0"")) {
+      bucUserId=bucUserId.substring(0,bucUserId.indexOf("".""));
+    }
+    userDo.setBucId(Long.parseLong(bucUserId));
+  }
+  userDo.setTenantId(Constants.DEFAULT_TENANT_ID);
+  userDo.setLoginName(teslaServiceUserDO.getUsername());
+  userDo.setNickName(teslaServiceUserDO.getNickname());
+  userDo.setEmail(teslaServiceUserDO.getEmail());
+  userDo.setPhone(teslaServiceUserDO.getMobilephone());
+  userDo.setAliww(teslaServiceUserDO.getAliww());
+  userDo.setGmtCreate(new Date());
+  userDo.setIsLocked((byte)(userDo.getIsLocked() == 0 ? 1 : 0));
+  userDo.setSecretKey(teslaServiceUserDO.getSecretkey());
+  userDo.setUserId(UserUtil.getUserId(userDo));
+  log.info(""insert user:{}"",userDo);
+  userMapper.insert(userDo);
+}",0,Clean Code
+"@Override public ONNXNode writeONNXGraph(ONNXRef<?> input){
+  ONNXContext onnx=input.onnxContext();
+  svm_model model=models.get(0);
+  int numOneVOne=model.label.length * (model.label.length - 1) / 2;
+  int numFeatures=featureIDMap.size();
+  Map<String,Object> attributes=new HashMap<>();
+  attributes.put(""classlabels_ints"",model.label);
+  float[] coefficients=new float[model.l * (model.nr_class - 1)];
+  for (int i=0; i < model.nr_class - 1; i++) {
+    for (int j=0; j < model.l; j++) {
+      coefficients[i * model.l + j]=(float)model.sv_coef[i][j];
+    }
+  }
+  attributes.put(""coefficients"",coefficients);
+  attributes.put(""kernel_params"",new float[]{(float)model.param.gamma,(float)model.param.coef0,model.param.degree});
+  attributes.put(""kernel_type"",KernelType.getKernelType(model.param.kernel_type).name());
+  float[] rho=new float[model.rho.length];
+  for (int i=0; i < rho.length; i++) {
+    rho[i]=(float)-model.rho[i];
+  }
+  attributes.put(""rho"",rho);
+  float[] supportVectors=new float[model.l * numFeatures];
+  for (int j=0; j < model.l; j++) {
+    svm_node[] sv=model.SV[j];
+    for (    svm_node svm_node : sv) {
+      int idx=(j * numFeatures) + svm_node.index;
+      supportVectors[idx]=(float)svm_node.value;
+    }
+  }
+  attributes.put(""support_vectors"",supportVectors);
+  attributes.put(""vectors_per_class"",Arrays.copyOf(model.nSV,model.label.length));
+  if (generatesProbabilities) {
+    attributes.put(""prob_a"",Arrays.copyOf(Util.toFloatArray(model.probA),numOneVOne));
+    attributes.put(""prob_b"",Arrays.copyOf(Util.toFloatArray(model.probB),numOneVOne));
+  }
+  List<ONNXNode> outputs=input.apply(ONNXOperators.SVM_CLASSIFIER,Arrays.asList(""pred_label"",""svm_output""),attributes);
+  ONNXNode predLabel=outputs.get(0);
+  ONNXNode svmOutput=outputs.get(1);
+  ONNXNode ungatheredOutput=svmOutput;
+  if (!generatesProbabilities) {
+    if (model.nr_class == 2) {
+      ONNXInitializer negOne=onnx.constant(""minus_one"",-1.0f);
+      ungatheredOutput=writeDecisionFunction(svmOutput.apply(ONNXOperators.MUL,negOne));
+    }
+ else {
+      ungatheredOutput=writeDecisionFunction(svmOutput);
+    }
+  }
+  int[] backwardsLibSVMMapping=new int[model.label.length];
+  for (int i=0; i < model.label.length; i++) {
+    backwardsLibSVMMapping[model.label[i]]=i;
+  }
+  ONNXInitializer indices=onnx.array(""label_indices"",backwardsLibSVMMapping);
+  return ungatheredOutput.apply(ONNXOperators.GATHER,indices,Collections.singletonMap(""axis"",1));
+}",1,Code Smell
+"@Override public void hook() throws Throwable {
+  if (Helper.prefs.getBoolean(""switch_mainswitch"",false) && Helper.prefs.getBoolean(""switch_reddot"",false)) {
+    XposedBridge.hookAllMethods(FeedsTabsFragment,""onUnReadCountLoaded"",XC_MethodReplacement.returnConstant(null));
+    if (BaseFeedFollowAvatarViewHolder_setUnreadTipVisibility != null)     XposedBridge.hookMethod(BaseFeedFollowAvatarViewHolder_setUnreadTipVisibility,XC_MethodReplacement.returnConstant(null));
+    if (ZHMainTabLayout_updateBadges != null)     XposedBridge.hookMethod(ZHMainTabLayout_updateBadges,XC_MethodReplacement.returnConstant(null));
+    if (BottomNavMenuItemView_setUnreadCount != null)     XposedBridge.hookMethod(BottomNavMenuItemView_setUnreadCount,XC_MethodReplacement.returnConstant(null));
+    if (BottomNavMenuItemViewForIconOnly_setUnreadCount != null)     XposedBridge.hookMethod(BottomNavMenuItemViewForIconOnly_setUnreadCount,XC_MethodReplacement.returnConstant(null));
+    if (BaseBottomNavMenuItemView_setNavBadge != null)     XposedBridge.hookMethod(BaseBottomNavMenuItemView_setNavBadge,XC_MethodReplacement.returnConstant(null));
+    XposedHelpers.findAndHookMethod(NotiMsgModel,""getUnreadCount"",XC_MethodReplacement.returnConstant(0));
+    if (NotiUnreadCountKt_hasUnread != null)     XposedBridge.hookMethod(NotiUnreadCountKt_hasUnread,XC_MethodReplacement.returnConstant(false));
+    if (IconWithDotAndCountView_setUnreadCount != null)     XposedBridge.hookMethod(IconWithDotAndCountView_setUnreadCount,XC_MethodReplacement.returnConstant(null));
+    if (CountDotView_setUnreadCount != null)     XposedBridge.hookMethod(CountDotView_setUnreadCount,new XC_MethodReplacement(){
+      @Override protected Object replaceHookedMethod(      MethodHookParam param){
+        View obj=(View)param.thisObject;
+        obj.setVisibility(View.GONE);
+        return null;
+      }
+    }
+);
+    if (ViewModel != null) {
+      XposedHelpers.findAndHookConstructor(ViewModel,View.class,new XC_MethodHook(){
+        @Override protected void afterHookedMethod(        MethodHookParam param){
+          try {
+            ViewGroup view=(ViewGroup)param.args[0];
+            if (view.getChildCount() == 2) {
+              view.setVisibility(View.GONE);
+            }
+          }
+ catch (          Throwable ignored) {
+          }
+        }
+      }
+);
+    }
+    if (RevisitView_getCanShowRedDot != null)     XposedBridge.hookMethod(RevisitView_getCanShowRedDot,XC_MethodReplacement.returnConstant(false));
+  }
+}",1,Code Smell
+"@Override public void clearSearch(){
+  mSearchQuery=null;
+  for (  VideoGroupObjectAdapter adapter : mSearchGroupAdapters.values()) {
+    adapter.clear();
+  }
+  mSearchGroupAdapters.clear();
+  ObjectAdapter resultsAdapter=getResultsAdapter();
+  if (resultsAdapter == null) {
+    return;
+  }
+  int size=resultsAdapter.size();
+  int index=0;
+  for (int i=0; i < size; i++) {
+    Object row=resultsAdapter.get(index);
+    if (row instanceof ListRow && ((ListRow)row).getAdapter() instanceof VideoGroupObjectAdapter) {
+      detachAdapter(index);
+    }
+ else {
+      index++;
+    }
+  }
+}",0,Clean Code
+"/** 
+ * {@inheritDoc} 
+ */
+@Override public NDList batchify(NDList[] inputs){
+  int batchSize=inputs.length;
+  int numInputKinds=inputs[0].size();
+  if (numInputKinds == 0) {
+    return new NDList();
+  }
+  try {
+    NDList result=new NDList(numInputKinds);
+    for (int i=0; i < numInputKinds; i++) {
+      NDList inputsOfKind=new NDList(batchSize);
+      String inputName=inputs[0].get(i).getName();
+      for (      NDList input : inputs) {
+        inputsOfKind.add(input.get(i));
+      }
+      NDArray stacked=NDArrays.stack(new NDList(inputsOfKind));
+      stacked.setName(inputName);
+      result.add(stacked);
+    }
+    return result;
+  }
+ catch (  IndexOutOfBoundsException|EngineException e) {
+    for (    NDList input : inputs) {
+      if (input.size() != numInputKinds) {
+        throw new IllegalArgumentException(""You cannot batch data with different numbers of inputs"",e);
+      }
+    }
+    for (int i=0; i < numInputKinds; i++) {
+      Shape kindDataShape=inputs[0].get(i).getShape();
+      DataType kindDataType=inputs[0].get(i).getDataType();
+      for (      NDList input : inputs) {
+        NDArray currInput=input.get(i);
+        if (!currInput.getShape().equals(kindDataShape)) {
+          throw new IllegalArgumentException(""You cannot batch data with different input shapes"" + currInput.getShape() + "" vs ""+ kindDataShape,e);
+        }
+        if (!currInput.getDataType().equals(kindDataType)) {
+          throw new IllegalArgumentException(""You cannot batch data with different input data types"",e);
+        }
+      }
+    }
+    throw e;
+  }
+}",1,Code Smell
+"@Override public CfLogisticsStorehousePlatformCargoTypeExample getExampleByQuery(CfLogisticsStorehousePlatformCargoTypeQuery cfLogisticsStorehousePlatformCargoTypeQuery){
+  CfLogisticsStorehousePlatformCargoTypeExample cfLogisticsStorehousePlatformCargoTypeExample=new CfLogisticsStorehousePlatformCargoTypeExample();
+  CfLogisticsStorehousePlatformCargoTypeExample.Criteria criteria=cfLogisticsStorehousePlatformCargoTypeExample.createCriteria();
+  if (cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehouseId() != null) {
+    criteria.andLogisticsStorehouseIdEqualTo(cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehouseId());
+  }
+  if (cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehousePlatformId() != null) {
+    criteria.andLogisticsStorehousePlatformIdEqualTo(cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehousePlatformId());
+  }
+  if (cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehousePlatformIds() != null && cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehousePlatformIds().size() > 0) {
+    criteria.andLogisticsStorehousePlatformIdIn(cfLogisticsStorehousePlatformCargoTypeQuery.getLogisticsStorehousePlatformIds());
+  }
+  if (cfLogisticsStorehousePlatformCargoTypeQuery.getFactoryId() != null) {
+    criteria.andFactoryIdEqualTo(cfLogisticsStorehousePlatformCargoTypeQuery.getFactoryId());
+  }
+  if (cfLogisticsStorehousePlatformCargoTypeQuery.getCargoType() != null) {
+    criteria.andCargoTypeEqualTo(cfLogisticsStorehousePlatformCargoTypeQuery.getCargoType());
+  }
+  if (StringUtils.isNotEmpty(cfLogisticsStorehousePlatformCargoTypeQuery.getOrderBy())) {
+    cfLogisticsStorehousePlatformCargoTypeExample.setOrderByClause(cfLogisticsStorehousePlatformCargoTypeQuery.getOrderBy());
+  }
+  if (cfLogisticsStorehousePlatformCargoTypeQuery.getPage() != null && cfLogisticsStorehousePlatformCargoTypeQuery.getSize() != null) {
+    PageHelper.startPage(cfLogisticsStorehousePlatformCargoTypeQuery.getPage(),cfLogisticsStorehousePlatformCargoTypeQuery.getSize());
+  }
+  return cfLogisticsStorehousePlatformCargoTypeExample;
+}",0,Clean Code
+"/** 
+ * 鍒犻櫎鏂囦欢澶逛互鍙婄洰褰曚笅鐨勬枃浠�
+ * @param filePath 琚垹闄ょ洰褰曠殑鏂囦欢璺緞
+ * @return 鐩綍鍒犻櫎鎴愬姛杩斿洖true锛屽惁鍒欒繑鍥瀎alse
+ */
+public static boolean deleteDirectory(String filePath){
+  boolean flag;
+  if (filePath == null || filePath.length() == 0)   return false;
+  if (!filePath.endsWith(File.separator)) {
+    filePath=filePath + File.separator;
+  }
+  File dirFile=new File(filePath);
+  try {
+    if (!dirFile.exists() || !dirFile.isDirectory()) {
+      return false;
+    }
+    flag=true;
+    File[] files=dirFile.listFiles();
+    for (    File file : files) {
+      if (file.isFile()) {
+        flag=deleteFile(file.getAbsolutePath());
+      }
+ else {
+        flag=deleteDirectory(file.getAbsolutePath());
+      }
+      if (!flag)       break;
+    }
+    if (!flag)     return false;
+  }
+ catch (  Exception e) {
+    return false;
+  }
+  return dirFile.delete();
+}",0,Clean Code

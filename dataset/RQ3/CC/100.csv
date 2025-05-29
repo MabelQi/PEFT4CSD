@@ -1,0 +1,2546 @@
+text,label,text_label
+"private void setEmojiButtonVisibility(boolean visible){
+  if (valueAnimator != null) {
+    valueAnimator.cancel();
+  }
+  if (visible) {
+    emojiButton.setVisibility(View.VISIBLE);
+    emojiButton.setScaleX(0f);
+    emojiButton.setScaleY(0f);
+    emojiButton.setAlpha(0f);
+  }
+  valueAnimator=ValueAnimator.ofFloat(visible ? 0 : 1,visible ? 1 : 0);
+  valueAnimator.addUpdateListener(animation -> {
+    float value=(Float)animation.getAnimatedValue();
+    emojiButton.setScaleX(value);
+    emojiButton.setScaleY(value);
+    emojiButton.setAlpha(Math.max(value,0.80f));
+    if (textView2 != null && deleteImageView == null && textView2.getVisibility() == View.VISIBLE) {
+      textView2.setTranslationY(AndroidUtilities.dp(26) * value);
+    }
+  }
+);
+  valueAnimator.addListener(new Animator.AnimatorListener(){
+    @Override public void onAnimationStart(    @NonNull Animator animation){
+    }
+    @Override public void onAnimationEnd(    @NonNull Animator animation){
+      if (!visible) {
+        emojiButton.setVisibility(View.GONE);
+      }
+ else {
+        emojiButton.setScaleX(1f);
+        emojiButton.setScaleY(1f);
+        emojiButton.setAlpha(0.80f);
+      }
+    }
+    @Override public void onAnimationCancel(    @NonNull Animator animation){
+    }
+    @Override public void onAnimationRepeat(    @NonNull Animator animation){
+    }
+  }
+);
+  valueAnimator.setDuration(200L);
+  valueAnimator.start();
+}",0,Clean Code
+"private void searchUserMessages(TLRPC.User user,TLRPC.Chat chat){
+  searchingUserMessages=user;
+  searchingChatMessages=chat;
+  if (searchItem == null || mentionContainer == null || searchingUserMessages == null && searchingChatMessages == null) {
+    return;
+  }
+  String name;
+  if (searchingUserMessages != null) {
+    name=searchingUserMessages.first_name;
+    if (TextUtils.isEmpty(name)) {
+      name=searchingUserMessages.last_name;
+    }
+  }
+ else {
+    name=searchingChatMessages.title;
+  }
+  if (name == null) {
+    return;
+  }
+  if (name.length() > 10) {
+    name=name.substring(0,10);
+  }
+  searchingForUser=false;
+  String from=LocaleController.getString(""SearchFrom"",R.string.SearchFrom);
+  Spannable spannable=new SpannableString(from + "" "" + name);
+  spannable.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_actionBarDefaultSubtitle)),from.length() + 1,spannable.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  searchItem.setSearchFieldCaption(spannable);
+  mentionContainer.getAdapter().searchUsernameOrHashtag(null,0,null,false,true);
+  searchItem.setSearchFieldHint(null);
+  searchItem.clearSearchText();
+  getMediaDataController().searchMessagesInChat(searchingQuery="""",dialog_id,mergeDialogId,classGuid,0,threadMessageId,searchingUserMessages,searchingChatMessages,searchingReaction,searchingType=null);
+}",0,Clean Code
+"/** 
+ * Deletes messages by its identifiers.
+ * @param ids array of identifiers of messages to delete.
+ */
+public void deleteByIds(String[] ids){
+  boolean result=false;
+  for (  String id : ids) {
+    int index=getMessagePositionById(id);
+    if (index >= 0) {
+      items.remove(index);
+      notifyItemRemoved(index);
+      result=true;
+    }
+  }
+  if (result) {
+    recountDateHeaders();
+  }
+}",0,Clean Code
+"public static synchronized void hookMethod(Member hookMethod,XposedBridge.AdditionalHookInfo additionalHookInfo){
+  if (!checkMember(hookMethod)) {
+    return;
+  }
+  if (hookedInfo.containsKey(hookMethod) || entityMap.containsKey(hookMethod)) {
+    DexLog.w(""already hook method:"" + hookMethod.toString());
+    return;
+  }
+  Yahfa.recordHooked(hookMethod);
+  try {
+    Trace.beginSection(""SandXposed"");
+    long timeStart=System.currentTimeMillis();
+    HookMethodEntity stub=null;
+    if (XposedCompat.useInternalStub && !HookBlackList.canNotHookByStub(hookMethod) && !HookBlackList.canNotHookByBridge(hookMethod)) {
+      stub=HookStubManager.getHookMethodEntity(hookMethod,additionalHookInfo);
+    }
+    if (stub != null) {
+      SandHook.hook(new HookWrapper.HookEntity(hookMethod,stub.hook,stub.backup,false));
+      entityMap.put(hookMethod,stub);
+    }
+ else {
+      HookMaker hookMaker;
+      if (HookBlackList.canNotHookByBridge(hookMethod)) {
+        hookMaker=new HookerDexMaker();
+      }
+ else {
+        hookMaker=defaultHookMaker;
+      }
+      hookMaker.start(hookMethod,additionalHookInfo,ClassLoaderUtils.createProxyClassLoader(hookMethod.getDeclaringClass().getClassLoader()));
+      hookedInfo.put(hookMethod,hookMaker.getCallBackupMethod());
+    }
+    DexLog.d(""hook method <"" + hookMethod.toString() + ""> cost ""+ (System.currentTimeMillis() - timeStart)+ "" ms, by ""+ (stub != null ? ""internal stub"" : ""dex maker""));
+    Trace.endSection();
+  }
+ catch (  Exception e) {
+    DexLog.e(""error occur when hook method <"" + hookMethod.toString() + "">"",e);
+  }
+}
+",1,Code Smell
+"@Override public void tick(){
+  super.tick();
+  prevAngle=angle;
+  if (level.isClientSide)   clientAngleDiff/=2;
+  if (!level.isClientSide && assembleNextTick) {
+    assembleNextTick=false;
+    if (running) {
+      boolean canDisassemble=movementMode.get() == RotationMode.ROTATE_PLACE || (isNearInitialAngle() && movementMode.get() == RotationMode.ROTATE_PLACE_RETURNED);
+      if (speed == 0 && (canDisassemble || movedContraption == null || movedContraption.getContraption().getBlocks().isEmpty())) {
+        if (movedContraption != null)         movedContraption.getContraption().stop(level);
+        disassemble();
+        return;
+      }
+    }
+ else {
+      if (speed == 0 && !isWindmill())       return;
+      assemble();
+    }
+  }
+  if (!running)   return;
+  if (!(movedContraption != null && movedContraption.isStalled())) {
+    float angularSpeed=getAngularSpeed();
+    if (sequencedAngleLimit >= 0) {
+      angularSpeed=(float)Mth.clamp(angularSpeed,-sequencedAngleLimit,sequencedAngleLimit);
+      sequencedAngleLimit=Math.max(0,sequencedAngleLimit - Math.abs(angularSpeed));
+    }
+    float newAngle=angle + angularSpeed;
+    angle=(float)(newAngle % 360);
+  }
+  applyRotation();
+}",1,Code Smell
+"@Override public void tick(){
+  super.tick();
+  isRunning=super.isSpeedRequirementFulfilled();
+  if ((!level.isClientSide || !isRunning) && !isVirtual())   return;
+  int activeFlaps=0;
+  boolean instant=Math.abs(getSpeed()) > 128;
+  for (  FlapDisplayLayout line : lines)   for (  FlapDisplaySection section : line.getSections())   activeFlaps+=section.tick(instant);
+  if (activeFlaps == 0)   return;
+  float volume=Mth.clamp(activeFlaps / 20f,0.25f,1.5f);
+  float bgVolume=Mth.clamp(activeFlaps / 40f,0.25f,1f);
+  BlockPos middle=worldPosition.relative(getDirection().getClockWise(),xSize / 2).relative(Direction.DOWN,ySize / 2);
+  AllSoundEvents.SCROLL_VALUE.playAt(level,middle,volume,0.56f,false);
+  level.playLocalSound(middle.getX(),middle.getY(),middle.getZ(),SoundEvents.CALCITE_HIT,SoundSource.BLOCKS,.35f * bgVolume,1.95f,false);
+}",1,Code Smell
+"private static ConverterExcelOption createConverter(Class<?> type,org.jetlinks.community.io.excel.annotation.ExcelHeader header){
+  if (type.isEnum()) {
+    return new EnumConverter((Class<? extends Enum>)type);
+  }
+  if (header.dataType() == CellDataType.DATE_TIME || Date.class.isAssignableFrom(type) || LocalDate.class.isAssignableFrom(type) || LocalDateTime.class.isAssignableFrom(type)) {
+    String format=header.format();
+    if (!StringUtils.hasText(format)) {
+      format=""yyyy/MM/dd HH:mm:ss"";
+    }
+    return new DateConverter(format,type);
+  }
+  if (type == String.class) {
+    return StringConverter.INSTANCE;
+  }
+  return null;
+}
+@SuppressWarnings(""all"") private static ConverterExcelOption createConverter(Field field,org.jetlinks.community.io.excel.annotation.ExcelHeader header){
+  if (field.getType().isArray()) {
+    Class<?> elementType=field.getType().getComponentType();
+    return new ArrayConverter(true,elementType,createConverter(elementType,header));
+  }
+  if (List.class.isAssignableFrom(field.getType())) {
+    Class<?> elementType=ResolvableType.forField(field).getGeneric(0).toClass();
+    return new ArrayConverter(false,elementType,createConverter(elementType,header));
+  }
+  return createConverter(field.getType(),header);
+}",1,Code Smell
+"public void updatePlayingMode(){
+  if (storiesViewPager == null) {
+    return;
+  }
+  boolean pause=isPaused();
+  if (ATTACH_TO_FRAGMENT && (fragment.isPaused() || !fragment.isLastFragment())) {
+    pause=true;
+  }
+  if (ArticleViewer.getInstance().isVisible()) {
+    pause=true;
+  }
+  storiesViewPager.setPaused(pause);
+  if (playerHolder != null) {
+    if (pause) {
+      playerHolder.pause();
+    }
+ else {
+      playerHolder.play(currentSpeed);
+    }
+  }
+  storiesViewPager.enableTouch(!keyboardVisible && !isClosed && !isRecording&& !isLongpressed&& !isInPinchToZoom&& selfStoriesViewsOffset == 0 && !isInTextSelectionMode);
+}",0,Clean Code
+"/** 
+ * 楠岃瘉瀛楁鐨勬纭�� 鐩墠绾跨储锛屽鎴凤紝鑱旂郴浜洪渶瑕侀獙璇佺殑閫昏緫鏄浉鍚岀殑
+ * @param model json鏁版嵁
+ * @return 楠岃瘉缁撴灉
+ */
+private Result verifyLeads(CrmModelSaveBO model){
+  JSONObject entity=new JSONObject(model.getEntity());
+  if (StrUtil.isNotEmpty(entity.getString(""mobile""))) {
+    if (!ReUtil.isMatch(""^(\\+?0?\\d{2,4}\\-?)?\\d{6,11}$"",entity.getString(""mobile""))) {
+      return R.error(CrmCodeEnum.CRM_PHONE_FORMAT_ERROR);
+    }
+  }
+  if (StrUtil.isNotEmpty(entity.getString(""next_time""))) {
+    Result result=verifyDateTime(entity.getString(""next_time""));
+    if (!result.hasSuccess()) {
+      return result;
+    }
+  }
+  Result result=verifyField(model);
+  if (!result.hasSuccess()) {
+    return result;
+  }
+  return R.ok();
+}",1,Code Smell
+"private void showHideScreensaver(boolean show){
+  Activity activity=mActivity.get();
+  if (activity == null) {
+    return;
+  }
+  if (show && (isPlaying() || isSigning() || mGeneralData.isScreensaverDisabled()|| (mMode == MODE_SCREEN_OFF && getPosition() == 0))) {
+    Helpers.disableScreensaver(activity);
+    return;
+  }
+  if (show) {
+    Helpers.enableScreensaver(activity);
+  }
+ else {
+    Helpers.disableScreensaver(activity);
+  }
+}",1,Code Smell
+"private static boolean isApplicationProxied(){
+  if (original_application_name != null && !original_application_name.isEmpty() && !(""android.app.Application"").equals(original_application_name)) {
+    return true;
+  }
+ else {
+    return false;
+  }
+}
+",1,Code Smell
+"void parseIcon(ElementStyleDslContext context,Tokens tokens,boolean restricted){
+  ElementStyle style=context.getStyle();
+  if (tokens.hasMoreThan(FIRST_PROPERTY_INDEX)) {
+    throw new RuntimeException(""Too many tokens, expected: icon <file|url>"");
+  }
+  if (tokens.includes(FIRST_PROPERTY_INDEX)) {
+    String path=tokens.get(1);
+    if (path.startsWith(""data:image/"") || path.startsWith(""https://"") || path.startsWith(""http://"")) {
+      if (IconUtils.isSupported(path)) {
+        style.setIcon(path);
+      }
+ else {
+        throw new IllegalArgumentException(""Only PNG and JPG URLs/data URIs are supported: "" + path);
+      }
+    }
+ else {
+      if (!restricted) {
+        File file=new File(context.getFile().getParent(),path);
+        if (file.exists() && !file.isDirectory()) {
+          try {
+            style.setIcon(ImageUtils.getImageAsDataUri(file));
+          }
+ catch (          IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+ else {
+          throw new RuntimeException(path + "" does not exist"");
+        }
+      }
+    }
+  }
+ else {
+    throw new RuntimeException(""Expected: icon <file|url>"");
+  }
+}",1,Code Smell
+"public void hapticAndAudioFeedback(final int code,final int repeatCount){
+  final MainKeyboardView keyboardView=mKeyboardSwitcher.getMainKeyboardView();
+  if (keyboardView != null && keyboardView.isInDraggingFinger()) {
+    return;
+  }
+  if (repeatCount > 0) {
+    if (code == KeyCode.DELETE && !mInputLogic.mConnection.canDeleteCharacters()) {
+      return;
+    }
+    if (repeatCount % PERIOD_FOR_AUDIO_AND_HAPTIC_FEEDBACK_IN_KEY_REPEAT == 0) {
+      return;
+    }
+  }
+  final AudioAndHapticFeedbackManager feedbackManager=AudioAndHapticFeedbackManager.getInstance();
+  if (repeatCount == 0) {
+    feedbackManager.performHapticFeedback(keyboardView);
+  }
+  feedbackManager.performAudioFeedback(code);
+}",0,Clean Code
+"@Override public int getCurrentSpeedId(){
+  int speed=(int)mMediaController.getPlaybackState().getPlaybackSpeed();
+  if (speed == 0) {
+    return PLAYBACK_SPEED_PAUSED;
+  }
+ else   if (speed == 1) {
+    return PLAYBACK_SPEED_NORMAL;
+  }
+ else   if (speed > 0) {
+    int[] seekSpeeds=getFastForwardSpeeds();
+    for (int index=0; index < seekSpeeds.length; index++) {
+      if (speed == seekSpeeds[index]) {
+        return PLAYBACK_SPEED_FAST_L0 + index;
+      }
+    }
+  }
+ else {
+    int[] seekSpeeds=getRewindSpeeds();
+    for (int index=0; index < seekSpeeds.length; index++) {
+      if (-speed == seekSpeeds[index]) {
+        return -PLAYBACK_SPEED_FAST_L0 - index;
+      }
+    }
+  }
+  Log.w(TAG,""Couldn't find index for speed "" + speed);
+  return PLAYBACK_SPEED_INVALID;
+}",1,Code Smell
+"/** 
+ * 鏌ヨ鍙戠エ鑷姩缂栧彿璁剧疆
+ * @return data
+ */
+@Override public AdminConfig queryInvoiceNumberSetting(){
+  String name=""numberSetting"";
+  QueryWrapper<AdminConfig> queryWrapper=new QueryWrapper<>();
+  queryWrapper.eq(""name"",name);
+  List<AdminConfig> adminConfigList=adminService.queryConfigByName(name).getData();
+  for (  AdminConfig adminConfig : adminConfigList) {
+    if (Objects.equals(""18"",adminConfig.getValue())) {
+      return adminConfig;
+    }
+  }
+  return null;
+}",0,Clean Code
+"/** 
+ * {@inheritDoc} 
+ */
+@Override public boolean isCompatible(DalvInsn insn){
+  RegisterSpecList regs=insn.getRegisters();
+  if (!((insn instanceof CstInsn) && (regs.size() == 1) && unsignedFitsInByte(regs.get(0).getReg()))) {
+    return false;
+  }
+  CstInsn ci=(CstInsn)insn;
+  Constant cst=ci.getConstant();
+  if (!(cst instanceof CstLiteralBits)) {
+    return false;
+  }
+  CstLiteralBits cb=(CstLiteralBits)cst;
+  return cb.fitsInInt() && signedFitsInShort(cb.getIntBits());
+}",1,Code Smell
+"/** 
+ * Read an array from an AMF encoded buffer.
+ * @param data The buffer from which to read.
+ * @return The value read from the buffer.
+ */
+private static ArrayList<Object> readAmfStrictArray(ParsableByteArray data){
+  int count=data.readUnsignedIntToInt();
+  ArrayList<Object> list=new ArrayList<>(count);
+  for (int i=0; i < count; i++) {
+    int type=readAmfType(data);
+    Object value=readAmfData(data,type);
+    if (value != null) {
+      list.add(value);
+    }
+  }
+  return list;
+}",0,Clean Code
+"/** 
+ * Creates a callback which always returns a specific value.
+ * @param result The value that should be returned to callers of the hooked method.
+ */
+public static XC_MethodReplacement returnConstant(final Object result){
+  return returnConstant(PRIORITY_DEFAULT,result);
+}
+/** 
+ * Like  {@link #returnConstant(Object)}, but allows to specify a priority for the callback.
+ * @param priority See {@link XCallback#priority}.
+ * @param result   The value that should be returned to callers of the hooked method.
+ */
+public static XC_MethodReplacement returnConstant(int priority,final Object result){
+  return new XC_MethodReplacement(priority){
+    @Override protected Object replaceHookedMethod(    MethodHookParam param) throws Throwable {
+      return result;
+    }
+  }
+;
+}
+",0,Clean Code
+"private int getUrlLength(String text,int i){
+  boolean startUrl=false;
+  if (text.charAt(i) == 'h') {
+    if (text.length() > i + 6 && text.substring(i,i + 7).equals(""http://"")) {
+      startUrl=true;
+    }
+ else     if (text.length() > i + 7 && text.substring(i,i + 8).equals(""https://"")) {
+      startUrl=true;
+    }
+  }
+  if (startUrl) {
+    for (int j=i + 1; j < text.length(); j++) {
+      char ch=text.charAt(j);
+      if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t') {
+        return j - i;
+      }
+    }
+    return text.length() - i - 1;
+  }
+  return 0;
+}",1,Code Smell
+"@Override public void onPositionDiscontinuity(@Player.DiscontinuityReason int reason){
+  if (adsManager == null) {
+    return;
+  }
+  if (!playingAd && !player.isPlayingAd()) {
+    checkForContentComplete();
+    if (sentContentComplete) {
+      for (int i=0; i < adPlaybackState.adGroupCount; i++) {
+        if (adPlaybackState.adGroupTimesUs[i] != C.TIME_END_OF_SOURCE) {
+          adPlaybackState=adPlaybackState.withSkippedAdGroup(i);
+        }
+      }
+      updateAdPlaybackState();
+    }
+ else     if (!timeline.isEmpty()) {
+      long positionMs=player.getCurrentPosition();
+      timeline.getPeriod(0,period);
+      int newAdGroupIndex=period.getAdGroupIndexForPositionUs(C.msToUs(positionMs));
+      if (newAdGroupIndex != C.INDEX_UNSET) {
+        sentPendingContentPositionMs=false;
+        pendingContentPositionMs=positionMs;
+        if (newAdGroupIndex != adGroupIndex) {
+          shouldNotifyAdPrepareError=false;
+        }
+      }
+    }
+  }
+  updateImaStateForPlayerState();
+}",1,Code Smell
+"private void highlightCaptionLink(URLSpan link){
+  try {
+    if (link != null && captionLayout != null && captionLayout.getText() instanceof Spanned) {
+      if (link == highlightPathSpan) {
+        return;
+      }
+      highlightPathSpan=link;
+      Spanned caption=(Spanned)captionLayout.getText();
+      int start=caption.getSpanStart(highlightPathSpan);
+      int end=caption.getSpanEnd(highlightPathSpan);
+      if (highlightPath != null) {
+        highlightPath.rewind();
+      }
+ else {
+        highlightPath=new LinkPath(true);
+      }
+      highlightPath.setCurrentLayout(captionLayout,start,0);
+      captionLayout.getSelectionPath(start,end,highlightPath);
+      highlightPathStart=System.currentTimeMillis();
+      invalidate();
+    }
+  }
+ catch (  Exception e) {
+    FileLog.e(e);
+  }
+}",0,Clean Code
+"private void onSwitchEditModeEnd(int fromMode,int toMode){
+  if (toMode == EDIT_MODE_PAINT) {
+    backButton.setVisibility(View.GONE);
+  }
+  if (fromMode == EDIT_MODE_PAINT && paintView != null) {
+    paintView.setVisibility(View.GONE);
+  }
+  if (fromMode == EDIT_MODE_NONE) {
+    captionContainer.setVisibility(View.GONE);
+    muteButton.setVisibility(View.GONE);
+    playButton.setVisibility(View.GONE);
+    downloadButton.setVisibility(View.GONE);
+    if (themeButton != null) {
+      themeButton.setVisibility(View.GONE);
+    }
+    timelineView.setVisibility(View.GONE);
+    titleTextView.setVisibility(View.GONE);
+  }
+  previewView.setAllowCropping(toMode == EDIT_MODE_NONE);
+  if ((toMode == EDIT_MODE_PAINT || fromMode == EDIT_MODE_PAINT) && paintView != null) {
+    paintView.onAnimationStateChanged(false);
+  }
+  if (photoFilterEnhanceView != null) {
+    photoFilterEnhanceView.setAllowTouch(toMode == EDIT_MODE_FILTER || toMode == EDIT_MODE_NONE);
+  }
+}
+",0,Clean Code
+"public boolean maybePlayVisibleVideo(){
+  if (chatListView == null) {
+    return false;
+  }
+  MessageObject playingMessage=MediaController.getInstance().getPlayingMessageObject();
+  if (playingMessage != null && !playingMessage.isVideo()) {
+    return false;
+  }
+  MessageObject visibleMessage=null;
+  AnimatedFileDrawable visibleAnimation=null;
+  if (noSoundHintView != null && noSoundHintView.getTag() != null) {
+    ChatMessageCell cell=noSoundHintView.getMessageCell();
+    if (cell != null) {
+      ImageReceiver imageReceiver=cell.getPhotoImage();
+      visibleAnimation=imageReceiver.getAnimation();
+      if (visibleAnimation != null) {
+        visibleMessage=cell.getMessageObject();
+        scrollToVideo=cell.getTop() + imageReceiver.getImageY2() > chatListView.getMeasuredHeight();
+      }
+    }
+  }
+  if (visibleMessage == null) {
+    int count=chatListView.getChildCount();
+    for (int a=0; a < count; a++) {
+      View child=chatListView.getChildAt(a);
+      if (!(child instanceof ChatMessageCell)) {
+        continue;
+      }
+      ChatMessageCell messageCell=(ChatMessageCell)child;
+      MessageObject messageObject=messageCell.getMessageObject();
+      boolean isRoundVideo=messageObject.isRoundVideo();
+      if ((!messageObject.isVideo() && !isRoundVideo) || messageObject.videoEditedInfo != null) {
+        continue;
+      }
+      ImageReceiver imageReceiver=messageCell.getPhotoImage();
+      AnimatedFileDrawable animation=imageReceiver.getAnimation();
+      if (animation == null) {
+        continue;
+      }
+      float top=child.getTop() + imageReceiver.getImageY();
+      float bottom=top + imageReceiver.getImageHeight();
+      if (bottom < 0 || top > chatListView.getMeasuredHeight()) {
+        continue;
+      }
+      if (visibleMessage != null && top < 0) {
+        break;
+      }
+      visibleMessage=messageObject;
+      visibleAnimation=animation;
+      scrollToVideo=top < 0 || bottom > chatListView.getMeasuredHeight();
+      if (top >= 0 && bottom <= chatListView.getMeasuredHeight()) {
+        break;
+      }
+    }
+  }
+  if (visibleMessage != null) {
+    if (MediaController.getInstance().isPlayingMessage(visibleMessage)) {
+      return false;
+    }
+    hideHints(true);
+    if (visibleMessage.isRoundVideo()) {
+      boolean result=MediaController.getInstance().playMessage(visibleMessage);
+      MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(visibleMessage,false) : null,false);
+      return result;
+    }
+ else {
+      SharedConfig.setNoSoundHintShowed(true);
+      visibleMessage.audioProgress=visibleAnimation.getCurrentProgress();
+      visibleMessage.audioProgressMs=visibleAnimation.getCurrentProgressMs();
+      visibleAnimation.stop();
+      if (PhotoViewer.isPlayingMessageInPip(visibleMessage)) {
+        PhotoViewer.getPipInstance().destroyPhotoViewer();
+      }
+      return MediaController.getInstance().playMessage(visibleMessage);
+    }
+  }
+  return false;
+}",1,Code Smell
+"private void setTorIcon(){
+  TorStatusLabel torStatusLabel=null;
+  for (  Node node : statusBar.getRightItems()) {
+    if (node instanceof TorStatusLabel) {
+      torStatusLabel=(TorStatusLabel)node;
+    }
+  }
+  if (!AppServices.isUsingProxy()) {
+    if (torStatusLabel != null) {
+      torStatusLabel.update();
+      statusBar.getRightItems().removeAll(torStatusLabel);
+    }
+  }
+ else {
+    if (torStatusLabel == null) {
+      torStatusLabel=new TorStatusLabel();
+      statusBar.getRightItems().add(Math.max(statusBar.getRightItems().size() - 2,0),torStatusLabel);
+    }
+ else {
+      torStatusLabel.update();
+    }
+  }
+}",1,Code Smell
+"/** 
+ * Constructor for the ViewHolder.
+ * @param rootView The root View that this view holder will be attachedto.
+ */
+public ViewHolder(View rootView,Presenter detailsPresenter,DetailsOverviewLogoPresenter logoPresenter){
+  super(rootView);
+  mOverviewRoot=(ViewGroup)rootView.findViewById(R.id.details_root);
+  mOverviewFrame=(FrameLayout)rootView.findViewById(R.id.details_frame);
+  mDetailsDescriptionFrame=(ViewGroup)rootView.findViewById(R.id.details_overview_description);
+  mActionsRow=(HorizontalGridView)mOverviewFrame.findViewById(R.id.details_overview_actions);
+  mActionsRow.setHasOverlappingRendering(false);
+  mActionsRow.setOnScrollListener(mScrollListener);
+  mActionsRow.setAdapter(mActionBridgeAdapter);
+  mActionsRow.setOnChildSelectedListener(mChildSelectedListener);
+  final int fadeLength=rootView.getResources().getDimensionPixelSize(R.dimen.lb_details_overview_actions_fade_size);
+  mActionsRow.setFadingRightEdgeLength(fadeLength);
+  mActionsRow.setFadingLeftEdgeLength(fadeLength);
+  mDetailsDescriptionViewHolder=detailsPresenter.onCreateViewHolder(mDetailsDescriptionFrame);
+  mDetailsDescriptionFrame.addView(mDetailsDescriptionViewHolder.view);
+  mDetailsLogoViewHolder=(DetailsOverviewLogoPresenter.ViewHolder)logoPresenter.onCreateViewHolder(mOverviewRoot);
+  mOverviewRoot.addView(mDetailsLogoViewHolder.view);
+}
+",0,Clean Code
+"private RelSubset registerSubset(RelSet set,RelSubset subset){
+  if ((set != subset.set) && (set != null) && (set.equivalentSet == null)) {
+    LOGGER.trace(""Register #{} {}, and merge sets"",subset.getId(),subset);
+    merge(set,subset.set);
+    registerCount++;
+  }
+  return subset;
+}
+",1,Code Smell
+"public LifeHashIcon(){
+  super();
+  dataProperty.addListener((observable,oldValue,data) -> {
+    if (data == null) {
+      getChildren().clear();
+    }
+ else     if (oldValue == null || !Arrays.equals(oldValue,data)) {
+      LifeHash.Image lifeHashImage=LifeHash.makeFromData(data,LifeHashVersion.VERSION2,1,false);
+      BufferedImage bufferedImage=LifeHash.getBufferedImage(lifeHashImage);
+      BufferedImage resizedImage=ImageUtils.resizeToImage(bufferedImage,SIZE,SIZE);
+      Image image=SwingFXUtils.toFXImage(resizedImage,null);
+      setImage(image);
+    }
+  }
+);
+}",1,Code Smell
+"@Override public ConfigInfoWrapper mapRow(ResultSet rs,int rowNum) throws SQLException {
+  ConfigInfoWrapper info=new ConfigInfoWrapper();
+  info.setDataId(rs.getString(""data_id""));
+  info.setGroup(rs.getString(""group_id""));
+  info.setTenant(rs.getString(""tenant_id""));
+  info.setAppName(rs.getString(""app_name""));
+  try {
+    info.setContent(rs.getString(""content""));
+  }
+ catch (  SQLException e) {
+  }
+  try {
+    info.setId(rs.getLong(""ID""));
+  }
+ catch (  SQLException e) {
+  }
+  try {
+    info.setLastModified(rs.getTimestamp(""gmt_modified"").getTime());
+  }
+ catch (  SQLException e) {
+  }
+  try {
+    info.setMd5(rs.getString(""md5""));
+  }
+ catch (  SQLException e) {
+  }
+  return info;
+}",0,Clean Code
+"public static void applyChatMessageSelectedBackgroundColor(){
+  applyChatMessageSelectedBackgroundColor(null,wallpaper);
+}
+public static void applyChatMessageSelectedBackgroundColor(Drawable wallpaperOverride){
+  applyChatMessageSelectedBackgroundColor(wallpaperOverride,wallpaper);
+}
+public static void applyChatMessageSelectedBackgroundColor(Drawable wallpaperOverride,Drawable currentWallpaper){
+  if (chat_messageBackgroundSelectedPaint == null) {
+    return;
+  }
+  int selectedBackgroundColor=currentColors.get(key_chat_selectedBackground);
+  Drawable drawable=wallpaperOverride != null ? wallpaperOverride : currentWallpaper;
+  boolean drawSelectedGradient=drawable instanceof MotionBackgroundDrawable && SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW && selectedBackgroundColor == 0;
+  if (drawSelectedGradient) {
+    Bitmap newBitmap=((MotionBackgroundDrawable)drawable).getBitmap();
+    if (serviceBitmap != newBitmap) {
+      serviceBitmap=newBitmap;
+      serviceBitmapShader=new BitmapShader(serviceBitmap,Shader.TileMode.CLAMP,Shader.TileMode.CLAMP);
+      if (serviceBitmapMatrix == null) {
+        serviceBitmapMatrix=new Matrix();
+      }
+    }
+  }
+  if (serviceBitmapShader != null && selectedBackgroundColor == 0 && drawSelectedGradient) {
+    ColorMatrix colorMatrix2=new ColorMatrix();
+    AndroidUtilities.adjustSaturationColorMatrix(colorMatrix2,2.5f);
+    AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix2,.75f);
+    chat_messageBackgroundSelectedPaint.setShader(serviceBitmapShader);
+    chat_messageBackgroundSelectedPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix2));
+    chat_messageBackgroundSelectedPaint.setAlpha(64);
+  }
+ else {
+    chat_messageBackgroundSelectedPaint.setColor(selectedBackgroundColor == 0 ? 0x40000000 : selectedBackgroundColor);
+    chat_messageBackgroundSelectedPaint.setColorFilter(null);
+    chat_messageBackgroundSelectedPaint.setShader(null);
+  }
+}",1,Code Smell
+"@Override @CacheEvict(key=""'sideBar_' + #req.articleId"",cacheManager=""caffeineCacheManager"",cacheNames=""article"") public void updateArticle(ArticlePostReq req){
+  if (req.getStatus() != PushStatusEnum.OFFLINE.getCode() && req.getStatus() != PushStatusEnum.ONLINE.getCode() && req.getStatus() != PushStatusEnum.REVIEW.getCode()) {
+    throw ExceptionUtil.of(StatusEnum.ILLEGAL_ARGUMENTS_MIXED,""鍙戝竷鐘舵�佷笉鍚堟硶!"");
+  }
+  ArticleDO article=articleDao.getById(req.getArticleId());
+  if (article == null) {
+    throw ExceptionUtil.of(StatusEnum.RECORDS_NOT_EXISTS,""鏂囩珷涓嶅瓨鍦�!"");
+  }
+  if (StringUtils.isNotBlank(req.getTitle())) {
+    article.setTitle(req.getTitle());
+  }
+  if (StringUtils.isNotBlank(req.getShortTitle())) {
+    article.setShortTitle(req.getShortTitle());
+  }
+  ArticleEventEnum operateEvent=null;
+  if (req.getStatus() != null) {
+    article.setStatus(req.getStatus());
+    if (req.getStatus() == PushStatusEnum.OFFLINE.getCode()) {
+      operateEvent=ArticleEventEnum.OFFLINE;
+    }
+ else     if (req.getStatus() == PushStatusEnum.REVIEW.getCode()) {
+      operateEvent=ArticleEventEnum.REVIEW;
+    }
+ else     if (req.getStatus() == PushStatusEnum.ONLINE.getCode()) {
+      operateEvent=ArticleEventEnum.ONLINE;
+    }
+  }
+  articleDao.updateById(article);
+  if (operateEvent != null) {
+    SpringUtil.publishEvent(new ArticleMsgEvent<>(this,operateEvent,article));
+  }
+}
+",0,Clean Code
+"/** 
+ * Creates View intent for given file
+ * @param file
+ * @return The intent for viewing file
+ */
+public static Intent getViewIntent(Context context,File file){
+  Intent intent=new Intent(Intent.ACTION_VIEW);
+  Uri uri;
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    uri=FileProvider.getUriForFile(context,context.getPackageName() + "".provider"",file);
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+  }
+ else {
+    uri=Uri.fromFile(file);
+  }
+  String url=file.toString().toLowerCase();
+  if (url.contains("".doc"") || url.contains("".docx"")) {
+    intent.setDataAndType(uri,""application/msword"");
+  }
+ else   if (url.contains("".pdf"")) {
+    intent.setDataAndType(uri,""application/pdf"");
+  }
+ else   if (url.contains("".ppt"") || url.contains("".pptx"")) {
+    intent.setDataAndType(uri,""application/vnd.ms-powerpoint"");
+  }
+ else   if (url.contains("".xls"") || url.contains("".xlsx"")) {
+    intent.setDataAndType(uri,""application/vnd.ms-excel"");
+  }
+ else   if (url.contains("".zip"") || url.contains("".rar"")) {
+    intent.setDataAndType(uri,""application/x-wav"");
+  }
+ else   if (url.contains("".rtf"")) {
+    intent.setDataAndType(uri,""application/rtf"");
+  }
+ else   if (url.contains("".wav"") || url.contains("".mp3"")) {
+    intent.setDataAndType(uri,""audio/x-wav"");
+  }
+ else   if (url.contains("".gif"")) {
+    intent.setDataAndType(uri,""image/gif"");
+  }
+ else   if (url.contains("".jpg"") || url.contains("".jpeg"") || url.contains("".png"")) {
+    intent.setDataAndType(uri,""image/jpeg"");
+  }
+ else   if (url.contains("".txt"")) {
+    intent.setDataAndType(uri,""text/plain"");
+  }
+ else   if (url.contains("".3gp"") || url.contains("".mpg"") || url.contains("".mpeg"")|| url.contains("".mpe"")|| url.contains("".mp4"")|| url.contains("".avi"")) {
+    intent.setDataAndType(uri,""video/*"");
+  }
+ else   if (url.contains("".apk"")) {
+    intent.setDataAndType(uri,""application/vnd.android.package-archive"");
+  }
+ else {
+    intent.setDataAndType(uri,""*/*"");
+  }
+  intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+  intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+  intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+  return intent;
+}",1,Code Smell
+"@Override public Popup getPopup(Component owner,Component contents,int x,int y) throws IllegalArgumentException {
+  Point pt=fixToolTipLocation(owner,contents,x,y);
+  if (pt != null) {
+    x=pt.x;
+    y=pt.y;
+  }
+  fixLinuxWaylandJava21focusIssue(owner);
+  for (  NonFlashingPopup popup : stillShownHeavyWeightPopups) {
+    if (popup.delegate != null && popup.owner == owner && (popup.contents == contents || (popup.contents instanceof JToolTip && contents instanceof JToolTip))) {
+      stillShownHeavyWeightPopups.remove(popup);
+      return reuseStillShownHeavyWeightPopups(popup,contents,x,y);
+    }
+  }
+  boolean forceHeavyWeight=isOptionEnabled(owner,contents,FlatClientProperties.POPUP_FORCE_HEAVY_WEIGHT,""Popup.forceHeavyWeight"");
+  if (!isOptionEnabled(owner,contents,FlatClientProperties.POPUP_DROP_SHADOW_PAINTED,""Popup.dropShadowPainted"") || SystemInfo.isProjector || SystemInfo.isWebswing)   return new NonFlashingPopup(getPopupForScreenOfOwner(owner,contents,x,y,forceHeavyWeight),owner,contents);
+  if (SystemInfo.isMacOS || SystemInfo.isLinux) {
+    NonFlashingPopup popup=new NonFlashingPopup(getPopupForScreenOfOwner(owner,contents,x,y,true),owner,contents);
+    if (popup.popupWindow != null && isMacOSBorderSupported())     setupRoundedBorder(popup.popupWindow,owner,contents);
+    return popup;
+  }
+  if (isWindows11BorderSupported() && getBorderCornerRadius(owner,contents) > 0) {
+    NonFlashingPopup popup=new NonFlashingPopup(getPopupForScreenOfOwner(owner,contents,x,y,true),owner,contents);
+    if (popup.popupWindow != null)     setupRoundedBorder(popup.popupWindow,owner,contents);
+    return popup;
+  }
+  if (!forceHeavyWeight && overlapsHeavyWeightComponent(owner,contents,x,y))   forceHeavyWeight=true;
+  Popup popupForScreenOfOwner=getPopupForScreenOfOwner(owner,contents,x,y,forceHeavyWeight);
+  GraphicsConfiguration gc=(owner != null) ? owner.getGraphicsConfiguration() : null;
+  return (gc != null && gc.isTranslucencyCapable()) ? new DropShadowPopup(popupForScreenOfOwner,owner,contents) : new NonFlashingPopup(popupForScreenOfOwner,owner,contents);
+}",1,Code Smell
+"@NonNull public static UserHistoryDictionary getUserHistoryDictionary(final Context context,final Locale locale,@Nullable final String accountName){
+  String lookupStr=locale.toString();
+  if (accountName != null) {
+    lookupStr+=""."" + accountName;
+  }
+synchronized (sLangUserHistoryDictCache) {
+    if (sLangUserHistoryDictCache.containsKey(lookupStr)) {
+      final SoftReference<UserHistoryDictionary> ref=sLangUserHistoryDictCache.get(lookupStr);
+      final UserHistoryDictionary dict=ref == null ? null : ref.get();
+      if (dict != null) {
+        if (DEBUG) {
+          Log.d(TAG,""Use cached UserHistoryDictionary with lookup: "" + lookupStr);
+        }
+        dict.reloadDictionaryIfRequired();
+        return dict;
+      }
+    }
+    final UserHistoryDictionary dict=new UserHistoryDictionary(context,locale,accountName);
+    sLangUserHistoryDictCache.put(lookupStr,new SoftReference<>(dict));
+    return dict;
+  }
+}
+",0,Clean Code
+"private synchronized void saveJob(Job job){
+  final Job oldJob=jobQueue.get(job.getId());
+  if ((oldJob != null && job.getVersion() != oldJob.getVersion()) || (oldJob == null && job.getVersion() > 0)) {
+    throw new ConcurrentJobModificationException(job);
+  }
+  try (JobVersioner jobVersioner=new JobVersioner(job)){
+    jobQueue.put(job.getId(),deepClone(job));
+    jobVersioner.commitVersion();
+  }
+ }",1,Code Smell
+"@Override public void deleteDeptById(String deptId){
+  Integer empCount=employeeService.lambdaQuery().in(HrmEmployee::getEntryStatus,1,3).eq(HrmEmployee::getDeptId,deptId).eq(HrmEmployee::getIsDel,0).count();
+  if (empCount > 0) {
+    throw new CrmException(HrmCodeEnum.THERE_ARE_EMPLOYEES_UNDER_THE_DEPARTMENT);
+  }
+  Integer childCount=lambdaQuery().eq(HrmDept::getPid,deptId).count();
+  if (childCount > 0) {
+    throw new CrmException(HrmCodeEnum.THERE_ARE_SUB_DEPARTMENTS_THAT_CANNOT_BE_DELETED);
+  }
+  HrmDept dept=getById(deptId);
+  if (""1"".equals(dept.getCode())) {
+    throw new CrmException(HrmCodeEnum.TOP_LEVEL_DEPARTMENT_CANNOT_BE_DELETED);
+  }
+  removeById(deptId);
+}",0,Clean Code
+"private ArrayList<TLObject> getContacts(){
+  final ArrayList<TLObject> chats=new ArrayList<>();
+  final ArrayList<TLRPC.TL_contact> contacts=ContactsController.getInstance(currentAccount).contacts;
+  if (contacts == null || contacts.isEmpty()) {
+    ContactsController.getInstance(currentAccount).loadContacts(false,0);
+  }
+  final MessagesController messagesController=MessagesController.getInstance(currentAccount);
+  if (contacts != null) {
+    for (int i=0; i < contacts.size(); ++i) {
+      final TLRPC.TL_contact contact=contacts.get(i);
+      if (contact != null) {
+        final TLRPC.User user=messagesController.getUser(contact.user_id);
+        if (user != null && !UserObject.isUserSelf(user) && !user.bot && user.id != 777000) {
+          chats.add(user);
+        }
+      }
+    }
+  }
+  return chats;
+}",1,Code Smell
+"@Nullable protected <I extends StatusDisplayItem,H extends StatusDisplayItem.Holder<I>>H findHolderOfType(String id,Class<H> type){
+  for (int i=0; i < list.getChildCount(); i++) {
+    RecyclerView.ViewHolder holder=list.getChildViewHolder(list.getChildAt(i));
+    if (holder instanceof StatusDisplayItem.Holder<?> && itemHolder.getItemID().equals(id) && type.isInstance(holder))     return type.cast(holder);
+  }
+  return null;
+}",0,Clean Code
+"/** 
+ * Peek the presentation timestamp of the first sample in the chunk from an ID3 PRIV as defined in the HLS spec, version 20, Section 3.4. Returns  {@link C#TIME_UNSET} if the frame is notfound. This method only modifies the peek position.
+ * @param input The {@link ExtractorInput} to obtain the PRIV frame from.
+ * @return The parsed, adjusted timestamp in microseconds
+ * @throws IOException If an error occurred peeking from the input.
+ * @throws InterruptedException If the thread was interrupted.
+ */
+private long peekId3PrivTimestamp(ExtractorInput input) throws IOException, InterruptedException {
+  input.resetPeekPosition();
+  try {
+    input.peekFully(scratchId3Data.data,0,Id3Decoder.ID3_HEADER_LENGTH);
+  }
+ catch (  EOFException e) {
+    return C.TIME_UNSET;
+  }
+  scratchId3Data.reset(Id3Decoder.ID3_HEADER_LENGTH);
+  int id=scratchId3Data.readUnsignedInt24();
+  if (id != Id3Decoder.ID3_TAG) {
+    return C.TIME_UNSET;
+  }
+  scratchId3Data.skipBytes(3);
+  int id3Size=scratchId3Data.readSynchSafeInt();
+  int requiredCapacity=id3Size + Id3Decoder.ID3_HEADER_LENGTH;
+  if (requiredCapacity > scratchId3Data.capacity()) {
+    byte[] data=scratchId3Data.data;
+    scratchId3Data.reset(requiredCapacity);
+    System.arraycopy(data,0,scratchId3Data.data,0,Id3Decoder.ID3_HEADER_LENGTH);
+  }
+  input.peekFully(scratchId3Data.data,Id3Decoder.ID3_HEADER_LENGTH,id3Size);
+  Metadata metadata=id3Decoder.decode(scratchId3Data.data,id3Size);
+  if (metadata == null) {
+    return C.TIME_UNSET;
+  }
+  int metadataLength=metadata.length();
+  for (int i=0; i < metadataLength; i++) {
+    Metadata.Entry frame=metadata.get(i);
+    if (frame instanceof PrivFrame) {
+      PrivFrame privFrame=(PrivFrame)frame;
+      if (PRIV_TIMESTAMP_FRAME_OWNER.equals(privFrame.owner)) {
+        System.arraycopy(privFrame.privateData,0,scratchId3Data.data,0,8);
+        scratchId3Data.reset(8);
+        return scratchId3Data.readLong() & 0x1FFFFFFFFL;
+      }
+    }
+  }
+  return C.TIME_UNSET;
+}",0,Clean Code
+"/** 
+ * 杩炴帴鍒版湇鍔″櫒
+ */
+public void startHttp(String ip){
+  String ip_save=SaveData.INSTANCE.getStringOther(""ip_save"");
+  if (ip_save == null || ip_save.isEmpty() || ip_save.equals(""def"")) {
+    ArrayList<EditPromptBean.EditPromptData> arrayList=new ArrayList<>();
+    EditPromptBean.EditPromptData editPromptData=new EditPromptBean.EditPromptData();
+    editPromptData.setIp(ip);
+    editPromptData.setConnection(0);
+    arrayList.add(editPromptData);
+    EditPromptBean editPromptBean=new EditPromptBean();
+    editPromptBean.setArrayList(arrayList);
+    String s=new Gson().toJson(editPromptBean);
+    UUtils.showLog(""缂栬緫妗嗗瓨鍏绗竴娆:"" + s);
+    SaveData.INSTANCE.saveStringOther(""ip_save"",s);
+  }
+ else {
+    try {
+      EditPromptBean editPromptBean=new Gson().fromJson(ip_save,EditPromptBean.class);
+      ArrayList<EditPromptBean.EditPromptData> arrayList=editPromptBean.getArrayList();
+      EditPromptBean.EditPromptData editPromptData=new EditPromptBean.EditPromptData();
+      editPromptData.setIp(ip);
+      editPromptData.setConnection(0);
+      arrayList.add(editPromptData);
+      ArrayList<EditPromptBean.EditPromptData> arrayList1=UUUtils.removeDuplicate_2(arrayList);
+      editPromptBean.setArrayList(arrayList1);
+      String s=new Gson().toJson(editPromptBean);
+      UUtils.showLog(""缂栬緫妗嗗瓨鍏澶氭]:"" + s);
+      SaveData.INSTANCE.saveStringOther(""ip_save"",s);
+    }
+ catch (    Exception e) {
+      e.printStackTrace();
+      SaveData.INSTANCE.saveStringOther(""ip_save"",""def"");
+    }
+  }
+  LoadingDialog loadingDialog=new LoadingDialog(TermuxActivity.this);
+  loadingDialog.getMsg().setText(UUtils.getString(R.string.姝ｅ湪杩炴帴鍒拌嚜瀹氫箟鏈嶅姟鍣));
+  loadingDialog.show();
+  new BaseHttpUtils().getUrl(ip + ""/repository/main.json"",new HttpResponseListenerBase(){
+    @Override public void onSuccessful(    @NotNull Message msg,    int mWhat){
+      loadingDialog.dismiss();
+      try {
+        ZDYDataBean zdyDataBean=new Gson().fromJson((String)msg.obj,ZDYDataBean.class);
+        DownLoadDialogBoom downLoadDialogBoom=new DownLoadDialogBoom(TermuxActivity.this);
+        downLoadDialogBoom.setIP(ip + ""/repository/main.json"");
+        downLoadDialogBoom.show();
+        downLoadDialogBoom.setCancelable(true);
+      }
+ catch (      Exception e) {
+        e.printStackTrace();
+        UUtils.showMsg(UUtils.getString(R.string.鏈嶅姟鍣ㄦ暟鎹));
+      }
+    }
+    @Override public void onFailure(    @org.jetbrains.annotations.Nullable Response<String> response,    @NotNull String msg,    int mWhat){
+      loadingDialog.dismiss();
+      UUtils.showMsg(UUtils.getString(R.string.鏃犳硶杩炴帴鍒拌嚜瀹氫箟鏈嶅姟鍣));
+    }
+  }
+,new HashMap<>(),5555);
+}",1,Code Smell
+"@Override public void onDrag(float dx,float dy){
+  if (mScaleDragDetector.isScaling()) {
+    return;
+  }
+  if (DEBUG) {
+    UILog.dTag(LOG_TAG,String.format(""onDrag: dx: %.2f. dy: %.2f"",dx,dy));
+  }
+  ImageView imageView=getImageView();
+  mSuppMatrix.postTranslate(dx,dy);
+  checkAndDisplayMatrix();
+  ViewParent parent=imageView.getParent();
+  if (mAllowParentInterceptOnEdge && !mScaleDragDetector.isScaling() && !mBlockParentIntercept) {
+    if (mScrollEdge == EDGE_BOTH || (mScrollEdge == EDGE_LEFT && dx >= 1f) || (mScrollEdge == EDGE_RIGHT && dx <= -1f)) {
+      if (null != parent) {
+        parent.requestDisallowInterceptTouchEvent(false);
+      }
+    }
+  }
+ else {
+    if (null != parent) {
+      parent.requestDisallowInterceptTouchEvent(true);
+    }
+  }
+}",1,Code Smell
+"private JMethod lookupMethod(JClass jclass,Subsignature subsignature,boolean allowAbstract){
+  for (JClass c=jclass; c != null; c=c.getSuperClass()) {
+    JMethod method=c.getDeclaredMethod(subsignature);
+    if (method != null && (allowAbstract || !method.isAbstract())) {
+      return method;
+    }
+  }
+  for (JClass c=jclass; c != null; c=c.getSuperClass()) {
+    for (    JClass iface : c.getInterfaces()) {
+      JMethod method=lookupMethodFromSuperinterfaces(iface,subsignature,allowAbstract);
+      if (method != null) {
+        return method;
+      }
+    }
+  }
+  return null;
+}
+",1,Code Smell
+"public void processChatInfo(long chatId,TLRPC.ChatFull info,ArrayList<TLRPC.User> usersArr,boolean fromCache,boolean force,boolean byChannelUsers,ArrayList<Integer> pinnedMessages,HashMap<Integer,MessageObject> pinnedMessagesMap,int totalPinnedCount,boolean pinnedEndReached){
+  AndroidUtilities.runOnUIThread(() -> {
+    if (fromCache && chatId > 0 && !byChannelUsers) {
+      long lastLoadedTime=loadedFullChats.get(chatId,0);
+      if (System.currentTimeMillis() - lastLoadedTime > 60 * 1000) {
+        loadFullChat(chatId,0,force);
+      }
+    }
+    if (info != null) {
+      if (fullChats.get(chatId) == null) {
+        fullChats.put(chatId,info);
+        getTranslateController().updateDialogFull(-chatId);
+      }
+      putUsers(usersArr,fromCache);
+      if (info.stickerset != null) {
+        getMediaDataController().getGroupStickerSetById(info.stickerset);
+      }
+      getNotificationCenter().postNotificationName(NotificationCenter.chatInfoDidLoad,info,0,byChannelUsers,false);
+    }
+    if (pinnedMessages != null) {
+      getNotificationCenter().postNotificationName(NotificationCenter.pinnedInfoDidLoad,-chatId,pinnedMessages,pinnedMessagesMap,totalPinnedCount,pinnedEndReached);
+    }
+  }
+);
+}",1,Code Smell
+"/** 
+ * Returns <tt>true</tt> iff the given  {@link Collection}s contain exactly the same elements with exactly the same cardinalities. <p> That is, iff the cardinality of <i>e</i> in <i>a</i> is equal to the cardinality of <i>e</i> in <i>b</i>, for each element <i>e</i> in <i>a</i> or <i>b</i>.
+ * @param a the first collection, must not be null
+ * @param b the second collection, must not be null
+ * @return <code>true</code> iff the collections contain the same elements with the same cardinalities.
+ */
+public static boolean isEqualCollection(final Collection a,final Collection b){
+  if (a.size() != b.size()) {
+    return false;
+  }
+ else {
+    Map mapa=getCardinalityMap(a);
+    Map mapb=getCardinalityMap(b);
+    if (mapa.size() != mapb.size()) {
+      return false;
+    }
+ else {
+      Iterator it=mapa.keySet().iterator();
+      while (it.hasNext()) {
+        Object obj=it.next();
+        if (getFreq(obj,mapa) != getFreq(obj,mapb)) {
+          return false;
+        }
+      }
+      return true;
+    }
+  }
+}
+",1,Code Smell
+"@Override public AppMemberSignInRecordSummaryRespVO getSignInRecordSummary(Long userId){
+  AppMemberSignInRecordSummaryRespVO summary=new AppMemberSignInRecordSummaryRespVO();
+  summary.setTotalDay(0);
+  summary.setContinuousDay(0);
+  summary.setTodaySignIn(false);
+  Long signCount=signInRecordMapper.selectCountByUserId(userId);
+  if (ObjUtil.equal(signCount,0L)) {
+    return summary;
+  }
+  summary.setTotalDay(signCount.intValue());
+  MemberSignInRecordDO lastRecord=signInRecordMapper.selectLastRecordByUserId(userId);
+  if (lastRecord == null) {
+    return summary;
+  }
+  summary.setTodaySignIn(DateUtils.isToday(lastRecord.getCreateTime()));
+  if (!summary.getTodaySignIn()) {
+    return summary;
+  }
+  summary.setContinuousDay(lastRecord.getDay());
+  return summary;
+}",0,Clean Code
+"private void setQSFooterText(){
+  try {
+    if (customQSFooterTextEnabled) {
+      TextView mBuildText=(TextView)getObjectField(QSFooterView,""mBuildText"");
+      setObjectField(QSFooterView,""mShouldShowBuildText"",customText.trim().length() > 0);
+      mBuildText.post(() -> {
+        mBuildText.setText(stringFormatter.formatString(customText));
+        mBuildText.setSelected(true);
+      }
+);
+    }
+ else {
+      callMethod(QSFooterView,""setBuildText"");
+    }
+  }
+ catch (  Throwable ignored) {
+  }
+}",1,Code Smell
+"/** 
+ * check判断
+ * @param method
+ * @return
+ */
+public static boolean checkStep(OperationMethod method,AbstractNodeTree node,OperationService service){
+  if (method == null || (method.getActionEnum() != PerformActionEnum.CHECK && method.getActionEnum() != PerformActionEnum.CHECK_NODE)) {
+    return false;
+  }
+  String argument=method.getParam(CHECK_PARAM);
+  if (StringUtil.isEmpty(argument)) {
+    return false;
+  }
+  try {
+    Boolean result=checkArgument(argument,method,node,service);
+    if (result == null) {
+      return false;
+    }
+    return result;
+  }
+ catch (  NumberFormatException e) {
+    LogUtil.e(TAG,""解析check出现异常： "" + e.getMessage(),e);
+    return false;
+  }
+}
+",1,Code Smell
+"@Override public void onPlayerStateChanged(boolean playWhenReady,int playbackState){
+  currentPlaybackState=playbackState;
+}
+@Override public void onPlayerStateChanged(boolean playWhenReady,int playbackState){
+  eventListener1States.add(playbackState);
+  if (playbackState == Player.STATE_READY) {
+    playerReference.get().stop(true);
+  }
+}
+@Override public void onPlayerStateChanged(boolean playWhenReady,int playbackState){
+  eventListener2States.add(playbackState);
+}
+@Override public void onPlayerStateChanged(boolean playWhenReady,int playbackState){
+  eventListenerPlayWhenReady.add(playWhenReady);
+  eventListenerStates.add(playbackState);
+  if (playbackState == Player.STATE_READY) {
+    playerReference.get().stop(true);
+  }
+}
+@Override public void onPlayerStateChanged(boolean playWhenReady,int playbackState){
+  if (playbackState == Player.STATE_READY && clockAtStartMs.get() == C.TIME_UNSET) {
+    clockAtStartMs.set(clock.elapsedRealtime());
+  }
+}",0,Clean Code
+"public static Info process(Node X){
+  if (X == null) {
+    return null;
+  }
+  Info leftInfo=process(X.left);
+  Info rightInfo=process(X.right);
+  int min=X.value;
+  int max=X.value;
+  Node maxSubBSTHead=null;
+  int maxSubBSTSize=0;
+  if (leftInfo != null) {
+    min=Math.min(min,leftInfo.min);
+    max=Math.max(max,leftInfo.max);
+    maxSubBSTHead=leftInfo.maxSubBSTHead;
+    maxSubBSTSize=leftInfo.maxSubBSTSize;
+  }
+  if (rightInfo != null) {
+    min=Math.min(min,rightInfo.min);
+    max=Math.max(max,rightInfo.max);
+    if (rightInfo.maxSubBSTSize > maxSubBSTSize) {
+      maxSubBSTHead=rightInfo.maxSubBSTHead;
+      maxSubBSTSize=rightInfo.maxSubBSTSize;
+    }
+  }
+  if ((leftInfo == null ? true : (leftInfo.maxSubBSTHead == X.left && leftInfo.max < X.value)) && (rightInfo == null ? true : (rightInfo.maxSubBSTHead == X.right && rightInfo.min > X.value))) {
+    maxSubBSTHead=X;
+    maxSubBSTSize=(leftInfo == null ? 0 : leftInfo.maxSubBSTSize) + (rightInfo == null ? 0 : rightInfo.maxSubBSTSize) + 1;
+  }
+  return new Info(maxSubBSTHead,maxSubBSTSize,min,max);
+}",1,Code Smell
+"public List<FlinkConnectorDTO> listConnector(Boolean isSource,Boolean isSink,String type) throws Exception {
+  String connectorUrl=String.format(""%s/sql/v1beta1/namespaces/default/connectors"",applicationProperties.getFlinkVvpEndpoint());
+  HttpResponse<String> response=Requests.get(connectorUrl,null,null);
+  JSONObject connectors=JSONObject.parseObject(response.body());
+  Stream<JSONObject> connectorList=connectors.getJSONArray(""connectors"").stream().filter(obj -> obj instanceof JSONObject).map(obj -> (JSONObject)obj);
+  if (isSource != null) {
+    connectorList=connectorList.filter(item -> isSource && item.containsKey(""source"") && item.getBoolean(""source""));
+  }
+  if (isSink != null) {
+    connectorList=connectorList.filter(item -> isSink && item.containsKey(""sink"") && item.getBoolean(""sink""));
+  }
+  if (type != null) {
+    connectorList=connectorList.filter(item -> StringUtils.equals(type,item.getString(""type"")));
+  }
+  return connectorList.map(FlinkConnectorDTO::new).collect(Collectors.toList());
+}",0,Clean Code
+"@Override public Integer onCompleted(Response response) throws Exception {
+  ip.setCheckRT(System.currentTimeMillis() - startTime);
+  int httpCode=response.getStatusCode();
+  if (HttpURLConnection.HTTP_OK == httpCode) {
+    healthCheckCommon.checkOK(ip,task,""http:"" + httpCode);
+    healthCheckCommon.reEvaluateCheckRT(System.currentTimeMillis() - startTime,task,switchDomain.getHttpHealthParams());
+  }
+ else   if (HttpURLConnection.HTTP_UNAVAILABLE == httpCode || HttpURLConnection.HTTP_MOVED_TEMP == httpCode) {
+    healthCheckCommon.checkFail(ip,task,""http:"" + httpCode);
+    healthCheckCommon.reEvaluateCheckRT(task.getCheckRTNormalized() * 2,task,switchDomain.getHttpHealthParams());
+  }
+ else {
+    healthCheckCommon.checkFailNow(ip,task,""http:"" + httpCode);
+    healthCheckCommon.reEvaluateCheckRT(switchDomain.getHttpHealthParams().getMax(),task,switchDomain.getHttpHealthParams());
+  }
+  return httpCode;
+}",1,Code Smell
+"/** 
+ * 拼装逻辑删除的条件
+ * @param searchDto 搜索dto
+ * @param logicDelDto 逻辑删除dto
+ */
+private void setLogicDelQueryStr(SearchDto searchDto,LogicDelDto logicDelDto){
+  if (logicDelDto != null && StrUtil.isNotEmpty(logicDelDto.getLogicDelField()) && StrUtil.isNotEmpty(logicDelDto.getLogicNotDelValue())) {
+    String result;
+    String queryStr=searchDto.getQueryStr();
+    String logicStr=logicDelDto.getLogicDelField() + "":"" + logicDelDto.getLogicNotDelValue();
+    if (StrUtil.isNotEmpty(queryStr)) {
+      result=""("" + queryStr + "") AND ""+ logicStr;
+    }
+ else {
+      result=logicStr;
+    }
+    searchDto.setQueryStr(result);
+  }
+}
+",1,Code Smell
+"public static void main(String[] args){
+  String str=System.getProperty(""io.opentelemetry.javaagent.slf4j.simpleLogger.defaultLogLevel"");
+  if ((str == null) || (str != null && !str.equalsIgnoreCase(""debug""))) {
+    throw new IllegalStateException(""debug mode not set"");
+  }
+}",1,Code Smell
+"private void activateExtractor(){
+  if (invVersionTracker.stillWaiting(invManipulation))   return;
+  BlockState blockState=getBlockState();
+  Direction facing=AbstractFunnelBlock.getFunnelFacing(blockState);
+  if (facing == null)   return;
+  boolean trackingEntityPresent=true;
+  AABB area=getEntityOverflowScanningArea();
+  if (lastObserved == null) {
+    trackingEntityPresent=false;
+  }
+ else {
+    ItemEntity lastEntity=lastObserved.get();
+    if (lastEntity == null || !lastEntity.isAlive() || !lastEntity.getBoundingBox().intersects(area)) {
+      trackingEntityPresent=false;
+      lastObserved=null;
+    }
+  }
+  if (trackingEntityPresent)   return;
+  int amountToExtract=getAmountToExtract();
+  ExtractionCountMode mode=getModeToExtract();
+  ItemStack stack=invManipulation.simulate().extract(mode,amountToExtract);
+  if (stack.isEmpty()) {
+    invVersionTracker.awaitNewVersion(invManipulation);
+    return;
+  }
+  for (  ItemEntity itemEntity : level.getEntitiesOfClass(ItemEntity.class,area)) {
+    lastObserved=new WeakReference<>(itemEntity);
+    return;
+  }
+  stack=invManipulation.extract(mode,amountToExtract);
+  if (stack.isEmpty())   return;
+  flap(false);
+  onTransfer(stack);
+  Vec3 outputPos=VecHelper.getCenterOf(worldPosition);
+  boolean vertical=facing.getAxis().isVertical();
+  boolean up=facing == Direction.UP;
+  outputPos=outputPos.add(Vec3.atLowerCornerOf(facing.getNormal()).scale(vertical ? up ? .15f : .5f : .25f));
+  if (!vertical)   outputPos=outputPos.subtract(0,.45f,0);
+  Vec3 motion=Vec3.ZERO;
+  if (up)   motion=new Vec3(0,4 / 16f,0);
+  ItemEntity item=new ItemEntity(level,outputPos.x,outputPos.y,outputPos.z,stack.copy());
+  item.setDefaultPickUpDelay();
+  item.setDeltaMovement(motion);
+  level.addFreshEntity(item);
+  lastObserved=new WeakReference<>(item);
+  startCooldown();
+}",1,Code Smell
+"/** 
+ * Stashes a value for the executor. Given values are de-duplicated if identical (see  {@link java.util.IdentityHashMap}). <p>For instance, to pass  {@code ArrayList} to your method, you can use{@code Expressions.call(method, implementor.stash(arrayList))}. <p>For simple literals (strings, numbers) the result is equivalent to {@link com.qihoo.qsql.org.apache.calcite.linq4j.tree.Expressions#constant(Object,java.lang.reflect.Type)}. <p>Note: the input value is held in memory as long as the statement is alive. If you are using just a subset of its content, consider creating a slimmer holder.
+ * @param input Value to be stashed
+ * @param clazz Java class type of the value when it is used
+ * @param < T > Java class type of the value when it is used
+ * @return Expression that will represent {@code input} in runtime
+ */
+public <T>Expression stash(T input,Class<? super T> clazz){
+  if (input == null || input instanceof String || input instanceof Boolean || input instanceof Byte || input instanceof Short || input instanceof Integer || input instanceof Long || input instanceof Float || input instanceof Double) {
+    return Expressions.constant(input,clazz);
+  }
+  ParameterExpression cached=stashedParameters.get(input);
+  if (cached != null) {
+    return cached;
+  }
+  final String name=""v"" + map.size() + ""stashed"";
+  final ParameterExpression x=Expressions.variable(clazz,name);
+  map.put(name,input);
+  stashedParameters.put(input,x);
+  return x;
+}",1,Code Smell
+"private Expression toRows(PhysType physType,Expression expression){
+  if (physType.getFormat() == JavaRowFormat.SCALAR && Object[].class.isAssignableFrom(elementType) && getRowType().getFieldCount() == 1 && (table.unwrap(ScannableTable.class) != null || table.unwrap(FilterableTable.class) != null || table.unwrap(ProjectableFilterableTable.class) != null)) {
+    return Expressions.call(BuiltInMethod.SLICE0.method,expression);
+  }
+  JavaRowFormat oldFormat=format();
+  if (physType.getFormat() == oldFormat && !hasCollectionField(rowType)) {
+    return expression;
+  }
+  final ParameterExpression row_=Expressions.parameter(elementType,""row"");
+  final int fieldCount=table.getRowType().getFieldCount();
+  List<Expression> expressionList=new ArrayList<>(fieldCount);
+  for (int i=0; i < fieldCount; i++) {
+    expressionList.add(fieldExpression(row_,i,physType,oldFormat));
+  }
+  return Expressions.call(expression,BuiltInMethod.SELECT.method,Expressions.lambda(Function1.class,physType.record(expressionList),row_));
+}",1,Code Smell
+"@Subscribe public void cormorantSyncStatus(CormorantSyncStatusEvent event){
+  editConnection.setDisable(false);
+  if (connectionService != null && connectionService.isRunning() && event.getProgress() < 100) {
+    DateFormat dateFormat=new SimpleDateFormat(""yyyy/MM/dd HH:mm"");
+    testResults.appendText(""\nThe connection to the Bitcoin Core node was successful, but it is still syncing and cannot be used yet."");
+    testResults.appendText(""\nCurrently "" + event.getProgress() + ""% completed to date ""+ dateFormat.format(event.getTip()));
+    testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE,null));
+    connectionService.cancel();
+  }
+}",0,Clean Code
+"/** 
+ * Returns the root relational expression, creating a  {@link LogicalProject}if necessary to remove fields that are not needed. 
+ */
+public RelNode project(){
+  return project(false);
+}
+/** 
+ * Returns the root relational expression as a  {@link LogicalProject}.
+ * @param force Create a Project even if all fields are used 
+ */
+public RelNode project(boolean force){
+  if (isRefTrivial() && (SqlKind.DML.contains(kind) || !force || rel instanceof LogicalProject)) {
+    return rel;
+  }
+  final List<RexNode> projects=new ArrayList<>();
+  final RexBuilder rexBuilder=rel.getCluster().getRexBuilder();
+  for (  Pair<Integer,String> field : fields) {
+    projects.add(rexBuilder.makeInputRef(rel,field.left));
+  }
+  return LogicalProject.create(rel,projects,Pair.right(fields));
+}
+",1,Code Smell
+"static void checkSourceAndAlia(List<Froms> list){
+  for (  Froms froms : list) {
+    final String source=froms.getSource();
+    if (SqliStringUtil.isNotNull(source) && !Parser.contains(source)) {
+      String tip="""";
+      if (froms.getJoin().getJoin() != null) {
+        tip+=froms.getJoin().getJoin().replace(""_"","" "");
+      }
+ else {
+        tip+=SqlScript.FROM;
+      }
+      throw new ParsingException(tip + SqlScript.SPACE + source);
+    }
+    String alia=froms.getAlia();
+    if (source != null && alia != null && !alia.equals(source) && Parser.contains(alia)) {
+      throw new NotSupportedException(""not support table alia = firstLetterLower(parsedEntityName), name+alia: "" + source + "" ""+ alia);
+    }
+  }
+}
+",0,Clean Code
+"@Override public void run(){
+  if (stopped) {
+    timer.cancel();
+  }
+  try {
+    if (syncing) {
+      BlockchainInfo blockchainInfo=getBitcoindService().getBlockchainInfo();
+      if (blockchainInfo.initialblockdownload() && !isEmptyBlockchain(blockchainInfo)) {
+        int percent=blockchainInfo.getProgressPercent();
+        Date tipDate=blockchainInfo.getTip();
+        Platform.runLater(() -> EventManager.get().post(new CormorantSyncStatusEvent(""Syncing"" + (percent < 100 ? "" ("" + percent + ""%)"" : """"),percent,tipDate)));
+        return;
+      }
+ else {
+        syncing=false;
+        syncingLock.lock();
+        try {
+          syncingCondition.signal();
+        }
+  finally {
+          syncingLock.unlock();
+        }
+      }
+    }
+    if (lastBlock != null && tip != null) {
+      String blockhash=getBitcoindService().getBlockHash(tip.height());
+      if (!lastBlock.equals(blockhash)) {
+        log.warn(""Reorg detected, block height "" + tip.height() + "" was ""+ lastBlock+ "" and now is ""+ blockhash);
+        lastBlock=null;
+      }
+    }
+    if (mempoolEntriesState == MempoolEntriesState.INITIALIZED && (++timerTaskCount + 1) % 12 == 0) {
+      updateMempoolEntries();
+    }
+    ListSinceBlock listSinceBlock=getListSinceBlock(lastBlock);
+    String currentBlock=lastBlock;
+    updateStore(listSinceBlock);
+    if (currentBlock == null || !currentBlock.equals(listSinceBlock.lastblock())) {
+      VerboseBlockHeader blockHeader=getBitcoindService().getBlockHeader(listSinceBlock.lastblock());
+      tip=blockHeader.getBlockHeader();
+      Cormorant.getEventBus().post(tip);
+    }
+    if (scanningLock.tryLock()) {
+      scanningLock.unlock();
+    }
+ else {
+      WalletInfo walletInfo=getBitcoindService().getWalletInfo();
+      if (walletInfo.scanning().isScanning()) {
+        Set<Wallet> scanningWallets=getScanningWallets();
+        int percent=walletInfo.scanning().getPercent();
+        Duration remainingDuration=walletInfo.scanning().getRemaining();
+        if (percent > 0) {
+          Platform.runLater(() -> EventManager.get().post(new CormorantScanStatusEvent(""Scanning"" + (percent < 100 ? "" ("" + percent + ""%)"" : """"),scanningWallets,percent,remainingDuration)));
+        }
+      }
+    }
+  }
+ catch (  Exception e) {
+    lastPollException=e;
+    log.warn(""Error polling Bitcoin Core"",e);
+    if (syncing) {
+      syncingLock.lock();
+      try {
+        syncingCondition.signal();
+      }
+  finally {
+        syncingLock.unlock();
+      }
+    }
+  }
+}",1,Code Smell
+"private Result<Void> modifyRetentionTime(Long clusterPhyId,List<ReassignSubJobPO> subJobPOList,String operator){
+  Map<String,Long> needModifyTopicRetentionTimeMap=new HashMap<>();
+  for (  ReassignSubJobPO subJobPO : subJobPOList) {
+    ReassignSubJobExtendData extendData=ConvertUtil.str2ObjByJson(subJobPO.getExtendData(),ReassignSubJobExtendData.class);
+    if (extendData == null || extendData.getOriginalRetentionTimeUnitMs() == null || extendData.getReassignRetentionTimeUnitMs() == null || extendData.getOriginalRetentionTimeUnitMs().equals(extendData.getReassignRetentionTimeUnitMs())) {
+      continue;
+    }
+    needModifyTopicRetentionTimeMap.put(subJobPO.getTopicName(),extendData.getReassignRetentionTimeUnitMs());
+  }
+  Result<Void> returnRV=Result.buildSuc();
+  for (  Map.Entry<String,Long> entry : needModifyTopicRetentionTimeMap.entrySet()) {
+    Map<String,String> changedProps=new HashMap<>();
+    changedProps.put(TopicConfig0100.RETENTION_MS_CONFIG,String.valueOf(entry.getValue()));
+    Result<Void> rv=topicConfigService.modifyTopicConfig(new KafkaTopicConfigParam(clusterPhyId,entry.getKey(),changedProps),operator);
+    if (rv == null || rv.failed()) {
+      returnRV=rv;
+    }
+  }
+  return returnRV;
+}",0,Clean Code
+"/** 
+ * Dismisses the popup if it is no longer valid
+ */
+public static void dismissInvalidPopup(BaseDraggingActivity activity){
+  PopupContainerWithArrow popup=getOpen(activity);
+  if (popup != null && (!popup.mOriginalIcon.isAttachedToWindow() || !canShow(popup.mOriginalIcon,(ItemInfo)popup.mOriginalIcon.getTag()))) {
+    popup.animateClose();
+  }
+}
+",0,Clean Code
+"/** 
+ * 鏍￠獙楠岃瘉鐮�
+ * @param username 鐢ㄦ埛鍚�
+ * @param code     楠岃瘉鐮�
+ * @param uuid     鍞竴鏍囪瘑
+ * @return 缁撴灉
+ */
+public void validateCaptcha(String username,String code,String uuid){
+  String verifyKey=CacheConstants.CAPTCHA_CODE_KEY + StringUtils.nvl(uuid,"""");
+  String captcha=redisCache.getCacheObject(verifyKey);
+  redisCache.deleteObject(verifyKey);
+  if (captcha == null) {
+    throw new CaptchaExpireException();
+  }
+  if (!code.equalsIgnoreCase(captcha)) {
+    throw new CaptchaException();
+  }
+}
+",0,Clean Code
+"private DashManifest getManifest(Uri uri,InputStream mpdContent){
+  DashManifestParser parser=new StaticDashManifestParser();
+  DashManifest result;
+  try {
+    result=parser.parse(uri,mpdContent);
+  }
+ catch (  IOException e) {
+    throw new IllegalStateException(""Malformed mpd file:\n"" + mpdContent,e);
+  }
+  return result;
+}
+private DashManifest getManifest(Uri uri,String mpdContent){
+  DashManifestParser parser=new StaticDashManifestParser();
+  DashManifest result;
+  try {
+    result=parser.parse(uri,FileHelpers.toStream(mpdContent));
+  }
+ catch (  IOException e) {
+    throw new IllegalStateException(""Malformed mpd file:\n"" + mpdContent,e);
+  }
+  return result;
+}
+",0,Clean Code
+"private static boolean loadLibrary(){
+  try {
+    String osName=System.getProperty(""os.name"");
+    String osArch=System.getProperty(""os.arch"");
+    if (osName.startsWith(""Mac"") && osArch.equals(""aarch64"")) {
+      NativeUtils.loadLibraryFromJar(""/native/osx/aarch64/libzbar.dylib"");
+    }
+ else     if (osName.startsWith(""Mac"")) {
+      NativeUtils.loadLibraryFromJar(""/native/osx/x64/libzbar.dylib"");
+    }
+ else     if (osName.startsWith(""Windows"")) {
+      NativeUtils.loadLibraryFromJar(""/native/windows/x64/iconv-2.dll"");
+      NativeUtils.loadLibraryFromJar(""/native/windows/x64/zbar.dll"");
+    }
+ else     if (osArch.equals(""aarch64"")) {
+      NativeUtils.loadLibraryFromJar(""/native/linux/aarch64/libzbar.so"");
+    }
+ else {
+      NativeUtils.loadLibraryFromJar(""/native/linux/x64/libzbar.so"");
+    }
+    return true;
+  }
+ catch (  Exception e) {
+    log.warn(""Could not load ZBar native libraries, disabling. "" + e.getMessage());
+  }
+  return false;
+}",1,Code Smell
+"private byte[] getTSAResponse(byte[] request) throws IOException {
+  LOG.debug(""Opening connection to TSA server"");
+  URLConnection connection=url.openConnection();
+  connection.setDoOutput(true);
+  connection.setDoInput(true);
+  connection.setRequestProperty(""Content-Type"",""application/timestamp-query"");
+  LOG.debug(""Established connection to TSA server"");
+  if (username != null && password != null && !username.isEmpty() && !password.isEmpty()) {
+    String contentEncoding=connection.getContentEncoding();
+    if (contentEncoding == null) {
+      contentEncoding=StandardCharsets.UTF_8.name();
+    }
+    connection.setRequestProperty(""Authorization"",""Basic "" + new String(Base64.getEncoder().encode((username + "":"" + password).getBytes(contentEncoding))));
+  }
+  try (OutputStream output=connection.getOutputStream()){
+    output.write(request);
+  }
+ catch (  IOException ex) {
+    LOG.error(""Exception when writing to {}"",this.url,ex);
+    throw ex;
+  }
+  LOG.debug(""Waiting for response from TSA server"");
+  byte[] response;
+  try (InputStream input=connection.getInputStream()){
+    response=input.readAllBytes();
+  }
+ catch (  IOException ex) {
+    LOG.error(""Exception when reading from {}"",this.url,ex);
+    throw ex;
+  }
+  LOG.debug(""Received response from TSA server"");
+  return response;
+}",0,Clean Code
+"@Override protected void onDraw(Canvas canvas){
+  int width=getWidth(), height=getHeight();
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+  int borderWidth=mIsSelected ? mSelectedBorderWidth : mBorderWidth;
+  if (mBitmap == null || mBitmapShader == null) {
+    drawBorder(canvas,borderWidth);
+    return;
+  }
+  if (mWidth != width || mHeight != height || mNeedResetShader) {
+    mWidth=width;
+    mHeight=height;
+    updateBitmapShader();
+  }
+  drawBitmap(canvas,borderWidth);
+  drawBorder(canvas,borderWidth);
+}",0,Clean Code
+"/** 
+ * Gets preview content of the article specified with the given article id.
+ * @param articleId the given article id
+ * @param context   the specified request context
+ * @return preview content
+ */
+public String getArticlePreviewContent(final String articleId,final RequestContext context){
+  final JSONObject article=getArticle(articleId);
+  if (null == article) {
+    return null;
+  }
+  final int articleType=article.optInt(Article.ARTICLE_TYPE);
+  if (Article.ARTICLE_TYPE_C_THOUGHT == articleType) {
+    return null;
+  }
+  Stopwatchs.start(""Get preview content"");
+  try {
+    final int length=Integer.valueOf(""150"");
+    String ret=article.optString(Article.ARTICLE_CONTENT);
+    final String authorId=article.optString(Article.ARTICLE_AUTHOR_ID);
+    final JSONObject author=userQueryService.getUser(authorId);
+    if (null != author && UserExt.USER_STATUS_C_INVALID == author.optInt(UserExt.USER_STATUS) || Article.ARTICLE_STATUS_C_INVALID == article.optInt(Article.ARTICLE_STATUS)) {
+      return Jsoup.clean(langPropsService.get(""articleContentBlockLabel""),Safelist.none());
+    }
+    final Set<String> userNames=userQueryService.getUserNames(ret);
+    final JSONObject currentUser=Sessions.getUser();
+    final String currentUserName=null == currentUser ? """" : currentUser.optString(User.USER_NAME);
+    final String authorName=author.optString(User.USER_NAME);
+    if (Article.ARTICLE_TYPE_C_DISCUSSION == articleType && !authorName.equals(currentUserName)) {
+      boolean invited=false;
+      for (      final String userName : userNames) {
+        if (userName.equals(currentUserName)) {
+          invited=true;
+          break;
+        }
+      }
+      if (!invited) {
+        String blockContent=langPropsService.get(""articleDiscussionLabel"");
+        blockContent=blockContent.replace(""{user}"",UserExt.getUserLink(authorName));
+        return blockContent;
+      }
+    }
+    ret=Emotions.convert(ret);
+    ret=Markdowns.toHTML(ret);
+    ret=Jsoup.clean(ret,Safelist.none());
+    if (ret.length() >= length) {
+      ret=StringUtils.substring(ret,0,length) + "" ...."";
+    }
+    return ret;
+  }
+  finally {
+    Stopwatchs.end();
+  }
+}",1,Code Smell
+"public void updateUserInfoPremiumBlocked(long userId,boolean contact_require_premium){
+  storageQueue.postRunnable(() -> {
+    SQLiteCursor cursor=null;
+    SQLitePreparedStatement state=null;
+    try {
+      TLRPC.UserFull userFull=null;
+      cursor=database.queryFinalized(""SELECT uid, info, pinned FROM user_settings WHERE uid = "" + userId);
+      boolean exist=cursor.next();
+      if (exist) {
+        NativeByteBuffer data=cursor.byteBufferValue(1);
+        userFull=TLRPC.UserFull.TLdeserialize(data,data.readInt32(true),true);
+        if (userFull != null) {
+          userFull.pinned_msg_id=cursor.intValue(2);
+        }
+        data.reuse();
+      }
+      cursor.dispose();
+      cursor=null;
+      if (!exist || userFull == null || userFull.contact_require_premium == contact_require_premium) {
+        return;
+      }
+      userFull.contact_require_premium=contact_require_premium;
+      state=database.executeFast(""REPLACE INTO user_settings VALUES(?, ?, ?)"");
+      NativeByteBuffer data=new NativeByteBuffer(userFull.getObjectSize());
+      userFull.serializeToStream(data);
+      state.bindLong(1,userId);
+      state.bindByteBuffer(2,data);
+      state.bindInteger(3,userFull.pinned_msg_id);
+      state.step();
+      state.dispose();
+      state=null;
+      data.reuse();
+    }
+ catch (    Exception e) {
+      checkSQLException(e);
+    }
+ finally {
+      if (state != null) {
+        state.dispose();
+      }
+      if (cursor != null) {
+        cursor.dispose();
+      }
+    }
+  }
+);
+}",0,Clean Code
+"public Criteria andGmtModifiedIsNull(){
+  addCriterion(""gmt_modified is null"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedIsNull(){
+  addCriterion(""gmt_modified is null"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedIsNull(){
+  addCriterion(""gmt_modified is null"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedIsNull(){
+  addCriterion(""gmt_modified is null"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedIsNull(){
+  addCriterion(""gmt_modified is null"");
+  return (Criteria)this;
+}
+public Criteria andGmtModifiedIsNull(){
+  addCriterion(""gmt_modified is null"");
+  return (Criteria)this;
+}
+",0,Clean Code
+"@Override public void apply(RequestTemplate template){
+  String currentXid=RootContext.getXID();
+  if (StrUtil.isNotBlank(currentXid) && !template.url().startsWith(Auth.CHECK_TOKEN_URI) && !template.url().startsWith(Auth.CHECK_RBAC_URI)) {
+    template.header(RootContext.KEY_XID,currentXid);
+  }
+}
+",0,Clean Code
+"public PollOptionStatusDisplayItem(String parentID,Poll poll,int optionIndex,BaseStatusListFragment parentFragment,Status status){
+  super(parentID,parentFragment);
+  this.optionIndex=optionIndex;
+  option=poll.options.get(optionIndex);
+  this.poll=poll;
+  this.status=status;
+  text=HtmlParser.parseCustomEmoji(option.title,poll.emojis);
+  emojiHelper.setText(text);
+  showResults=poll.isExpired() || poll.voted;
+  int total=poll.votersCount > 0 ? poll.votersCount : poll.votesCount;
+  if (showResults && option.votesCount != null && total > 0) {
+    votesFraction=(float)option.votesCount / (float)total;
+    int mostVotedCount=0;
+    for (    Poll.Option opt : poll.options)     mostVotedCount=Math.max(mostVotedCount,opt.votesCount);
+    isMostVoted=option.votesCount == mostVotedCount;
+  }
+}",0,Clean Code
+"@Override public Integer getNextLogLine(){
+  if (result == null) {
+    return null;
+  }
+  if (result instanceof JobLogResult) {
+    return ((JobLogResult)result).getFromLine();
+  }
+  if (result instanceof OpenLogResult2 && ((OpenLogResult2)result).getResult() != null && ((OpenLogResult2)result).getResult().getLog() != null) {
+    return getNumOfLines(((OpenLogResult2)result).getResult().getLog()[UJESConstants.IDX_FOR_LOG_TYPE_ALL]);
+  }
+  return null;
+}",1,Code Smell
+"/** 
+ * Returns DrmInitData from leaf atoms. 
+ */
+private static DrmInitData getDrmInitDataFromAtoms(List<Atom.LeafAtom> leafChildren){
+  ArrayList<SchemeData> schemeDatas=null;
+  int leafChildrenSize=leafChildren.size();
+  for (int i=0; i < leafChildrenSize; i++) {
+    LeafAtom child=leafChildren.get(i);
+    if (child.type == Atom.TYPE_pssh) {
+      if (schemeDatas == null) {
+        schemeDatas=new ArrayList<>();
+      }
+      byte[] psshData=child.data.data;
+      UUID uuid=PsshAtomUtil.parseUuid(psshData);
+      if (uuid == null) {
+        Log.w(TAG,""Skipped pssh atom (failed to extract uuid)"");
+      }
+ else {
+        schemeDatas.add(new SchemeData(uuid,MimeTypes.VIDEO_MP4,psshData));
+      }
+    }
+  }
+  return schemeDatas == null ? null : new DrmInitData(schemeDatas);
+}",0,Clean Code
+"private void putToAllStories(long dialogId,TL_stories.PeerStories stories){
+  TL_stories.PeerStories old=allStoriesMap.get(dialogId);
+  if (old != null && old.stories != null && !old.stories.isEmpty() && stories != null && stories.stories != null && !stories.stories.isEmpty()) {
+    for (int i=0; i < stories.stories.size(); ++i) {
+      if (stories.stories.get(i) instanceof TL_stories.TL_storyItemSkipped) {
+        int storyId=stories.stories.get(i).id;
+        for (int j=0; j < old.stories.size(); ++j) {
+          if (old.stories.get(j).id == storyId && old.stories.get(j) instanceof TL_stories.TL_storyItem) {
+            stories.stories.set(i,old.stories.get(j));
+            break;
+          }
+        }
+      }
+    }
+  }
+  allStoriesMap.put(dialogId,stories);
+}",1,Code Smell
+"@Override public boolean keyPressed(int keyCode,int scanCode,int modifiers){
+  if (this.prompt != null && this.prompt.keyPressed(keyCode,scanCode,modifiers)) {
+    return true;
+  }
+  if (this.prompt == null && keyCode == GLFW.GLFW_KEY_P && (modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+    Minecraft.getInstance().setScreen(new VideoSettingsScreen(this.prevScreen,Minecraft.getInstance().options));
+    return true;
+  }
+  return super.keyPressed(keyCode,scanCode,modifiers);
+}",0,Clean Code
+"@Override public int read(byte[] buffer,int offset,int readLength) throws UdpDataSourceException {
+  if (readLength == 0) {
+    return 0;
+  }
+  if (packetRemaining == 0) {
+    try {
+      socket.receive(packet);
+    }
+ catch (    IOException e) {
+      throw new UdpDataSourceException(e);
+    }
+    packetRemaining=packet.getLength();
+    bytesTransferred(packetRemaining);
+  }
+  int packetOffset=packet.getLength() - packetRemaining;
+  int bytesToRead=Math.min(packetRemaining,readLength);
+  System.arraycopy(packetBuffer,packetOffset,buffer,offset,bytesToRead);
+  packetRemaining-=bytesToRead;
+  return bytesToRead;
+}",0,Clean Code
+"public static int getLanguageOnSpacebarFormatType(@NonNull final RichInputMethodSubtype subtype){
+  if (subtype.isNoLanguage()) {
+    return FORMAT_TYPE_FULL_LOCALE;
+  }
+  if (sEnabledSubtypes.size() < 2 && sIsSystemLanguageSameAsInputLanguage && Settings.getInstance().getCurrent().mSecondaryLocales.isEmpty()) {
+    return FORMAT_TYPE_NONE;
+  }
+  final Locale locale=subtype.getLocale();
+  if (locale == null) {
+    return FORMAT_TYPE_NONE;
+  }
+  final String keyboardLanguage=locale.getLanguage();
+  final String keyboardLayout=subtype.getKeyboardLayoutSetName();
+  int sameLanguageAndLayoutCount=0;
+  for (  final InputMethodSubtype ims : sEnabledSubtypes) {
+    final String language=SubtypeUtilsKt.locale(ims).getLanguage();
+    if (keyboardLanguage.equals(language) && keyboardLayout.equals(SubtypeLocaleUtils.getKeyboardLayoutSetName(ims))) {
+      sameLanguageAndLayoutCount++;
+    }
+  }
+  return sameLanguageAndLayoutCount > 1 ? FORMAT_TYPE_FULL_LOCALE : FORMAT_TYPE_LANGUAGE_ONLY;
+}",0,Clean Code
+"void newPassword(Editable editable){
+  if (!TextUtils.isEmpty(oldPasswordEditText.getText()) && !TextUtils.isEmpty(confirmPasswordEditText.getText()) && !TextUtils.isEmpty(editable)) {
+    confirmButton.setEnabled(true);
+  }
+ else {
+    confirmButton.setEnabled(false);
+  }
+}
+",1,Code Smell
+"/** 
+ * Attempt to install the java 8 runtime, if necessary
+ * @param am App context
+ */
+public static void unpackRuntime(AssetManager am){
+  String rt_version=null;
+  String current_rt_version=MultiRTUtils.__internal__readBinpackVersion(""Internal"");
+  try {
+    rt_version=Tools.read(am.open(""components/jre/version""));
+  }
+ catch (  IOException e) {
+    Log.e(""JREAuto"",""JRE was not included on this APK."",e);
+  }
+  String exactJREName=MultiRTUtils.getExactJreName(8);
+  if (current_rt_version == null && exactJREName != null && !exactJREName.equals(""Internal""))   return;
+  if (rt_version == null)   return;
+  if (rt_version.equals(current_rt_version))   return;
+  String finalRt_version=rt_version;
+  sExecutorService.execute(() -> {
+    try {
+      MultiRTUtils.installRuntimeNamedBinpack(am.open(""components/jre/universal.tar.xz""),am.open(""components/jre/bin-"" + archAsString(Tools.DEVICE_ARCHITECTURE) + "".tar.xz""),""Internal"",finalRt_version);
+      MultiRTUtils.postPrepare(""Internal"");
+    }
+ catch (    IOException e) {
+      Log.e(""JREAuto"",""Internal JRE unpack failed"",e);
+    }
+  }
+);
+}",0,Clean Code
+"/** 
+ * Dispatches  {@link #onLoadCompleted(int,MediaPeriodId,LoadEventInfo,MediaLoadData)}. 
+ */
+public void loadCompleted(DataSpec dataSpec,Uri uri,Map<String,List<String>> responseHeaders,int dataType,long elapsedRealtimeMs,long loadDurationMs,long bytesLoaded){
+  loadCompleted(dataSpec,uri,responseHeaders,dataType,C.TRACK_TYPE_UNKNOWN,null,C.SELECTION_REASON_UNKNOWN,null,C.TIME_UNSET,C.TIME_UNSET,elapsedRealtimeMs,loadDurationMs,bytesLoaded);
+}
+/** 
+ * Dispatches  {@link #onLoadCompleted(int,MediaPeriodId,LoadEventInfo,MediaLoadData)}. 
+ */
+public void loadCompleted(DataSpec dataSpec,Uri uri,Map<String,List<String>> responseHeaders,int dataType,int trackType,@Nullable Format trackFormat,int trackSelectionReason,@Nullable Object trackSelectionData,long mediaStartTimeUs,long mediaEndTimeUs,long elapsedRealtimeMs,long loadDurationMs,long bytesLoaded){
+  loadCompleted(new LoadEventInfo(dataSpec,uri,responseHeaders,elapsedRealtimeMs,loadDurationMs,bytesLoaded),new MediaLoadData(dataType,trackType,trackFormat,trackSelectionReason,trackSelectionData,adjustMediaTime(mediaStartTimeUs),adjustMediaTime(mediaEndTimeUs)));
+}
+/** 
+ * Dispatches  {@link #onLoadCompleted(int,MediaPeriodId,LoadEventInfo,MediaLoadData)}. 
+ */
+public void loadCompleted(LoadEventInfo loadEventInfo,MediaLoadData mediaLoadData){
+  for (  ListenerAndHandler listenerAndHandler : listenerAndHandlers) {
+    final MediaSourceEventListener listener=listenerAndHandler.listener;
+    postOrRun(listenerAndHandler.handler,() -> listener.onLoadCompleted(windowIndex,mediaPeriodId,loadEventInfo,mediaLoadData));
+  }
+}
+",0,Clean Code
+"@Override public void execute(@NonNull final LauncherAppState app,@NonNull final BgDataModel dataModel,@NonNull final AllAppsList apps){
+  apps.addPromiseApp(app.getContext(),sessionInfo);
+  bindApplicationsIfNeeded();
+}
+@Override public void execute(@NonNull final LauncherAppState app,@NonNull final BgDataModel dataModel,@NonNull final AllAppsList apps){
+  final IntSet removedIds=new IntSet();
+synchronized (dataModel) {
+    for (    ItemInfo info : dataModel.itemsIdMap) {
+      if (info instanceof WorkspaceItemInfo && ((WorkspaceItemInfo)info).hasPromiseIconUi() && user.equals(info.user)&& info.getIntent() != null && TextUtils.equals(packageName,info.getIntent().getPackage())) {
+        removedIds.add(info.id);
+      }
+    }
+  }
+  if (!removedIds.isEmpty()) {
+    deleteAndBindComponentsRemoved(ItemInfoMatcher.ofItemIds(removedIds),""removed because install session failed"");
+  }
+}
+@Override public void execute(@NonNull final LauncherAppState app,@NonNull final BgDataModel dataModel,@NonNull final AllAppsList apps){
+  dataModel.widgetsModel.onPackageIconsUpdated(updatedPackages,user,app);
+  bindUpdatedWidgets(dataModel);
+}
+void execute(@NonNull Callbacks callbacks);
+@Override public void execute(@NonNull final LauncherAppState app,@NonNull final BgDataModel dataModel,@NonNull final AllAppsList apps){
+  WorkspaceItemInfo info=itemProvider.get();
+  getModelWriter().updateItemInDatabase(info);
+  ArrayList<WorkspaceItemInfo> update=new ArrayList<>();
+  update.add(info);
+  bindUpdatedWorkspaceItems(update);
+}
+@Override public void execute(@NonNull final LauncherAppState app,@NonNull final BgDataModel dataModel,@NonNull final AllAppsList apps){
+  dataModel.widgetsModel.update(app,packageUser);
+  bindUpdatedWidgets(dataModel);
+}
+",0,Clean Code
+"/** 
+ * For olcut.
+ */
+private ImageConverter(){
+}
+/** 
+ * Builds an image converter for images of the supplied size.
+ * @param inputName The input name.
+ * @param width The image width.
+ * @param height The image height.
+ * @param channels The number of colour channels.
+ */
+public ImageConverter(String inputName,int width,int height,int channels){
+  if (width < 1 || height < 1 || channels < 1) {
+    throw new IllegalArgumentException(""Inputs must be positive integers, found ["" + width + "",""+ height+ "",""+ channels+ ""]"");
+  }
+  if (inputName == null || inputName.isEmpty()) {
+    throw new IllegalArgumentException(""The input name must be a valid String"");
+  }
+  long values=((long)width) * height * channels;
+  if (values > Integer.MAX_VALUE) {
+    throw new IllegalArgumentException(""Image size must be less than 2^31, found "" + values);
+  }
+  this.inputName=inputName;
+  this.totalPixels=(int)values;
+  this.width=width;
+  this.height=height;
+  this.channels=channels;
+}",0,Clean Code
+"/** 
+ * <p> Appends the fields and values defined by the given object of the given <code>Class</code>. </p>
+ * @param object the object to append details of
+ * @param clazz the class to append details of
+ * @param builder the builder to append to
+ * @param useTransients whether to use transient fields
+ * @param excludeFields Collection of String field names to exclude from use in calculation of hash code
+ */
+private static void reflectionAppend(Object object,Class<?> clazz,HashCodeBuilder builder,boolean useTransients,String[] excludeFields){
+  if (isRegistered(object)) {
+    return;
+  }
+  try {
+    register(object);
+    Field[] fields=clazz.getDeclaredFields();
+    AccessibleObject.setAccessible(fields,true);
+    for (    Field field : fields) {
+      if (!ArrayUtils.contains(excludeFields,field.getName()) && (field.getName().indexOf('$') == -1) && (useTransients || !Modifier.isTransient(field.getModifiers()))&& (!Modifier.isStatic(field.getModifiers()))) {
+        try {
+          Object fieldValue=field.get(object);
+          builder.append(fieldValue);
+        }
+ catch (        IllegalAccessException e) {
+          throw new InternalError(""Unexpected IllegalAccessException"");
+        }
+      }
+    }
+  }
+  finally {
+    unregister(object);
+  }
+}",1,Code Smell
+"/** 
+ * Tries to map an SSA register to a rop register.
+ * @param ssaSpec {@code non-null;} SSA register
+ * @param ropReg {@code >=0;} rop register
+ * @param maxAllowedCategory {@code 1..2;} the maximum categorythat the SSA register is allowed to be
+ * @return {@code true} if map succeeded, {@code false} if not
+ */
+private boolean tryMapReg(RegisterSpec ssaSpec,int ropReg,int maxAllowedCategory){
+  if (ssaSpec.getCategory() <= maxAllowedCategory && !ssaRegsMapped.get(ssaSpec.getReg()) && canMapReg(ssaSpec,ropReg)) {
+    addMapping(ssaSpec,ropReg);
+    return true;
+  }
+  return false;
+}",1,Code Smell
+"@Override public void onProgressUpload(String fileName,long uploadedSize,long totalSize,boolean isEncrypted){
+  float progress=totalSize == 0 ? 0 : Math.min(1f,uploadedSize / (float)totalSize);
+  currentMessageObject.loadedFileSize=uploadedSize;
+  radialProgress.setProgress(progress,true);
+  if (uploadedSize == totalSize && currentPosition != null) {
+    boolean sending=SendMessagesHelper.getInstance(currentAccount).isSendingMessage(currentMessageObject.getId());
+    if (sending && (buttonState == 1 || buttonState == 4 && documentAttachType == DOCUMENT_ATTACH_TYPE_MUSIC)) {
+      drawRadialCheckBackground=true;
+      getIconForCurrentState();
+      radialProgress.setIcon(MediaActionDrawable.ICON_CHECK,false,true);
+    }
+  }
+  if (lastLoadingSizeTotal > 0 && Math.abs(lastLoadingSizeTotal - totalSize) > UPLOADING_ALLOWABLE_ERROR) {
+    lastLoadingSizeTotal=totalSize;
+  }
+  createLoadingProgressLayout(uploadedSize,totalSize);
+  if (currentFocusedVirtualView == -1 && hasFocus())   announceForAccessibility((progress * 100) + ""%"");
+}",1,Code Smell
+"/** 
+ * Creates a new  {@link IConfigGuiElement} for a given {@link IGuiContext}, config struct instance and config property field.
+ * @param context the current {@link IGuiContext}
+ * @return a new {@link IConfigGuiElement}
+ */
+@SneakyThrows({IllegalAccessException.class,InstantiationException.class,InvocationTargetException.class,NoSuchMethodException.class}) public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context,@NonNull GuiObjectAccess<?> access){
+  Config.GuiElementClass guiElementAnnotation=access.getAnnotation(Config.GuiElementClass.class);
+  if (guiElementAnnotation != null) {
+    Constructor<? extends IConfigGuiElement> constructor=guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class,GuiObjectAccess.class);
+    constructor.setAccessible(true);
+    return constructor.newInstance(context,access);
+  }
+  Class<?> type=access.type();
+  checkArg(type != char.class && type != Character.class && type != byte.class && type != Byte.class && type != short.class && type != Short.class && (type.isPrimitive() || type.isEnum() || (type.getModifiers() & Modifier.ABSTRACT) == 0) && !type.isInterface() && !type.isAnonymousClass(),""unsupported type for access: %s"",access);
+  if (type.isEnum()) {
+    return new GuiEnumButton<>(context,uncheckedCast(access));
+  }
+ else   if (type == boolean.class || type == Boolean.class) {
+    return new GuiToggleButton(context,uncheckedCast(access));
+  }
+ else   if (type == int.class || type == Integer.class || type == long.class || type == Long.class || type == float.class || type == Float.class || type == double.class || type == Double.class) {
+    return new GuiSlider(context,uncheckedCast(access));
+  }
+ else {
+    return new GuiSubmenuButton<>(context,access);
+  }
+}",0,Clean Code
+"@Override public int getItemViewType(int section,int position){
+  HashMap<String,ArrayList<TLRPC.TL_contact>> usersSectionsDict=onlyUsers == 2 ? ContactsController.getInstance(currentAccount).usersMutualSectionsDict : ContactsController.getInstance(currentAccount).usersSectionsDict;
+  ArrayList<String> sortedUsersSectionsArray=onlyUsers == 2 ? ContactsController.getInstance(currentAccount).sortedUsersMutualSectionsArray : ContactsController.getInstance(currentAccount).sortedUsersSectionsArray;
+  if (onlyUsers != 0 && !isAdmin) {
+    if (isEmpty) {
+      return 4;
+    }
+    ArrayList<TLRPC.TL_contact> arr=usersSectionsDict.get(sortedUsersSectionsArray.get(section));
+    return position < arr.size() ? 0 : 3;
+  }
+ else {
+    if (section == 0) {
+      if (isAdmin) {
+        if (position == 1) {
+          return 2;
+        }
+      }
+ else       if (needPhonebook) {
+        if (hasGps && position == 2 || !hasGps && position == 1) {
+          return isEmpty ? 5 : 2;
+        }
+      }
+ else       if (position == 3) {
+        return isEmpty ? 5 : 2;
+      }
+    }
+ else {
+      if (isEmpty) {
+        return 4;
+      }
+      if (sortType == SORT_TYPE_BY_TIME) {
+        if (section == 1) {
+          return position < onlineContacts.size() ? 0 : 3;
+        }
+      }
+ else {
+        if (section - 1 < sortedUsersSectionsArray.size()) {
+          ArrayList<TLRPC.TL_contact> arr=usersSectionsDict.get(sortedUsersSectionsArray.get(section - 1));
+          return position < arr.size() ? 0 : 3;
+        }
+      }
+    }
+  }
+  return 1;
+}",1,Code Smell
+"@Override public boolean onKeyDown(final int keyCode,final KeyEvent keyEvent){
+  if (mEmojiAltPhysicalKeyDetector == null) {
+    mEmojiAltPhysicalKeyDetector=new EmojiAltPhysicalKeyDetector(getApplicationContext().getResources());
+  }
+  mEmojiAltPhysicalKeyDetector.onKeyDown(keyEvent);
+  if (!ProductionFlags.IS_HARDWARE_KEYBOARD_SUPPORTED) {
+    return super.onKeyDown(keyCode,keyEvent);
+  }
+  final Event event;
+  if (mRichImm.getCurrentSubtypeLocale().getLanguage().equals(""ko"")) {
+    final RichInputMethodSubtype subtype=mKeyboardSwitcher.getKeyboard() == null ? mRichImm.getCurrentSubtype() : mKeyboardSwitcher.getKeyboard().mId.mSubtype;
+    event=HangulEventDecoder.decodeHardwareKeyEvent(subtype,keyEvent,() -> getHardwareKeyEventDecoder(keyEvent.getDeviceId()).decodeHardwareKey(keyEvent));
+  }
+ else {
+    event=getHardwareKeyEventDecoder(keyEvent.getDeviceId()).decodeHardwareKey(keyEvent);
+  }
+  if (event.isHandled()) {
+    mInputLogic.onCodeInput(mSettings.getCurrent(),event,mKeyboardSwitcher.getKeyboardShiftMode(),mKeyboardSwitcher.getCurrentKeyboardScript(),mHandler);
+    return true;
+  }
+  return super.onKeyDown(keyCode,keyEvent);
+}
+",1,Code Smell
+"private void updateRepoSummary(){
+  final int[] count=new int[]{0};
+  HashSet<String> processedModules=new HashSet<>();
+  var modules=moduleUtil.getModules();
+  if (modules != null && repoLoader.isRepoLoaded()) {
+    modules.forEach((k,v) -> {
+      if (!processedModules.contains(k.first)) {
+        var ver=repoLoader.getModuleLatestVersion(k.first);
+        if (ver != null && ver.upgradable(v.versionCode,v.versionName)) {
+          ++count[0];
+        }
+        processedModules.add(k.first);
+      }
+    }
+);
+  }
+ else {
+    count[0]=-1;
+  }
+  runOnUiThread(() -> {
+    if (binding != null) {
+      if (count[0] > 0) {
+        binding.toolbar.setSubtitle(getResources().getQuantityString(R.plurals.module_repo_upgradable,count[0],count[0]));
+      }
+ else       if (count[0] == 0) {
+        binding.toolbar.setSubtitle(getResources().getString(R.string.module_repo_up_to_date));
+      }
+ else {
+        binding.toolbar.setSubtitle(getResources().getString(R.string.loading));
+      }
+      binding.toolbarLayout.setSubtitle(binding.toolbar.getSubtitle());
+    }
+  }
+);
+}",1,Code Smell
+"public void detectPhotoLanguage(MessageObject messageObject,Utilities.Callback<String> done){
+  if (messageObject == null || messageObject.messageOwner == null || !LanguageDetector.hasSupport() || TextUtils.isEmpty(messageObject.messageOwner.message)) {
+    return;
+  }
+  if (!TextUtils.isEmpty(messageObject.messageOwner.originalLanguage)) {
+    if (done != null) {
+      done.run(messageObject.messageOwner.originalLanguage);
+    }
+    return;
+  }
+  MessageKey key=new MessageKey(messageObject);
+  if (detectingPhotos.contains(key)) {
+    return;
+  }
+  detectingPhotos.add(key);
+  LanguageDetector.detectLanguage(messageObject.messageOwner.message,lng -> AndroidUtilities.runOnUIThread(() -> {
+    messageObject.messageOwner.originalLanguage=lng;
+    getMessagesStorage().updateMessageCustomParams(key.dialogId,messageObject.messageOwner);
+    detectingPhotos.remove(key);
+    if (done != null) {
+      done.run(lng);
+    }
+  }
+),err -> AndroidUtilities.runOnUIThread(() -> {
+    messageObject.messageOwner.originalLanguage=UNKNOWN_LANGUAGE;
+    getMessagesStorage().updateMessageCustomParams(key.dialogId,messageObject.messageOwner);
+    detectingPhotos.remove(key);
+    if (done != null) {
+      done.run(UNKNOWN_LANGUAGE);
+    }
+  }
+));
+}
+",0,Clean Code
+"/** 
+ * Checks if the  {@link TaskModel} identifier is in the Redis Set and size of the set is morethan the  {@link TaskDef#concurrencyLimit()}.
+ * @param task The {@link TaskModel} object.
+ * @return true if the task id is not in the set and size of the set is more than the {@link TaskDef#concurrencyLimit()}.
+ */
+@Override public boolean exceedsLimit(TaskModel task){
+  Optional<TaskDef> taskDefinition=task.getTaskDefinition();
+  if (taskDefinition.isEmpty()) {
+    return false;
+  }
+  int limit=taskDefinition.get().concurrencyLimit();
+  if (limit <= 0) {
+    return false;
+  }
+  try {
+    Monitors.recordDaoRequests(CLASS_NAME,""exceedsLimit"",task.getTaskType(),task.getWorkflowType());
+    String taskId=task.getTaskId();
+    String taskDefName=task.getTaskDefName();
+    String keyName=createKeyName(taskDefName);
+    boolean isMember=ObjectUtils.defaultIfNull(stringRedisTemplate.opsForSet().isMember(keyName,taskId),false);
+    long size=ObjectUtils.defaultIfNull(stringRedisTemplate.opsForSet().size(keyName),-1L);
+    LOGGER.debug(""Task: {} is {} of {}, size: {} and limit: {}"",taskId,isMember ? ""a member"" : ""not a member"",keyName,size,limit);
+    return !isMember && size >= limit;
+  }
+ catch (  Exception e) {
+    Monitors.error(CLASS_NAME,""exceedsLimit"");
+    String errorMsg=String.format(""Failed to get in progress limit - %s:%s in workflow :%s"",task.getTaskDefName(),task.getTaskId(),task.getWorkflowInstanceId());
+    LOGGER.error(errorMsg,e);
+    throw new TransientException(errorMsg);
+  }
+}",0,Clean Code
+"@SuppressLint(""NewApi"") protected void updateLayout(AttachAlertLayout layout,boolean animated,int dy){
+  if (layout == null) {
+    return;
+  }
+  int newOffset=layout.getCurrentItemTop();
+  if (newOffset == Integer.MAX_VALUE) {
+    return;
+  }
+  boolean show=layout == currentAttachLayout && newOffset <= layout.getButtonsHideOffset();
+  if (currentAttachLayout != photoPreviewLayout && keyboardVisible && animated && !(currentAttachLayout instanceof ChatAttachAlertBotWebViewLayout)) {
+    animated=false;
+  }
+  if (layout == currentAttachLayout) {
+    updateActionBarVisibility(show,animated);
+  }
+  FrameLayout.LayoutParams layoutParams=(FrameLayout.LayoutParams)layout.getLayoutParams();
+  newOffset+=(layoutParams == null ? 0 : layoutParams.topMargin) - AndroidUtilities.dp(11);
+  int idx=currentAttachLayout == layout ? 0 : 1;
+  boolean previewAnimationIsRunning=(currentAttachLayout instanceof ChatAttachAlertPhotoLayoutPreview || nextAttachLayout instanceof ChatAttachAlertPhotoLayoutPreview) && (viewChangeAnimator instanceof SpringAnimation && ((SpringAnimation)viewChangeAnimator).isRunning());
+  if (scrollOffsetY[idx] != newOffset || previewAnimationIsRunning) {
+    previousScrollOffsetY=scrollOffsetY[idx];
+    scrollOffsetY[idx]=newOffset;
+    updateSelectedPosition(idx);
+    containerView.invalidate();
+  }
+ else   if (dy != 0) {
+    previousScrollOffsetY=scrollOffsetY[idx];
+  }
+}",0,Clean Code
+"@PostMapping(""/getRulesSetting"") @ApiOperation(""鏌ヨ瑙勫垯璁剧疆"") public Result<JSONObject> getRulesSetting(){
+  AdminConfig dealDay=adminService.queryFirstConfigByName(""customerPoolSettingDealDays"").getData();
+  AdminConfig followupDay=adminService.queryFirstConfigByName(""customerPoolSettingFollowupDays"").getData();
+  AdminConfig type=adminService.queryFirstConfigByName(""customerPoolSetting"").getData();
+  AdminConfig remindConfig=adminService.queryFirstConfigByName(""putInPoolRemindDays"").getData();
+  if (dealDay == null) {
+    dealDay=new AdminConfig();
+    dealDay.setName(""customerPoolSettingDealDays"");
+    dealDay.setValue(""3"");
+    adminService.updateAdminConfig(dealDay);
+  }
+  if (followupDay == null) {
+    followupDay=new AdminConfig();
+    followupDay.setName(""customerPoolSettingFollowupDays"");
+    followupDay.setValue(""7"");
+    adminService.updateAdminConfig(followupDay);
+  }
+  if (type == null) {
+    type=new AdminConfig();
+    type.setName(""customerPoolSetting"");
+    type.setStatus(0);
+    adminService.updateAdminConfig(type);
+  }
+  if (remindConfig == null) {
+    remindConfig=new AdminConfig();
+    remindConfig.setStatus(0);
+    remindConfig.setValue(""3"");
+    remindConfig.setName(""putInPoolRemindDays"");
+    adminService.updateAdminConfig(remindConfig);
+  }
+  AdminConfig config=adminService.queryFirstConfigByName(""expiringContractDays"").getData();
+  if (config == null) {
+    config=new AdminConfig();
+    config.setStatus(0);
+    config.setName(""expiringContractDays"");
+    config.setValue(""3"");
+    config.setDescription(""鍚堝悓鍒版湡鎻愰啋"");
+    adminService.updateAdminConfig(config);
+  }
+  JSONObject object=new JSONObject();
+  object.put(""dealDay"",dealDay.getValue());
+  object.put(""followupDay"",followupDay.getValue());
+  object.put(""customerConfig"",type.getStatus());
+  object.put(""contractConfig"",config.getStatus());
+  object.put(""contractDay"",config.getValue());
+  object.put(""putInPoolRemindConfig"",remindConfig.getStatus());
+  object.put(""putInPoolRemindDays"",remindConfig.getValue());
+  return R.ok(object);
+}",0,Clean Code
+"@Override public boolean onGenericMotionEvent(MotionEvent event){
+  if (event.getAxisValue(MotionEvent.AXIS_LTRIGGER) > GAMEPAD_TRIGGER_INTENSITY_ON && !gamepadTriggerPressed) {
+    mPlaybackFragment.rewind();
+    gamepadTriggerPressed=true;
+  }
+ else   if (event.getAxisValue(MotionEvent.AXIS_RTRIGGER) > GAMEPAD_TRIGGER_INTENSITY_ON && !gamepadTriggerPressed) {
+    mPlaybackFragment.fastForward();
+    gamepadTriggerPressed=true;
+  }
+ else   if (event.getAxisValue(MotionEvent.AXIS_LTRIGGER) < GAMEPAD_TRIGGER_INTENSITY_OFF && event.getAxisValue(MotionEvent.AXIS_RTRIGGER) < GAMEPAD_TRIGGER_INTENSITY_OFF) {
+    gamepadTriggerPressed=false;
+  }
+ else   if ((event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0 && event.getAction() == MotionEvent.ACTION_SCROLL) {
+    Utils.volumeUp(this,getPlaybackView().getPlayer(),event.getAxisValue(MotionEvent.AXIS_VSCROLL) < 0.0f);
+    return true;
+  }
+  return super.onGenericMotionEvent(event);
+}",0,Clean Code
+"private synchronized GameItem deleteItem(GameItem item,int count){
+  if (count <= 0 || item == null || item.getOwnerUid() != getPlayer().getUid()) {
+    return null;
+  }
+  if (item.getExcel() == null || item.getExcel().isEquippable()) {
+    item.setCount(0);
+  }
+ else {
+    item.setCount(Utils.safeSubtract(item.getCount(),count));
+  }
+  if (item.getCount() <= 0) {
+    InventoryTab tab=null;
+    if (item.getExcel() != null) {
+      tab=getTabByItemType(item.getExcel().getItemMainType());
+      if (tab != null) {
+        tab.onRemoveItem(item);
+      }
+    }
+    getItems().remove(item.getInternalUid());
+  }
+  item.save();
+  return item;
+}",1,Code Smell
+"public static Bitmap createBitmap(int width,int height,Bitmap.Config config){
+  Bitmap bitmap;
+  if (Build.VERSION.SDK_INT < 21) {
+    BitmapFactory.Options options=new BitmapFactory.Options();
+    options.inDither=true;
+    options.inPreferredConfig=config;
+    options.inPurgeable=true;
+    options.inSampleSize=1;
+    options.inMutable=true;
+    byte[] array=jpegData.get();
+    array[76]=(byte)(height >> 8);
+    array[77]=(byte)(height & 0x00ff);
+    array[78]=(byte)(width >> 8);
+    array[79]=(byte)(width & 0x00ff);
+    bitmap=BitmapFactory.decodeByteArray(array,0,array.length,options);
+    Utilities.pinBitmap(bitmap);
+    bitmap.setHasAlpha(true);
+    bitmap.eraseColor(0);
+  }
+ else {
+    bitmap=Bitmap.createBitmap(width,height,config);
+  }
+  if (config == Bitmap.Config.ARGB_8888 || config == Bitmap.Config.ARGB_4444) {
+    bitmap.eraseColor(Color.TRANSPARENT);
+  }
+  return bitmap;
+}
+!org.eclipse.jdt.core.dom.MethodDeclaration@78dc2bbdpublic static Bitmap createBitmap(Bitmap source,int x,int y,int width,int height){
+  return createBitmap(source,x,y,width,height,null,false);
+}",0,Clean Code
+"@NonNull @Override public Dialog onCreateDialog(Bundle savedInstanceState){
+  mActivity=requireActivity();
+  String[] suggestions=requireArguments().getStringArray(QUERY_SUGGESTIONS);
+  String logFilename=SaveLogHelper.createLogFilename();
+  mLogLevel=Prefs.LogViewer.getLogLevel();
+  mFilterQuery="""";
+  return new TextInputDialogBuilder(mActivity,R.string.enter_filename).setTitle(R.string.record_log).setInputText(logFilename).setPositiveButton(R.string.ok,(dialog,which,inputText,isChecked) -> {
+    if (SaveLogHelper.isInvalidFilename(inputText)) {
+      Toast.makeText(mActivity,R.string.enter_good_filename,Toast.LENGTH_SHORT).show();
+    }
+ else {
+      String filename=inputText.toString();
+      Context context=mActivity.getApplicationContext();
+      ThreadUtils.postOnBackgroundThread(() -> {
+        Intent intent=ServiceHelper.getLogcatRecorderServiceIfNotAlreadyRunning(context,filename,mFilterQuery,mLogLevel);
+        ThreadUtils.postOnMainThread(() -> {
+          if (intent != null) {
+            ContextCompat.startForegroundService(context,intent);
+          }
+          if (mListener != null && !(mActivity.isFinishing() || mActivity.isDestroyed())) {
+            mListener.onServiceStarted();
+          }
+        }
+);
+      }
+);
+    }
+  }
+).setNegativeButton(R.string.cancel,(dialog,which,inputText,isChecked) -> WidgetHelper.updateWidgets(mActivity)).setNeutralButton(R.string.text_filter_ellipsis,null).setOnShowListener(dialog -> {
+    AlertDialog dialog1=(AlertDialog)dialog;
+    Button filterButton=dialog1.getButton(AlertDialog.BUTTON_NEUTRAL);
+    filterButton.setOnClickListener(v -> {
+      WidgetHelper.updateWidgets(mActivity);
+      showFilterDialogForRecording(suggestions != null ? Arrays.asList(suggestions) : Collections.emptyList());
+    }
+);
+  }
+).create();
+}",0,Clean Code
+"@Override protected void renderSafe(ChuteBlockEntity be,float partialTicks,PoseStack ms,MultiBufferSource buffer,int light,int overlay){
+  if (be.item.isEmpty())   return;
+  BlockState blockState=be.getBlockState();
+  if (blockState.getValue(ChuteBlock.FACING) != Direction.DOWN)   return;
+  if (blockState.getValue(ChuteBlock.SHAPE) != Shape.WINDOW && (be.bottomPullDistance == 0 || be.itemPosition.getValue(partialTicks) > .5f))   return;
+  renderItem(be,partialTicks,ms,buffer,light,overlay);
+}",1,Code Smell
+"/** 
+ * @param id 璐﹀彿Id
+ * @return
+ */
+@GetMapping(""/template/list"") @ApiOperation(""/鏍规嵁璐﹀彿Id鑾峰彇妯℃澘鍒楄〃"") @AustinResult public List<CommonAmisVo> queryList(Integer id){
+  try {
+    List<CommonAmisVo> result=new ArrayList<>();
+    WxMpService wxMpService=accountUtils.getAccountById(id,WxMpService.class);
+    List<WxMpTemplate> allPrivateTemplate=wxMpService.getTemplateMsgService().getAllPrivateTemplate();
+    for (    WxMpTemplate wxMpTemplate : allPrivateTemplate) {
+      CommonAmisVo commonAmisVo=CommonAmisVo.builder().label(wxMpTemplate.getTitle()).value(wxMpTemplate.getTemplateId()).build();
+      result.add(commonAmisVo);
+    }
+    return result;
+  }
+ catch (  Exception e) {
+    log.error(""OfficialAccountController#queryList fail:{}"",Throwables.getStackTraceAsString(e));
+    throw new CommonException(RespStatusEnum.SERVICE_ERROR);
+  }
+}
+",0,Clean Code
+"@EventHandler private void onSendPacket(PacketEvent.Send event){
+  if (mc.player.getAbilities().creativeMode || !(event.packet instanceof PlayerMoveC2SPacket) || mode.get() != Mode.Packet || ((IPlayerMoveC2SPacket)event.packet).getTag() == 1337)   return;
+  if (!Modules.get().isActive(Flight.class)) {
+    if (mc.player.isFallFlying())     return;
+    if (mc.player.getVelocity().y > -0.5)     return;
+    ((PlayerMoveC2SPacketAccessor)event.packet).setOnGround(true);
+  }
+ else {
+    ((PlayerMoveC2SPacketAccessor)event.packet).setOnGround(true);
+  }
+}",0,Clean Code

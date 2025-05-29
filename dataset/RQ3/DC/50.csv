@@ -1,0 +1,2089 @@
+text,label,text_label
+"public class AWSCredential {
+  private String accessKey;
+  private String secretKey;
+  public String getAccessKey(){
+    return accessKey;
+  }
+  public void setAccessKey(  String accessKey){
+    this.accessKey=accessKey;
+  }
+  public String getSecretKey(){
+    return secretKey;
+  }
+  public void setSecretKey(  String secretKey){
+    this.secretKey=secretKey;
+  }
+}
+",1,Code Smell
+"public class RandomLookAroundGoal extends GoalSelector {
+  private static final Random RANDOM=new Random();
+  private final int chancePerTick;
+  private final Supplier<Integer> minimalLookTimeSupplier;
+  private final Function<EntityCreature,Vec> randomDirectionFunction;
+  private Vec lookDirection;
+  private int lookTime=0;
+  public RandomLookAroundGoal(  EntityCreature entityCreature,  int chancePerTick){
+    this(entityCreature,chancePerTick,() -> 20 + RANDOM.nextInt(20),(creature) -> {
+      final double n=Math.PI * 2 * RANDOM.nextDouble();
+      return new Vec((float)Math.cos(n),0,(float)Math.sin(n));
+    }
+);
+  }
+  /** 
+ * @param entityCreature          Creature that should randomly look around.
+ * @param chancePerTick           The chance (per tick) that the entity looks around. Setting this to N would mean there is a 1 in N chance.
+ * @param minimalLookTimeSupplier A supplier that returns the minimal amount of time an entity looks in a direction.
+ * @param randomDirectionFunction A function that returns a random vector that the entity will look in/at.
+ */
+  public RandomLookAroundGoal(  EntityCreature entityCreature,  int chancePerTick,  @NotNull Supplier<Integer> minimalLookTimeSupplier,  @NotNull Function<EntityCreature,Vec> randomDirectionFunction){
+    super(entityCreature);
+    this.chancePerTick=chancePerTick;
+    this.minimalLookTimeSupplier=minimalLookTimeSupplier;
+    this.randomDirectionFunction=randomDirectionFunction;
+  }
+  @Override public boolean shouldStart(){
+    if (RANDOM.nextInt(chancePerTick) != 0) {
+      return false;
+    }
+    return entityCreature.getNavigator().getPathPosition() == null;
+  }
+  @Override public void start(){
+    lookTime=minimalLookTimeSupplier.get();
+    lookDirection=randomDirectionFunction.apply(entityCreature);
+  }
+  @Override public void tick(  long time){
+    --lookTime;
+    entityCreature.refreshPosition(entityCreature.getPosition().withDirection(lookDirection));
+  }
+  @Override public boolean shouldEnd(){
+    return this.lookTime < 0;
+  }
+  @Override public void end(){
+  }
+}
+",0,Clean Code
+"public class FlowExecutorExtension implements AfterEachCallback, ParameterResolver {
+  private static final ExtensionContext.Namespace NAMESPACE=ExtensionContext.Namespace.create(KestraTestExtension.class);
+  private ApplicationContext context;
+  @Override public boolean supportsParameter(  ParameterContext parameterContext,  ExtensionContext extensionContext) throws ParameterResolutionException {
+    return parameterContext.getParameter().getType() == Execution.class;
+  }
+  @SneakyThrows @Override public Object resolveParameter(  ParameterContext parameterContext,  ExtensionContext extensionContext) throws ParameterResolutionException {
+    if (context == null) {
+      context=extensionContext.getRoot().getStore(NAMESPACE).get(ApplicationContext.class,ApplicationContext.class);
+      if (context == null) {
+        throw new IllegalStateException(""No application context, to use '@LoadFlows' annotation, you need to add '@KestraTest'"");
+      }
+    }
+    ExecuteFlow executeFlow=getExecuteFlow(extensionContext);
+    String path=executeFlow.value();
+    URL url=getClass().getClassLoader().getResource(path);
+    if (url == null) {
+      throw new IllegalArgumentException(""Unable to load flow: "" + path);
+    }
+    LocalFlowRepositoryLoader repositoryLoader=context.getBean(LocalFlowRepositoryLoader.class);
+    TestsUtils.loads(repositoryLoader,Objects.requireNonNull(url));
+    YamlParser yamlParser=context.getBean(YamlParser.class);
+    Flow flow=yamlParser.parse(Paths.get(url.toURI()).toFile(),Flow.class);
+    RunnerUtils runnerUtils=context.getBean(RunnerUtils.class);
+    return runnerUtils.runOne(null,flow.getNamespace(),flow.getId(),Duration.parse(executeFlow.timeout()));
+  }
+  @Override public void afterEach(  ExtensionContext extensionContext) throws URISyntaxException {
+    ExecuteFlow executeFlow=getExecuteFlow(extensionContext);
+    FlowRepositoryInterface flowRepository=context.getBean(FlowRepositoryInterface.class);
+    YamlParser yamlParser=context.getBean(YamlParser.class);
+    String path=executeFlow.value();
+    URL resource=loadFile(path);
+    Flow loadedFlow=yamlParser.parse(Paths.get(resource.toURI()).toFile(),Flow.class);
+    flowRepository.findAllForAllTenants().stream().filter(flow -> Objects.equals(flow.getId(),loadedFlow.getId())).forEach(flow -> flowRepository.delete(FlowWithSource.of(flow,""unused"")));
+  }
+  private static ExecuteFlow getExecuteFlow(  ExtensionContext extensionContext){
+    ExecuteFlow executeFlow=extensionContext.getTestMethod().orElseThrow().getAnnotation(ExecuteFlow.class);
+    return executeFlow;
+  }
+}
+",0,Clean Code
+"/** 
+ * Parser for lists of methods in a class file.
+ */
+final class MethodListParser extends MemberListParser {
+  /** 
+ * {@code non-null;} list in progress 
+ */
+  final private StdMethodList methods;
+  /** 
+ * Constructs an instance.
+ * @param cf {@code non-null;} the class file to parse from
+ * @param definer {@code non-null;} class being defined
+ * @param offset offset in {@code bytes} to the start of the list
+ * @param attributeFactory {@code non-null;} attribute factory to use
+ */
+  public MethodListParser(  DirectClassFile cf,  CstType definer,  int offset,  AttributeFactory attributeFactory){
+    super(cf,definer,offset,attributeFactory);
+    methods=new StdMethodList(getCount());
+  }
+  /** 
+ * Gets the parsed list.
+ * @return {@code non-null;} the parsed list
+ */
+  public StdMethodList getList(){
+    parseIfNecessary();
+    return methods;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected String humanName(){
+    return ""method"";
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected String humanAccessFlags(  int accessFlags){
+    return AccessFlags.methodString(accessFlags);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected int getAttributeContext(){
+    return AttributeFactory.CTX_METHOD;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected Member set(  int n,  int accessFlags,  CstNat nat,  AttributeList attributes){
+    StdMethod meth=new StdMethod(getDefiner(),accessFlags,nat,attributes);
+    methods.set(n,meth);
+    return meth;
+  }
+}
+",0,Clean Code
+"/** 
+ * 鍥炴斁璇锋眰
+ * @author QingtaiJiang
+ * @date 2023/4/28 10:37
+ * @email qingtaij@163.com
+ */
+@MsgId(id=""9201"") public class J9201 extends Rs {
+  private String ip;
+  private int tcpPort;
+  private int udpPort;
+  private int channel;
+  private int type;
+  private int rate;
+  private int storageType;
+  private int playbackType;
+  private int playbackSpeed;
+  private String startTime;
+  private String endTime;
+  @Override public ByteBuf encode(){
+    ByteBuf buffer=Unpooled.buffer();
+    buffer.writeByte(ip.getBytes().length);
+    buffer.writeCharSequence(ip,CharsetUtil.UTF_8);
+    buffer.writeShort(tcpPort);
+    buffer.writeShort(udpPort);
+    buffer.writeByte(channel);
+    buffer.writeByte(type);
+    buffer.writeByte(rate);
+    buffer.writeByte(storageType);
+    buffer.writeByte(playbackType);
+    buffer.writeByte(playbackSpeed);
+    buffer.writeBytes(ByteBufUtil.decodeHexDump(startTime));
+    buffer.writeBytes(ByteBufUtil.decodeHexDump(endTime));
+    return buffer;
+  }
+  public String getIp(){
+    return ip;
+  }
+  public void setIp(  String ip){
+    this.ip=ip;
+  }
+  public int getTcpPort(){
+    return tcpPort;
+  }
+  public void setTcpPort(  int tcpPort){
+    this.tcpPort=tcpPort;
+  }
+  public int getUdpPort(){
+    return udpPort;
+  }
+  public void setUdpPort(  int udpPort){
+    this.udpPort=udpPort;
+  }
+  public int getChannel(){
+    return channel;
+  }
+  public void setChannel(  int channel){
+    this.channel=channel;
+  }
+  public int getType(){
+    return type;
+  }
+  public void setType(  int type){
+    this.type=type;
+  }
+  public int getRate(){
+    return rate;
+  }
+  public void setRate(  int rate){
+    this.rate=rate;
+  }
+  public int getStorageType(){
+    return storageType;
+  }
+  public void setStorageType(  int storageType){
+    this.storageType=storageType;
+  }
+  public int getPlaybackType(){
+    return playbackType;
+  }
+  public void setPlaybackType(  int playbackType){
+    this.playbackType=playbackType;
+  }
+  public int getPlaybackSpeed(){
+    return playbackSpeed;
+  }
+  public void setPlaybackSpeed(  int playbackSpeed){
+    this.playbackSpeed=playbackSpeed;
+  }
+  public String getStartTime(){
+    return startTime;
+  }
+  public void setStartTime(  String startTime){
+    this.startTime=startTime;
+  }
+  public String getEndTime(){
+    return endTime;
+  }
+  public void setEndTime(  String endTime){
+    this.endTime=endTime;
+  }
+  @Override public String toString(){
+    return ""J9201{"" + ""ip='"" + ip + '\''+ "", tcpPort=""+ tcpPort+ "", udpPort=""+ udpPort+ "", channel=""+ channel+ "", type=""+ type+ "", rate=""+ rate+ "", storageType=""+ storageType+ "", playbackType=""+ playbackType+ "", playbackSpeed=""+ playbackSpeed+ "", startTime='""+ startTime+ '\''+ "", endTime='""+ endTime+ '\''+ '}';
+  }
+}",1,Code Smell
+"/** 
+ * 随机字符串验证码
+ * @author L.cm
+ */
+public class RandomCaptchaDraw implements CaptchaDraw {
+  /** 
+ * 默认的验证码数量，由于字体大小定死，后期再扩展自动一数量
+ */
+  private static final int CODE_SIZE=4;
+  /** 
+ * 验证码随机字符数组
+ */
+  private static final char[] CHAR_ARRAY=""3456789ABCDEFGHJKMNPQRSTUVWXY"".toCharArray();
+  private final int codeSize;
+  public RandomCaptchaDraw(){
+    this(CODE_SIZE);
+  }
+  public RandomCaptchaDraw(  int codeSize){
+    this.codeSize=codeSize;
+  }
+  @Override public String draw(  Graphics2D g,  int width,  int height,  Font[] fonts,  Random random){
+    String code=generateCode(random,codeSize);
+    char[] buffer=code.toCharArray();
+    for (int i=0; i < buffer.length; i++) {
+      int degree=random.nextInt(25);
+      if (i % 2 == 0) {
+        degree=-degree;
+      }
+      int x=27 * i;
+      int y=28;
+      double radians=Math.toRadians(degree);
+      g.rotate(radians,x,y);
+      g.setColor(CaptchaUtil.randColor(random,20,130));
+      Font fontTemp=fonts[random.nextInt(fonts.length)];
+      Font font=fontTemp.deriveFont(Font.BOLD,(width - 10F) / codeSize * 1.2F);
+      g.setFont(font);
+      char xcode=buffer[i];
+      g.drawString(String.valueOf(xcode),x + 8,y + 10);
+      g.rotate(-radians,x,y);
+    }
+    return code;
+  }
+  /** 
+ * 生成验证码字符串
+ * @param random Random
+ * @return 验证码字符串
+ */
+  private static String generateCode(  Random random,  int size){
+    char[] buffer=new char[size];
+    for (int i=0; i < size; i++) {
+      buffer[i]=CHAR_ARRAY[random.nextInt(CHAR_ARRAY.length)];
+    }
+    return new String(buffer);
+  }
+  @Override public boolean validate(  String code,  String userInputCaptcha){
+    if (StringUtil.isBlank(userInputCaptcha)) {
+      return false;
+    }
+    return ObjectUtils.nullSafeEquals(code,userInputCaptcha.toUpperCase());
+  }
+}
+",0,Clean Code
+"public class IllustHeader extends ViewHolder<RecyRecmdHeaderBinding> {
+  private String type="""";
+  public IllustHeader(  RecyRecmdHeaderBinding bindView,  String type){
+    super(bindView);
+    this.type=type;
+  }
+  public void show(  Context context,  List<IllustsBean> illustsBeans){
+    baseBind.topRela.setVisibility(View.VISIBLE);
+    Animation animation=new AlphaAnimation(0.0f,1.0f);
+    animation.setDuration(800L);
+    baseBind.topRela.startAnimation(animation);
+    RAdapter adapter=new RAdapter(illustsBeans,context);
+    adapter.setOnItemClickListener((v,position,viewType) -> {
+      final PageData pageData=new PageData(illustsBeans);
+      Container.get().addPageToMap(pageData);
+      Intent intent=new Intent(context,VActivity.class);
+      intent.putExtra(Params.POSITION,position);
+      intent.putExtra(Params.PAGE_UUID,pageData.getUUID());
+      context.startActivity(intent);
+    }
+);
+    baseBind.ranking.setAdapter(adapter);
+  }
+  public void initView(  Context context){
+    baseBind.topRela.setVisibility(View.GONE);
+    baseBind.seeMore.setOnClickListener(v -> {
+      Intent intent=new Intent(context,RankActivity.class);
+      intent.putExtra(""dataType"",type);
+      context.startActivity(intent);
+    }
+);
+    baseBind.ranking.addItemDecoration(new LinearItemHorizontalDecoration(DensityUtil.dp2px(8.0f)));
+    LinearLayoutManager manager=new LinearLayoutManager(context,LinearLayoutManager.HORIZONTAL,false);
+    baseBind.ranking.setLayoutManager(manager);
+    baseBind.ranking.setHasFixedSize(true);
+  }
+}
+",0,Clean Code
+"public static class Assignment_stmt_single_itemContext extends ParserRuleContext {
+  public IdentContext ident(){
+    return getRuleContext(IdentContext.class,0);
+  }
+  public TerminalNode T_EQUAL(){
+    return getToken(HiveSqlParser.T_EQUAL,0);
+  }
+  public ExprContext expr(){
+    return getRuleContext(ExprContext.class,0);
+  }
+  public TerminalNode T_COLON(){
+    return getToken(HiveSqlParser.T_COLON,0);
+  }
+  public TerminalNode T_OPEN_P(){
+    return getToken(HiveSqlParser.T_OPEN_P,0);
+  }
+  public TerminalNode T_CLOSE_P(){
+    return getToken(HiveSqlParser.T_CLOSE_P,0);
+  }
+  public Assignment_stmt_single_itemContext(  ParserRuleContext parent,  int invokingState){
+    super(parent,invokingState);
+  }
+  @Override public int getRuleIndex(){
+    return RULE_assignment_stmt_single_item;
+  }
+  @Override public void enterRule(  ParseTreeListener listener){
+    if (listener instanceof HiveSqlListener)     ((HiveSqlListener)listener).enterAssignment_stmt_single_item(this);
+  }
+  @Override public void exitRule(  ParseTreeListener listener){
+    if (listener instanceof HiveSqlListener)     ((HiveSqlListener)listener).exitAssignment_stmt_single_item(this);
+  }
+  @Override public <T>T accept(  ParseTreeVisitor<? extends T> visitor){
+    if (visitor instanceof HiveSqlVisitor)     return ((HiveSqlVisitor<? extends T>)visitor).visitAssignment_stmt_single_item(this);
+ else     return visitor.visitChildren(this);
+  }
+}",0,Clean Code
+"/** 
+ * 登录用户访问
+ */
+@RestController @RequestMapping(""/user/"") public class UserController {
+  @Autowired private SysUserService sysUserService;
+  @Autowired private UserService userService;
+  @Autowired private SysShortcutMenuService sysShortcutMenuService;
+  @GetMapping(""userinfo"") public ModelAndView userinfo(){
+    SysUserVo sysUserVo=sysUserService.findByLoginName(SecurityUtil.getLoginUser().getUsername()).getData();
+    sysUserVo.setPassword(null);
+    return new ModelAndView(""user/userinfo"",""user"",sysUserVo);
+  }
+  @GetMapping(""shortcMenu"") public ModelAndView shortcMenu(){
+    return new ModelAndView(""user/shortcmenu"");
+  }
+  /** 
+ * 修改密码
+ */
+  @PostMapping(""updatePassword"") @Decrypt @Encrypt public Result<SysUserVo> updatePassword(  SysUserVo sysUserVo){
+    return userService.updatePassword(sysUserVo.getOldPassword(),sysUserVo.getNewPassword());
+  }
+  /** 
+ * 修改部分用户属性
+ */
+  @PostMapping(""updateUser"") @Decrypt @Encrypt public Result<SysUserVo> updateUser(  SysUserVo sysUserVo){
+    return userService.updateUser(sysUserVo);
+  }
+  /** 
+ * 分层级
+ */
+  @PostMapping(""shortcutMenuListByTier"") @Decrypt @Encrypt public Result<List<SysShortcutMenuVo>> shortcutMenuListByTier(){
+    SysUserVo sysUserVo=sysUserService.findByLoginName(SecurityUtil.getLoginUser().getUsername()).getData();
+    return sysShortcutMenuService.findByUserId(sysUserVo.getUserId());
+  }
+  /** 
+ * 保存
+ */
+  @PostMapping(""shortcutMenuSave"") @Decrypt @Encrypt public Result<SysShortcutMenuVo> shortcutMenuSave(  SysShortcutMenuVo sysShortcutMenuVo){
+    SysUserVo sysUserVo=sysUserService.findByLoginName(SecurityUtil.getLoginUser().getUsername()).getData();
+    sysShortcutMenuVo.setUserId(sysUserVo.getUserId());
+    return sysShortcutMenuService.save(sysShortcutMenuVo);
+  }
+  @DeleteMapping(""shortcutMenuDelete/{id}"") public Result<String> shortcutMenuDelete(  @PathVariable(""id"") String id){
+    SysUserVo sysUserVo=sysUserService.findByLoginName(SecurityUtil.getLoginUser().getUsername()).getData();
+    SysShortcutMenuVo sysShortcutMenuVo=new SysShortcutMenuVo();
+    sysShortcutMenuVo.setUserId(sysUserVo.getUserId());
+    List<SysShortcutMenuVo> sysShortcutMenuVoList=sysShortcutMenuService.list(sysShortcutMenuVo).getData();
+    boolean flag=false;
+    for (    SysShortcutMenuVo shortcutMenuVo : sysShortcutMenuVoList) {
+      if (shortcutMenuVo.getShortcutMenuId().equals(id)) {
+        flag=true;
+        break;
+      }
+    }
+    if (flag) {
+      return sysShortcutMenuService.delete(id);
+    }
+ else {
+      return Result.of(null,false,""请不要删除别人个性菜单！"");
+    }
+  }
+}
+",0,Clean Code
+"/** 
+ * 瀹炰綋绫 - 娴嬭瘯鐢
+ */
+public class Person {
+  private Integer id;
+  private String name;
+  private Integer age;
+  public Person(){
+    System.out.println(""鏃犲弬鏁版瀯閫犲嚱鏁拌璋冪敤"");
+  }
+  public Person(  Integer id,  String name,  Integer age){
+    this.id=id;
+    this.name=name;
+    this.age=age;
+    System.out.println(""鏈夊弬鏁版瀯閫犲嚱鏁拌璋冪敤"");
+  }
+  public Integer getId(){
+    return id;
+  }
+  public void setId(  Integer id){
+    this.id=id;
+  }
+  public String getName(){
+    System.out.println(""getName鏂规硶琚皟鐢"");
+    return name;
+  }
+  public void setName(  String name){
+    System.out.println(""setName鏂规硶琚皟鐢"");
+    this.name=name;
+  }
+  public Integer getAge(){
+    return age;
+  }
+  public void setAge(  Integer age){
+    this.age=age;
+  }
+}
+",1,Code Smell
+"@ConfigurationProperties(""conductor.redis-concurrent-execution-limit"") public class RedisConcurrentExecutionLimitProperties {
+  public enum RedisType {  STANDALONE,   CLUSTER}
+  private RedisType type;
+  private String host;
+  private int port;
+  private String password;
+  private int maxConnectionsPerHost;
+  private String clientName;
+  private String namespace=""conductor"";
+  public RedisType getType(){
+    return type;
+  }
+  public void setType(  RedisType type){
+    this.type=type;
+  }
+  public int getMaxConnectionsPerHost(){
+    return maxConnectionsPerHost;
+  }
+  public void setMaxConnectionsPerHost(  int maxConnectionsPerHost){
+    this.maxConnectionsPerHost=maxConnectionsPerHost;
+  }
+  public String getClientName(){
+    return clientName;
+  }
+  public void setClientName(  String clientName){
+    this.clientName=clientName;
+  }
+  public String getHost(){
+    return host;
+  }
+  public void setHost(  String host){
+    this.host=host;
+  }
+  public int getPort(){
+    return port;
+  }
+  public void setPort(  int port){
+    this.port=port;
+  }
+  public String getPassword(){
+    return password;
+  }
+  public void setPassword(  String password){
+    this.password=password;
+  }
+  public String getNamespace(){
+    return namespace;
+  }
+  public void setNamespace(  String namespace){
+    this.namespace=namespace;
+  }
+}
+",1,Code Smell
+"public final class GProExposeRecommedsReq {
+  ArrayList<GProExposeItem> exposeItems;
+  String stage;
+  String traceId;
+  String user;
+  public GProExposeRecommedsReq(){
+    this.user="""";
+    this.traceId="""";
+    this.stage="""";
+    this.exposeItems=new ArrayList<>();
+  }
+  public ArrayList<GProExposeItem> getExposeItems(){
+    return this.exposeItems;
+  }
+  public String getStage(){
+    return this.stage;
+  }
+  public String getTraceId(){
+    return this.traceId;
+  }
+  public String getUser(){
+    return this.user;
+  }
+  public String toString(){
+    return ""GProExposeRecommedsReq{user="" + this.user + "",traceId=""+ this.traceId+ "",stage=""+ this.stage+ "",exposeItems=""+ this.exposeItems+ "",}"";
+  }
+  public GProExposeRecommedsReq(  String str,  String str2,  String str3,  ArrayList<GProExposeItem> arrayList){
+    this.user="""";
+    this.traceId="""";
+    this.stage="""";
+    this.exposeItems=new ArrayList<>();
+    this.user=str;
+    this.traceId=str2;
+    this.stage=str3;
+    this.exposeItems=arrayList;
+  }
+}",1,Code Smell
+"/** 
+ * {@link }<p>
+ * @author zhaoyb1990
+ */
+public class ConvertUtil {
+  public static Record convertWrapper(  RecordWrapper wrapper,  String body){
+    Record record=new Record();
+    record.setAppName(wrapper.getAppName());
+    record.setEnvironment(wrapper.getEnvironment());
+    record.setGmtCreate(new Date());
+    record.setGmtRecord(new Date(wrapper.getTimestamp()));
+    record.setHost(wrapper.getHost());
+    record.setTraceId(wrapper.getTraceId());
+    Serializer hessian=SerializerProvider.instance().provide(Serializer.Type.HESSIAN);
+    try {
+      Object response=hessian.deserialize(wrapper.getEntranceInvocation().getResponseSerialized(),Object.class);
+      if (response instanceof String) {
+        record.setResponse(convert2Json((String)response));
+      }
+ else {
+        record.setResponse(JacksonUtil.serialize(response));
+      }
+      record.setRequest(JacksonUtil.serialize(hessian.deserialize(wrapper.getEntranceInvocation().getRequestSerialized(),Object[].class)));
+    }
+ catch (    SerializeException e) {
+    }
+    record.setEntranceDesc(wrapper.getEntranceDesc());
+    record.setWrapperRecord(body);
+    return record;
+  }
+  public static String convert2Json(  String json){
+    try {
+      return JacksonUtil.serialize(JacksonUtil.deserialize(json,HashMap.class));
+    }
+ catch (    SerializeException e) {
+      return json;
+    }
+  }
+}
+",0,Clean Code
+"public static class NET_IN_FACE_OPEN_DOOR extends SdkStructure {
+  public int dwSize;
+  public int nChannel;
+  public int emCompareResult;
+  public NET_OPENDOOR_MATCHINFO stuMatchInfo;
+  public NET_OPENDOOR_IMAGEINFO stuImageInfo;
+  public NET_IN_FACE_OPEN_DOOR(){
+    this.dwSize=this.size();
+  }
+}
+",1,Code Smell
+"public class IcebergMetricsBean implements Serializable {
+  private Map<Integer,Long> columnSizes=null;
+  private Map<Integer,Long> valueCounts=null;
+  private Map<Integer,Long> nullValueCounts=null;
+  private Map<Integer,Long> nanValueCounts=null;
+  private Map<Integer,byte[]> lowerBounds=null;
+  private Map<Integer,byte[]> upperBounds=null;
+  public IcebergMetricsBean(){
+  }
+  public Map<Integer,Long> getColumnSizes(){
+    return columnSizes;
+  }
+  public void setColumnSizes(  Map<Integer,Long> columnSizes){
+    this.columnSizes=columnSizes;
+  }
+  public Map<Integer,Long> getValueCounts(){
+    return valueCounts;
+  }
+  public void setValueCounts(  Map<Integer,Long> valueCounts){
+    this.valueCounts=valueCounts;
+  }
+  public Map<Integer,Long> getNullValueCounts(){
+    return nullValueCounts;
+  }
+  public void setNullValueCounts(  Map<Integer,Long> nullValueCounts){
+    this.nullValueCounts=nullValueCounts;
+  }
+  public Map<Integer,Long> getNanValueCounts(){
+    return nanValueCounts;
+  }
+  public void setNanValueCounts(  Map<Integer,Long> nanValueCounts){
+    this.nanValueCounts=nanValueCounts;
+  }
+  public Map<Integer,byte[]> getLowerBounds(){
+    return lowerBounds;
+  }
+  public void setLowerBounds(  Map<Integer,byte[]> lowerBounds){
+    this.lowerBounds=lowerBounds;
+  }
+  public Map<Integer,byte[]> getUpperBounds(){
+    return upperBounds;
+  }
+  public void setUpperBounds(  Map<Integer,byte[]> upperBounds){
+    this.upperBounds=upperBounds;
+  }
+}
+",1,Code Smell
+"/** 
+ * @author 鐜嬪竻
+ * @since 2023-06-07
+ */
+public class UserVO3 {
+  @Id private String userId;
+  private String userName;
+  private List<RoleVO3> roleVO3;
+  public String getUserId(){
+    return userId;
+  }
+  public void setUserId(  String userId){
+    this.userId=userId;
+  }
+  public String getUserName(){
+    return userName;
+  }
+  public void setUserName(  String userName){
+    this.userName=userName;
+  }
+  public List<RoleVO3> getRoleVO3(){
+    return roleVO3;
+  }
+  public void setRoleVO3(  List<RoleVO3> roleVO3){
+    this.roleVO3=roleVO3;
+  }
+  @Override public String toString(){
+    return ""UserVO3{"" + ""userId='"" + userId + '\''+ "", userName='""+ userName+ '\''+ "", roleVO3=""+ roleVO3+ '}';
+  }
+}",1,Code Smell
+"/** 
+ * Reads and writes DWARFv3 LEB 128 signed and unsigned integers. See DWARF v3 section 7.6.
+ */
+public final class Leb128 {
+  private Leb128(){
+  }
+  /** 
+ * Gets the number of bytes in the unsigned LEB128 encoding of the given value.
+ * @param value the value in question
+ * @return its write size, in bytes
+ */
+  public static int unsignedLeb128Size(  int value){
+    int remaining=value >> 7;
+    int count=0;
+    while (remaining != 0) {
+      remaining>>=7;
+      count++;
+    }
+    return count + 1;
+  }
+  /** 
+ * Reads an signed integer from  {@code in}.
+ */
+  public static int readSignedLeb128(  ByteInput in){
+    int result=0;
+    int cur;
+    int count=0;
+    int signBits=-1;
+    do {
+      cur=in.readByte() & 0xff;
+      result|=(cur & 0x7f) << (count * 7);
+      signBits<<=7;
+      count++;
+    }
+ while (((cur & 0x80) == 0x80) && count < 5);
+    if ((cur & 0x80) == 0x80) {
+      throw new DexException(""invalid LEB128 sequence"");
+    }
+    if (((signBits >> 1) & result) != 0) {
+      result|=signBits;
+    }
+    return result;
+  }
+  /** 
+ * Reads an unsigned integer from  {@code in}.
+ */
+  public static int readUnsignedLeb128(  ByteInput in){
+    int result=0;
+    int cur;
+    int count=0;
+    do {
+      cur=in.readByte() & 0xff;
+      result|=(cur & 0x7f) << (count * 7);
+      count++;
+    }
+ while (((cur & 0x80) == 0x80) && count < 5);
+    if ((cur & 0x80) == 0x80) {
+      throw new DexException(""invalid LEB128 sequence"");
+    }
+    return result;
+  }
+  /** 
+ * Writes  {@code value} as an unsigned integer to {@code out}, starting at {@code offset}. Returns the number of bytes written.
+ */
+  public static void writeUnsignedLeb128(  ByteOutput out,  int value){
+    int remaining=value >>> 7;
+    while (remaining != 0) {
+      out.writeByte((byte)((value & 0x7f) | 0x80));
+      value=remaining;
+      remaining>>>=7;
+    }
+    out.writeByte((byte)(value & 0x7f));
+  }
+  /** 
+ * Writes  {@code value} as a signed integer to {@code out}, starting at {@code offset}. Returns the number of bytes written.
+ */
+  public static void writeSignedLeb128(  ByteOutput out,  int value){
+    int remaining=value >> 7;
+    boolean hasMore=true;
+    int end=((value & Integer.MIN_VALUE) == 0) ? 0 : -1;
+    while (hasMore) {
+      hasMore=(remaining != end) || ((remaining & 1) != ((value >> 6) & 1));
+      out.writeByte((byte)((value & 0x7f) | (hasMore ? 0x80 : 0)));
+      value=remaining;
+      remaining>>=7;
+    }
+  }
+}
+",0,Clean Code
+"public class PluginHelper {
+  /** 
+ * 动态加载的插件管理apk
+ */
+  public final static String sPluginManagerName=""pluginmanager.apk"";
+  /** 
+ * 动态加载的插件包，里面包含以下几个部分，插件apk，插件框架apk（loader apk和runtime apk）, apk信息配置关系json文件
+ */
+  public final static String sPluginZip=BuildConfig.DEBUG ? ""plugin-debug.zip"" : ""plugin-release.zip"";
+  public File pluginManagerFile;
+  public File pluginZipFile;
+  public ExecutorService singlePool=Executors.newSingleThreadExecutor();
+  private Context mContext;
+  private static PluginHelper sInstance=new PluginHelper();
+  public static PluginHelper getInstance(){
+    return sInstance;
+  }
+  private PluginHelper(){
+  }
+  public void init(  Context context){
+    pluginManagerFile=new File(context.getFilesDir(),sPluginManagerName);
+    pluginZipFile=new File(context.getFilesDir(),sPluginZip);
+    mContext=context.getApplicationContext();
+    singlePool.execute(new Runnable(){
+      @Override public void run(){
+        preparePlugin();
+      }
+    }
+);
+  }
+  private void preparePlugin(){
+    try {
+      InputStream is=mContext.getAssets().open(sPluginManagerName);
+      pluginManagerFile.setWritable(true);
+      FileUtils.copyInputStreamToFile(is,pluginManagerFile);
+      InputStream zip=mContext.getAssets().open(sPluginZip);
+      FileUtils.copyInputStreamToFile(zip,pluginZipFile);
+    }
+ catch (    IOException e) {
+      throw new RuntimeException(""从assets中复制apk出错"",e);
+    }
+  }
+}
+",0,Clean Code
+"/** 
+ * Represents a NOT operation.
+ * @author Andy Clement
+ * @author Mark Fisher
+ * @author Oliver Becker
+ * @since 3.0
+ */
+class OperatorNot extends SpelNodeImpl {
+  public OperatorNot(  int pos,  SpelNodeImpl operand){
+    super(pos,operand);
+    this.exitTypeDescriptor=""Z"";
+  }
+  @Override public BooleanTypedValue getValueInternal(  ExpressionState state) throws EvaluationException {
+    try {
+      Boolean value=this.children[0].getValue(state,Boolean.class);
+      if (value == null) {
+        throw new SpelEvaluationException(SpelMessage.TYPE_CONVERSION_ERROR,""null"",""boolean"");
+      }
+      return BooleanTypedValue.forValue(!value);
+    }
+ catch (    SpelEvaluationException ex) {
+      ex.setPosition(getChild(0).getStartPosition());
+      throw ex;
+    }
+  }
+  @Override public String toStringAST(){
+    return ""!"" + getChild(0).toStringAST();
+  }
+  @Override public boolean isCompilable(){
+    SpelNodeImpl child=this.children[0];
+    return (child.isCompilable() && CodeFlow.isBooleanCompatible(child.exitTypeDescriptor));
+  }
+  @Override public void generateCode(  MethodVisitor mv,  CodeFlow cf){
+    this.children[0].generateCode(mv,cf);
+    cf.unboxBooleanIfNecessary(mv);
+    Label elseTarget=new Label();
+    Label endOfIf=new Label();
+    mv.visitJumpInsn(IFNE,elseTarget);
+    mv.visitInsn(ICONST_1);
+    mv.visitJumpInsn(GOTO,endOfIf);
+    mv.visitLabel(elseTarget);
+    mv.visitInsn(ICONST_0);
+    mv.visitLabel(endOfIf);
+    cf.pushDescriptor(this.exitTypeDescriptor);
+  }
+}
+",0,Clean Code
+"/** 
+ * 鐢ㄦ埛 VO 瀵硅薄銆�
+ * @author 鐜嬪竻
+ * @since 2023-06-07
+ */
+public class UserVO {
+  private String userId;
+  private String userName;
+  private HashMap<String,Object> roleList;
+  public String getUserId(){
+    return userId;
+  }
+  public void setUserId(  String userId){
+    this.userId=userId;
+  }
+  public String getUserName(){
+    return userName;
+  }
+  public void setUserName(  String userName){
+    this.userName=userName;
+  }
+  public Map<String,Object> getRoleList(){
+    return roleList;
+  }
+  public void setRoleList(  HashMap<String,Object> roleList){
+    this.roleList=roleList;
+  }
+  @Override public String toString(){
+    return ""UserVO{"" + ""userId='"" + userId + '\''+ "", userName='""+ userName+ '\''+ "", roleList=""+ roleList+ '}';
+  }
+}",1,Code Smell
+"public static class ExtInfo extends MessageMicro<ExtInfo> {
+  public final PBBytesField message_ext=PBField.initBytes(ByteStringMicro.EMPTY);
+  public final PBBytesField tag_name=PBField.initBytes(ByteStringMicro.EMPTY);
+  public final PBRepeatField<Integer> rpt_custom_featureid=PBField.initRepeat(PBUInt32Field.__repeatHelper__);
+  public final PBStringField apns_wording=PBField.initString("""");
+  public final PBUInt32Field uint32_group_savedb_flag=PBField.initUInt32(0);
+  public final PBUInt32Field receiver_appid=PBField.initUInt32(0);
+  public final PBUInt64Field msg_seq=PBField.initUInt64(0);
+}",1,Code Smell
+"public static class NET_DVR_STREAM_MEDIA_SERVER extends Structure {
+  public byte byValid;
+  public byte[] byRes1=new byte[3];
+  public byte[] byAddress=new byte[MAX_DOMAIN_NAME];
+  public short wDevPort;
+  public byte byTransmitType;
+  public byte[] byRes2=new byte[5];
+}",1,Code Smell
+"/** 
+ * 褰曞儚璁板綍
+ */
+public class RecordInfo {
+  /** 
+ * ID
+ */
+  private int id;
+  /** 
+ * 搴旂敤鍚
+ */
+  private String app;
+  /** 
+ * 娴両D
+ */
+  private String stream;
+  /** 
+ * 瀵瑰簲鐨剒lm娴佸獟浣撶殑ID
+ */
+  private String mediaServerId;
+  /** 
+ * 鍒涘缓鏃堕棿
+ */
+  private String createTime;
+  /** 
+ * 绫诲瀷 瀵瑰簲zlm鐨 originType unknown = 0, rtmp_push=1, rtsp_push=2, rtp_push=3, pull=4, ffmpeg_pull=5, mp4_vod=6, device_chn=7, rtc_push=8
+ */
+  private int type;
+  /** 
+ * 鍥芥爣褰曞儚鏃剁殑璁惧ID
+ */
+  private String deviceId;
+  /** 
+ * 鍥芥爣褰曞儚鏃剁殑閫氶亾ID
+ */
+  private String channelId;
+  /** 
+ * 鎷夋祦浠ｇ悊褰曞儚鏃剁殑鍚嶇О
+ */
+  private String name;
+  public int getId(){
+    return id;
+  }
+  public void setId(  int id){
+    this.id=id;
+  }
+  public String getApp(){
+    return app;
+  }
+  public void setApp(  String app){
+    this.app=app;
+  }
+  public String getStream(){
+    return stream;
+  }
+  public void setStream(  String stream){
+    this.stream=stream;
+  }
+  public String getMediaServerId(){
+    return mediaServerId;
+  }
+  public void setMediaServerId(  String mediaServerId){
+    this.mediaServerId=mediaServerId;
+  }
+  public String getCreateTime(){
+    return createTime;
+  }
+  public void setCreateTime(  String createTime){
+    this.createTime=createTime;
+  }
+  public int getType(){
+    return type;
+  }
+  public void setType(  int type){
+    this.type=type;
+  }
+  public String getDeviceId(){
+    return deviceId;
+  }
+  public void setDeviceId(  String deviceId){
+    this.deviceId=deviceId;
+  }
+  public String getChannelId(){
+    return channelId;
+  }
+  public void setChannelId(  String channelId){
+    this.channelId=channelId;
+  }
+  public String getName(){
+    return name;
+  }
+  public void setName(  String name){
+    this.name=name;
+  }
+}",1,Code Smell
+"/** 
+ * Link repository.
+ * @author <a href=""http://88250.b3log.org"">Liang Ding</a>
+ * @version 1.0.0.1, Oct 1, 2018
+ * @since 1.6.0
+ */
+@Repository public class LinkRepository extends AbstractRepository {
+  /** 
+ * Logger.
+ */
+  private static final Logger LOGGER=LogManager.getLogger(LinkRepository.class);
+  /** 
+ * Gets a link with the specified address.
+ * @param addr the specified address
+ * @return a link, returns {@code null} if not found
+ */
+  public JSONObject getLink(  final String addr){
+    final String hash=DigestUtils.sha1Hex(addr);
+    final Query query=new Query().setFilter(new PropertyFilter(Link.LINK_ADDR_HASH,FilterOperator.EQUAL,hash)).setPageCount(1).setPage(1,1);
+    try {
+      return getFirst(query);
+    }
+ catch (    final Exception e) {
+      LOGGER.log(Level.ERROR,""Gets link by address [addr="" + addr + "", hash=""+ hash+ ""] failed"",e);
+      return null;
+    }
+  }
+  /** 
+ * Public constructor.
+ */
+  public LinkRepository(){
+    super(Link.LINK);
+  }
+}
+",0,Clean Code
+"@Api(tags=""data source operate restful api"") @RestController @RequestMapping(value=""/data-source-manager/op/"",produces={""application/json""}) public class DataSourceOperateRestfulApi {
+  @Autowired private MetadataOperateService metadataOperateService;
+  @Autowired private DataSourceRelateService dataSourceRelateService;
+  @Autowired private DataSourceInfoService dataSourceInfoService;
+  @Autowired private ParameterValidator parameterValidator;
+  @Autowired private Validator beanValidator;
+  @Autowired private List<DataSourceParamsHook> dataSourceParamsHooks=new ArrayList<>();
+  private MultiPartFormDataTransformer formDataTransformer;
+  @PostConstruct public void initRestful(){
+    this.formDataTransformer=FormDataTransformerFactory.buildCustom();
+  }
+  @ApiOperation(value=""connect"",notes=""connect"",response=Message.class) @ApiOperationSupport(ignoreParameters={""dataSource""}) @RequestMapping(value=""/connect/json"",method=RequestMethod.POST) public Message connect(  @RequestBody DataSource dataSource,  HttpServletRequest request){
+    return RestfulApiHelper.doAndResponse(() -> {
+      String operator=ModuleUserUtils.getOperationUser(request,""do connect"");
+      Set<ConstraintViolation<DataSource>> result=beanValidator.validate(dataSource,Default.class);
+      if (result.size() > 0) {
+        throw new ConstraintViolationException(result);
+      }
+      doConnect(operator,dataSource);
+      return Message.ok().data(""ok"",true);
+    }
+,"""");
+  }
+  /** 
+ * Build a connection
+ * @param dataSource
+ */
+  protected void doConnect(  String operator,  DataSource dataSource) throws ErrorException {
+    if (dataSource.getConnectParams().containsKey(""envId"")) {
+      try {
+        dataSourceInfoService.addEnvParamsToDataSource(Long.parseLong(dataSource.getConnectParams().get(""envId"").toString()),dataSource);
+      }
+ catch (      Exception e) {
+        throw new ParameterValidateException(ENVID_ATYPICAL.getErrorDesc() + e);
+      }
+    }
+    List<DataSourceParamKeyDefinition> keyDefinitionList=dataSourceRelateService.getKeyDefinitionsByType(dataSource.getDataSourceTypeId());
+    dataSource.setKeyDefinitions(keyDefinitionList);
+    Map<String,Object> connectParams=dataSource.getConnectParams();
+    parameterValidator.validate(keyDefinitionList,connectParams);
+    for (    DataSourceParamsHook hook : dataSourceParamsHooks) {
+      hook.beforePersist(connectParams,keyDefinitionList);
+    }
+    DataSourceType dataSourceType=dataSourceRelateService.getDataSourceType(dataSource.getDataSourceTypeId());
+    metadataOperateService.doRemoteConnect(MdmConfiguration.METADATA_SERVICE_APPLICATION.getValue(),dataSourceType.getName().toLowerCase(),operator,dataSource.getConnectParams());
+  }
+}",0,Clean Code
+"@Table(""tb_article"") public class Article {
+  @Id(keyType=KeyType.Auto) private Long id;
+  @Id(keyType=KeyType.Generator,value=""uuid"") private String uuid;
+  private Long accountId;
+  private String title;
+  @Column(isLarge=true) private String content;
+  @Column(onInsertValue=""now()"") private Date created;
+  @Column(onUpdateValue=""now()"",onInsertValue=""now()"") private Date modified;
+  @Column(isLogicDelete=true) private Boolean isDelete;
+  @Column(version=true) private Long version;
+  private Account account;
+  public Long getId(){
+    return id;
+  }
+  public void setId(  Long id){
+    this.id=id;
+  }
+  public String getUuid(){
+    return uuid;
+  }
+  public void setUuid(  String uuid){
+    this.uuid=uuid;
+  }
+  public Long getAccountId(){
+    return accountId;
+  }
+  public void setAccountId(  Long accountId){
+    this.accountId=accountId;
+  }
+  public String getTitle(){
+    return title;
+  }
+  public void setTitle(  String title){
+    this.title=title;
+  }
+  public String getContent(){
+    return content;
+  }
+  public void setContent(  String content){
+    this.content=content;
+  }
+  public Date getCreated(){
+    return created;
+  }
+  public void setCreated(  Date created){
+    this.created=created;
+  }
+  public Date getModified(){
+    return modified;
+  }
+  public void setModified(  Date modified){
+    this.modified=modified;
+  }
+  public Boolean getDelete(){
+    return isDelete;
+  }
+  public void setDelete(  Boolean delete){
+    isDelete=delete;
+  }
+  public Long getVersion(){
+    return version;
+  }
+  public void setVersion(  Long version){
+    this.version=version;
+  }
+  public Account getAccount(){
+    return account;
+  }
+  public void setAccount(  Account account){
+    this.account=account;
+  }
+}
+",1,Code Smell
+"public static class Dtype_defaultContext extends ParserRuleContext {
+  public TerminalNode T_EQUAL(){
+    return getToken(HiveSqlParser.T_EQUAL,0);
+  }
+  public ExprContext expr(){
+    return getRuleContext(ExprContext.class,0);
+  }
+  public TerminalNode T_COLON(){
+    return getToken(HiveSqlParser.T_COLON,0);
+  }
+  public TerminalNode T_DEFAULT(){
+    return getToken(HiveSqlParser.T_DEFAULT,0);
+  }
+  public TerminalNode T_WITH(){
+    return getToken(HiveSqlParser.T_WITH,0);
+  }
+  public Dtype_defaultContext(  ParserRuleContext parent,  int invokingState){
+    super(parent,invokingState);
+  }
+  @Override public int getRuleIndex(){
+    return RULE_dtype_default;
+  }
+  @Override public void enterRule(  ParseTreeListener listener){
+    if (listener instanceof HiveSqlListener)     ((HiveSqlListener)listener).enterDtype_default(this);
+  }
+  @Override public void exitRule(  ParseTreeListener listener){
+    if (listener instanceof HiveSqlListener)     ((HiveSqlListener)listener).exitDtype_default(this);
+  }
+  @Override public <T>T accept(  ParseTreeVisitor<? extends T> visitor){
+    if (visitor instanceof HiveSqlVisitor)     return ((HiveSqlVisitor<? extends T>)visitor).visitDtype_default(this);
+ else     return visitor.visitChildren(this);
+  }
+}",0,Clean Code
+"/** 
+ * 进行词频统计 并将统计结果存储到Redis中
+ */
+public class WordCountToRedisApp {
+  private static final String DATA_SOURCE_SPOUT=""dataSourceSpout"";
+  private static final String SPLIT_BOLT=""splitBolt"";
+  private static final String COUNT_BOLT=""countBolt"";
+  private static final String STORE_BOLT=""storeBolt"";
+  private static final String REDIS_HOST=""192.168.200.226"";
+  private static final int REDIS_PORT=6379;
+  public static void main(  String[] args){
+    TopologyBuilder builder=new TopologyBuilder();
+    builder.setSpout(DATA_SOURCE_SPOUT,new DataSourceSpout());
+    builder.setBolt(SPLIT_BOLT,new SplitBolt()).shuffleGrouping(DATA_SOURCE_SPOUT);
+    builder.setBolt(COUNT_BOLT,new CountBolt()).shuffleGrouping(SPLIT_BOLT);
+    JedisPoolConfig poolConfig=new JedisPoolConfig.Builder().setHost(REDIS_HOST).setPort(REDIS_PORT).build();
+    RedisStoreMapper storeMapper=new WordCountStoreMapper();
+    RedisStoreBolt storeBolt=new RedisStoreBolt(poolConfig,storeMapper);
+    builder.setBolt(STORE_BOLT,storeBolt).shuffleGrouping(COUNT_BOLT);
+    if (args.length > 0 && args[0].equals(""cluster"")) {
+      try {
+        StormSubmitter.submitTopology(""ClusterWordCountToRedisApp"",new Config(),builder.createTopology());
+      }
+ catch (      AlreadyAliveException|InvalidTopologyException|AuthorizationException e) {
+        e.printStackTrace();
+      }
+    }
+ else {
+      LocalCluster cluster=new LocalCluster();
+      cluster.submitTopology(""LocalWordCountToRedisApp"",new Config(),builder.createTopology());
+    }
+  }
+}
+",0,Clean Code
+"/** 
+ * Member Service 实现类
+ * @author 芋道源码
+ */
+@Service public class MemberServiceImpl implements MemberService {
+  @Value(""${yudao.info.base-package}"") private String basePackage;
+  private volatile Object memberUserApi;
+  @Override public String getMemberUserMobile(  Long id){
+    Object user=getMemberUser(id);
+    if (user == null) {
+      return null;
+    }
+    return ReflectUtil.invoke(user,""getMobile"");
+  }
+  @Override public String getMemberUserEmail(  Long id){
+    Object user=getMemberUser(id);
+    if (user == null) {
+      return null;
+    }
+    return ReflectUtil.invoke(user,""getEmail"");
+  }
+  private Object getMemberUser(  Long id){
+    if (id == null) {
+      return null;
+    }
+    return ReflectUtil.invoke(getMemberUserApi(),""getUser"",id);
+  }
+  private Object getMemberUserApi(){
+    if (memberUserApi == null) {
+      memberUserApi=SpringUtil.getBean(ClassUtil.loadClass(String.format(""%s.module.member.api.user.MemberUserApi"",basePackage)));
+    }
+    return memberUserApi;
+  }
+}
+",0,Clean Code
+"public abstract static class RawData extends CustomTextureData {
+  private final byte[] content;
+  private final InternalTextureFormat internalFormat;
+  private final PixelFormat pixelFormat;
+  private final PixelType pixelType;
+  private final TextureFilteringData filteringData;
+  private RawData(  byte[] content,  TextureFilteringData filteringData,  InternalTextureFormat internalFormat,  PixelFormat pixelFormat,  PixelType pixelType){
+    this.content=content;
+    this.filteringData=filteringData;
+    this.internalFormat=internalFormat;
+    this.pixelFormat=pixelFormat;
+    this.pixelType=pixelType;
+  }
+  public final byte[] getContent(){
+    return content;
+  }
+  public TextureFilteringData getFilteringData(){
+    return filteringData;
+  }
+  public final InternalTextureFormat getInternalFormat(){
+    return internalFormat;
+  }
+  public final PixelFormat getPixelFormat(){
+    return pixelFormat;
+  }
+  public final PixelType getPixelType(){
+    return pixelType;
+  }
+}
+",1,Code Smell
+"/** 
+ * 消息模板格式化
+ */
+public class MsgFormatUtil {
+  private static String REGEX=""(\\{([a-zA-Z]+)\\})"";
+  public static String TEMPALTE_NICKNAME=""nickname"";
+  public static String TEMPALTE_DATETIME=""datetime"";
+  public static String TEMPALTE_BUSINESS_NAME=""businessName"";
+  public static String TEMPALTE_BUSINESS_KEY=""businessKey"";
+  /** 
+ * 根据模板及参数获得内容
+ * @param tempalte
+ * @param parameters
+ * @return
+ */
+  public static String getContent(  String tempalte,  Map<String,String> parameters){
+    if (StrUtil.isBlank(tempalte)) {
+      tempalte=""业务名称:{businessName},发起人:{nickname},业务编号:{businessKey}"";
+    }
+    Pattern p=Pattern.compile(REGEX);
+    Matcher m=p.matcher(tempalte);
+    StringBuffer stringBuffer=new StringBuffer();
+    while (m.find()) {
+      String key=m.group(2);
+      String value=null;
+      if (parameters.containsKey(key)) {
+        value=parameters.get(key);
+      }
+      value=(value == null) ? """" : value;
+      m.appendReplacement(stringBuffer,value);
+    }
+    m.appendTail(stringBuffer);
+    return stringBuffer.toString();
+  }
+  public static void main(  String[] args){
+    String tempalte=""{name}你好,今年{age}岁"";
+    Map<String,String> parameters=new HashMap<>();
+    parameters.put(""name"",""chris"");
+    parameters.put(""age"",""22"");
+    System.out.println(getContent(tempalte,parameters));
+  }
+}",0,Clean Code
+"public static class DEV_EVENT_ALARM_INFO extends SdkStructure {
+  public int nChannelID;
+  public byte[] szName=new byte[128];
+  public byte[] Reserved=new byte[4];
+  public double PTS;
+  public NET_TIME_EX UTC;
+  public int nEventID;
+  public NET_EVENT_FILE_INFO stuFileInfo;
+  public EVENT_COMM_INFO stCommInfo;
+  public byte byEventAction;
+  public byte[] byReserved=new byte[3];
+}",1,Code Smell
+"@Service public interface TableService {
+  /** 
+ * Checks if the specified table exists.
+ * @param tableParams The TableParams object containing information about the table
+ * @return true if the table exists, false otherwise
+ */
+  boolean tableExists(  TableParams tableParams);
+  /** 
+ * Creates a table in the database given $ {@link TableParams}.
+ * @param tableParams The TableParams object containing information about the table
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean createTable(  TableParams tableParams);
+  /** 
+ * Adds a column to the table.
+ * @param tableParams The TableDTO object containing information about the table
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean addColumn(  TableParams tableParams);
+  /** 
+ * Drops a column from a table.
+ * @param catalogName The name of the catalog
+ * @param databaseName The name of the database
+ * @param tableName The name of the table
+ * @param columnName The name of the column to be dropped
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean dropColumn(  String catalogName,  String databaseName,  String tableName,  String columnName);
+  /** 
+ * Adds options to a table.
+ * @param tableDTO The TableDTO object containing information about the table
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean addOption(  TableParams tableDTO);
+  /** 
+ * Removes an option from a table.
+ * @param catalogName The name of the catalog
+ * @param databaseName The name of the database
+ * @param tableName The name of the table
+ * @param key The key of the option to be removed
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean removeOption(  String catalogName,  String databaseName,  String tableName,  String key);
+  /** 
+ * Drops a table from the specified database in the given catalog.
+ * @param catalogName The name of the catalog from which the table will be dropped
+ * @param databaseName The name of the database from which the table will be dropped
+ * @param tableName The name of the table to be dropped
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean dropTable(  String catalogName,  String databaseName,  String tableName);
+  /** 
+ * Renames a table in the specified database of the given catalog.
+ * @param catalogName The name of the catalog where the table resides
+ * @param databaseName The name of the database where the table resides
+ * @param fromTableName The current name of the table to be renamed
+ * @param toTableName The new name for the table
+ * @return true if the operation is successful, false otherwise
+ */
+  boolean renameTable(  String catalogName,  String databaseName,  String fromTableName,  String toTableName);
+  /** 
+ * Lists tables given  {@link TableParams} condition.
+ * @return Response object containing a list of {@link TableParams} representing the tables
+ */
+  List<TableParams> listTables(  TableParams tableDTO);
+  /** 
+ * Retrieves the column details of a specific table within the specified catalog and database.
+ * @param catalogName The name of the catalog where the table is located
+ * @param databaseName The name of the database where the table is located
+ * @param tableName The name of the table whose columns are to be retrieved
+ * @return A {@link TableParams} object containing the details of the columns of the specifiedtable
+ */
+  TableParams listColumns(  String catalogName,  String databaseName,  String tableName);
+}
+",0,Clean Code
+"@Generated(""org.mybatis.generator.api.MyBatisGenerator"") public static final class BookCategory extends SqlTable {
+  public final SqlColumn<Integer> id=column(""id"",JDBCType.INTEGER);
+  public final SqlColumn<Byte> workDirection=column(""work_direction"",JDBCType.TINYINT);
+  public final SqlColumn<String> name=column(""name"",JDBCType.VARCHAR);
+  public final SqlColumn<Byte> sort=column(""sort"",JDBCType.TINYINT);
+  public final SqlColumn<Long> createUserId=column(""create_user_id"",JDBCType.BIGINT);
+  public final SqlColumn<Date> createTime=column(""create_time"",JDBCType.TIMESTAMP);
+  public final SqlColumn<Long> updateUserId=column(""update_user_id"",JDBCType.BIGINT);
+  public final SqlColumn<Date> updateTime=column(""update_time"",JDBCType.TIMESTAMP);
+  public BookCategory(){
+    super(""book_category"");
+  }
+}
+",1,Code Smell
+"public static class NET_ATTENDANCE_USERINFO extends SdkStructure {
+  public byte[] szUserID=new byte[MAX_COMMON_STRING_32];
+  public byte[] szUserName=new byte[MAX_ATTENDANCE_USERNAME_LEN];
+  public byte[] szCardNo=new byte[MAX_COMMON_STRING_32];
+  public int emAuthority;
+  public byte[] szPassword=new byte[MAX_COMMON_STRING_32];
+  public int nPhotoLength;
+  public byte[] szClassNumber=new byte[MAX_CLASS_NUMBER_LEN];
+  public byte[] szPhoneNumber=new byte[MAX_PHONENUMBER_LEN];
+  public byte[] byReserved=new byte[208];
+}",1,Code Smell
+"/** 
+ * 瀵瑰簲XML涓� <trim>锛屾敞鎰弍refixOverrides鍜宻uffixOverrides澶у皬鍐欐晱鎰�
+ * @author zhangxu
+ * @version : 2020-12-05
+ */
+public class TrimSqlNode extends SqlNode {
+  /** 
+ * 鍓嶇紑  prefix
+ */
+  protected String prefix;
+  /** 
+ * 鍚庣紑  suffix
+ */
+  protected String suffix;
+  /** 
+ * 鍓嶇紑 prefixOverrides
+ */
+  protected String prefixOverrides;
+  /** 
+ * 鍚庣紑 suffixOverrides
+ */
+  protected String suffixOverrides;
+  public void setPrefix(  String prefix){
+    this.prefix=prefix;
+  }
+  public void setSuffix(  String suffix){
+    this.suffix=suffix;
+  }
+  public void setSuffixOverrides(  String suffixOverrides){
+    this.suffixOverrides=suffixOverrides == null ? null : suffixOverrides.toUpperCase();
+  }
+  public void setPrefixOverrides(  String prefixOverrides){
+    this.prefixOverrides=prefixOverrides == null ? null : prefixOverrides.toUpperCase();
+  }
+  @Override public String getSql(  Map<String,Object> paramMap,  List<Object> parameters){
+    StringBuilder sqlBuffer=new StringBuilder();
+    String childrenSql=executeChildren(paramMap,parameters).trim();
+    if (StringUtils.isNotEmpty(childrenSql)) {
+      String upperSql=childrenSql.toUpperCase();
+      sqlBuffer.append(StringUtils.defaultString(this.prefix)).append("" "");
+      if (StringUtils.isNotEmpty(this.prefixOverrides)) {
+        String[] overrideArray=this.prefixOverrides.split(""\\|"");
+        for (        String override : overrideArray) {
+          if (upperSql.startsWith(override)) {
+            childrenSql=childrenSql.substring(upperSql.indexOf(override) + override.length()).trim();
+            upperSql=childrenSql.toUpperCase();
+            break;
+          }
+        }
+      }
+      if (StringUtils.isNotBlank(this.suffixOverrides)) {
+        String[] overrideArray=this.suffixOverrides.split(""\\|"");
+        for (        String override : overrideArray) {
+          if (upperSql.endsWith(override)) {
+            childrenSql=childrenSql.substring(0,upperSql.lastIndexOf(override));
+            break;
+          }
+        }
+      }
+      sqlBuffer.append(childrenSql);
+      sqlBuffer.append("" "").append(StringUtils.defaultString(this.suffix));
+    }
+    return sqlBuffer.toString();
+  }
+}",1,Code Smell
+"/** 
+ * 默认的 DataPermissionRuleFactoryImpl 实现类 支持通过  {@link DataPermissionContextHolder} 过滤数据权限
+ * @author 芋道源码
+ */
+@RequiredArgsConstructor public class DataPermissionRuleFactoryImpl implements DataPermissionRuleFactory {
+  /** 
+ * 数据权限规则数组
+ */
+  private final List<DataPermissionRule> rules;
+  @Override public List<DataPermissionRule> getDataPermissionRules(){
+    return rules;
+  }
+  @Override public List<DataPermissionRule> getDataPermissionRule(  String mappedStatementId){
+    if (CollUtil.isEmpty(rules)) {
+      return Collections.emptyList();
+    }
+    DataPermission dataPermission=DataPermissionContextHolder.get();
+    if (dataPermission == null) {
+      return rules;
+    }
+    if (!dataPermission.enable()) {
+      return Collections.emptyList();
+    }
+    if (ArrayUtil.isNotEmpty(dataPermission.includeRules())) {
+      return rules.stream().filter(rule -> ArrayUtil.contains(dataPermission.includeRules(),rule.getClass())).collect(Collectors.toList());
+    }
+    if (ArrayUtil.isNotEmpty(dataPermission.excludeRules())) {
+      return rules.stream().filter(rule -> !ArrayUtil.contains(dataPermission.excludeRules(),rule.getClass())).collect(Collectors.toList());
+    }
+    return rules;
+  }
+}
+",0,Clean Code
+"/** 
+ * Created by Administrator on 2016/8/1 0001.
+ */
+public abstract class AnimationProvider {
+  protected Bitmap mCurPageBitmap, mNextPageBitmap;
+  protected float myStartX;
+  protected float myStartY;
+  protected int myEndX;
+  protected int myEndY;
+  protected Direction myDirection;
+  protected int mScreenWidth;
+  protected int mScreenHeight;
+  protected PointF mTouch=new PointF();
+  private Direction direction=Direction.NONE;
+  private boolean isCancel=false;
+  public AnimationProvider(  int width,  int height){
+    mCurPageBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+    mNextPageBitmap=Bitmap.createBitmap(width,height,Bitmap.Config.RGB_565);
+    this.mScreenWidth=width;
+    this.mScreenHeight=height;
+  }
+  public abstract void drawMove(  Canvas canvas);
+  public abstract void drawStatic(  Canvas canvas);
+  public void setStartPoint(  float x,  float y){
+    myStartX=x;
+    myStartY=y;
+  }
+  public void setTouchPoint(  float x,  float y){
+    mTouch.x=x;
+    mTouch.y=y;
+  }
+  public Direction getDirection(){
+    return direction;
+  }
+  public void setDirection(  Direction direction){
+    this.direction=direction;
+  }
+  public abstract void startAnimation(  Scroller scroller);
+  /** 
+ * 转换页面，在显示下一章的时候，必须首先调用此方法
+ */
+  public void changePage(){
+    Bitmap bitmap=mCurPageBitmap;
+    mCurPageBitmap=mNextPageBitmap;
+    mNextPageBitmap=bitmap;
+  }
+  public Bitmap getNextBitmap(){
+    return mNextPageBitmap;
+  }
+  public Bitmap getBgBitmap(){
+    return mNextPageBitmap;
+  }
+  public boolean getCancel(){
+    return isCancel;
+  }
+  public void setCancel(  boolean isCancel){
+    this.isCancel=isCancel;
+  }
+  public enum Direction {  NONE(true),   NEXT(true),   PRE(true),   UP(false),   DOWN(false);   public final boolean isHorizontal;
+  Direction(  boolean isHorizontal){
+    this.isHorizontal=isHorizontal;
+  }
+}
+}
+",0,Clean Code
+"public static class NET_DVR_MATRIX_LOCAL_HOST_INFO extends Structure {
+  public int dwSize;
+  public int dwLocalHostProperty;
+  public int dwIsIsolated;
+  public int dwLocalMatrixHostPort;
+  public byte[] byLocalMatrixHostUsrName=new byte[NAME_LEN];
+  public byte[] byLocalMatrixHostPasswd=new byte[PASSWD_LEN];
+  public int dwLocalMatrixCtrlMedia;
+  public byte[] sMatrixCenterIP=new byte[16];
+  public int dwMatrixCenterPort;
+  public byte[] byMatrixCenterUsrName=new byte[NAME_LEN];
+  public byte[] byMatrixCenterPasswd=new byte[PASSWD_LEN];
+}",1,Code Smell
+"/** 
+ * CSDN登录
+ * @author yadong.zhang (yadong.zhang0415(a)gmail.com)
+ * @since 1.0.0
+ */
+@Deprecated public class AuthCsdnRequest extends AuthDefaultRequest {
+  public AuthCsdnRequest(  AuthConfig config){
+    super(config,AuthDefaultSource.CSDN);
+  }
+  public AuthCsdnRequest(  AuthConfig config,  AuthStateCache authStateCache){
+    super(config,AuthDefaultSource.CSDN,authStateCache);
+  }
+  @Override public AuthToken getAccessToken(  AuthCallback authCallback){
+    String response=doPostAuthorizationCode(authCallback.getCode());
+    JSONObject accessTokenObject=JSONObject.parseObject(response);
+    this.checkResponse(accessTokenObject);
+    return AuthToken.builder().accessToken(accessTokenObject.getString(""access_token"")).build();
+  }
+  @Override public AuthUser getUserInfo(  AuthToken authToken){
+    String response=doGetUserInfo(authToken);
+    JSONObject object=JSONObject.parseObject(response);
+    this.checkResponse(object);
+    return AuthUser.builder().rawUserInfo(object).uuid(object.getString(""username"")).username(object.getString(""username"")).remark(object.getString(""description"")).blog(object.getString(""website"")).gender(AuthUserGender.UNKNOWN).token(authToken).source(source.toString()).build();
+  }
+  /** 
+ * 检查响应内容是否正确
+ * @param object 请求响应内容
+ */
+  private void checkResponse(  JSONObject object){
+    if (object.containsKey(""error_code"")) {
+      throw new AuthException(object.getString(""error""));
+    }
+  }
+}
+",0,Clean Code
+"@JSONCompiled public static class Bean8 {
+  public Integer v1;
+  public Integer v2;
+  public Integer v3;
+  public Integer v4;
+  public Integer v5;
+  public Integer v6;
+  public Integer v7;
+  public Integer v8;
+}",1,Code Smell
+"public static class ScheduleDatePickerColors {
+  public final int textColor;
+  public final int backgroundColor;
+  public final int iconColor;
+  public final int iconSelectorColor;
+  public final int subMenuTextColor;
+  public final int subMenuBackgroundColor;
+  public final int subMenuSelectorColor;
+  public final int buttonTextColor;
+  public final int buttonBackgroundColor;
+  public final int buttonBackgroundPressedColor;
+  private ScheduleDatePickerColors(){
+    this(null);
+  }
+  private ScheduleDatePickerColors(  Theme.ResourcesProvider rp){
+    this(rp != null ? rp.getColorOrDefault(Theme.key_dialogTextBlack) : Theme.getColor(Theme.key_dialogTextBlack),rp != null ? rp.getColorOrDefault(Theme.key_dialogBackground) : Theme.getColor(Theme.key_dialogBackground),rp != null ? rp.getColorOrDefault(Theme.key_sheet_other) : Theme.getColor(Theme.key_sheet_other),rp != null ? rp.getColorOrDefault(Theme.key_player_actionBarSelector) : Theme.getColor(Theme.key_player_actionBarSelector),rp != null ? rp.getColorOrDefault(Theme.key_actionBarDefaultSubmenuItem) : Theme.getColor(Theme.key_actionBarDefaultSubmenuItem),rp != null ? rp.getColorOrDefault(Theme.key_actionBarDefaultSubmenuBackground) : Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground),rp != null ? rp.getColorOrDefault(Theme.key_listSelector) : Theme.getColor(Theme.key_listSelector),rp != null ? rp.getColorOrDefault(Theme.key_featuredStickers_buttonText) : Theme.getColor(Theme.key_featuredStickers_buttonText),rp != null ? rp.getColorOrDefault(Theme.key_featuredStickers_addButton) : Theme.getColor(Theme.key_featuredStickers_addButton),rp != null ? rp.getColorOrDefault(Theme.key_featuredStickers_addButtonPressed) : Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+  }
+  public ScheduleDatePickerColors(  int textColor,  int backgroundColor,  int iconColor,  int iconSelectorColor,  int subMenuTextColor,  int subMenuBackgroundColor,  int subMenuSelectorColor){
+    this(textColor,backgroundColor,iconColor,iconSelectorColor,subMenuTextColor,subMenuBackgroundColor,subMenuSelectorColor,Theme.getColor(Theme.key_featuredStickers_buttonText),Theme.getColor(Theme.key_featuredStickers_addButton),Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+  }
+  public ScheduleDatePickerColors(  int textColor,  int backgroundColor,  int iconColor,  int iconSelectorColor,  int subMenuTextColor,  int subMenuBackgroundColor,  int subMenuSelectorColor,  int buttonTextColor,  int buttonBackgroundColor,  int buttonBackgroundPressedColor){
+    this.textColor=textColor;
+    this.backgroundColor=backgroundColor;
+    this.iconColor=iconColor;
+    this.iconSelectorColor=iconSelectorColor;
+    this.subMenuTextColor=subMenuTextColor;
+    this.subMenuBackgroundColor=subMenuBackgroundColor;
+    this.subMenuSelectorColor=subMenuSelectorColor;
+    this.buttonTextColor=buttonTextColor;
+    this.buttonBackgroundColor=buttonBackgroundColor;
+    this.buttonBackgroundPressedColor=buttonBackgroundPressedColor;
+  }
+}
+",1,Code Smell
+"public class ClusterInfoVO extends BaseEntity {
+  @ApiModelProperty(notes=""闆嗙兢鍚嶇О"") private String clusterName;
+  @ApiModelProperty(notes=""闆嗙兢id"") private Long clusterId;
+  private Timestamp gmtCreate;
+  private Timestamp gmtModified;
+  private Integer isDeleted=0;
+  @ApiModelProperty(notes=""鏄惁鑳戒慨鏀瑰垏鎹etadata"") private boolean canModifyMetadata=true;
+  public boolean isCanModifyMetadata(){
+    return canModifyMetadata;
+  }
+  public void setCanModifyMetadata(  boolean canModifyMetadata){
+    this.canModifyMetadata=canModifyMetadata;
+  }
+  public Timestamp getGmtCreate(){
+    return gmtCreate;
+  }
+  public void setGmtCreate(  Timestamp gmtCreate){
+    this.gmtCreate=gmtCreate;
+  }
+  public Integer getIsDeleted(){
+    return isDeleted;
+  }
+  public void setIsDeleted(  Integer isDeleted){
+    this.isDeleted=isDeleted;
+  }
+  public Long getClusterId(){
+    return clusterId;
+  }
+  public void setClusterId(  Long clusterId){
+    this.clusterId=clusterId;
+  }
+  public Timestamp getGmtModified(){
+    return gmtModified;
+  }
+  public void setGmtModified(  Timestamp gmtModified){
+    this.gmtModified=gmtModified;
+  }
+  public String getClusterName(){
+    return clusterName;
+  }
+  public void setClusterName(  String clusterName){
+    this.clusterName=clusterName;
+  }
+}",1,Code Smell
+"public static class Nlist extends KaitaiStruct {
+  public static Nlist fromFile(  String fileName) throws IOException {
+    return new Nlist(new ByteBufferKaitaiStream(fileName));
+  }
+  public Nlist(  KaitaiStream _io){
+    this(_io,null,null);
+  }
+  public Nlist(  KaitaiStream _io,  MachO.SymtabCommand _parent){
+    this(_io,_parent,null);
+  }
+  public Nlist(  KaitaiStream _io,  MachO.SymtabCommand _parent,  MachO _root){
+    super(_io);
+    this._parent=_parent;
+    this._root=_root;
+    _read();
+  }
+  private void _read(){
+    this.un=this._io.readU4le();
+    this.type=this._io.readU1();
+    this.sect=this._io.readU1();
+    this.desc=this._io.readU2le();
+{
+      MagicType on=_root.magic();
+      if (on != null) {
+switch (_root.magic()) {
+case MACHO_BE_X64:
+{
+            this.value=this._io.readU8le();
+            break;
+          }
+case MACHO_LE_X64:
+{
+          this.value=this._io.readU8le();
+          break;
+        }
+case MACHO_BE_X86:
+{
+        this.value=(long)(this._io.readU4le());
+        break;
+      }
+case MACHO_LE_X86:
+{
+      this.value=(long)(this._io.readU4le());
+      break;
+    }
+}
+}
+}
+}
+private long un;
+private int type;
+private int sect;
+private int desc;
+private Long value;
+private MachO _root;
+private MachO.SymtabCommand _parent;
+public long un(){
+return un;
+}
+public int type(){
+return type;
+}
+public int sect(){
+return sect;
+}
+public int desc(){
+return desc;
+}
+public Long value(){
+return value;
+}
+public MachO _root(){
+return _root;
+}
+public MachO.SymtabCommand _parent(){
+return _parent;
+}
+}
+",0,Clean Code
+"public static class ReqBody extends MessageMicro<ReqBody> {
+  public final PBUInt64Field uint64_group_code=PBField.initUInt64(0);
+  public final PBUInt64Field uint64_start_uin=PBField.initUInt64(0);
+  public final PBUInt32Field uint32_identify_flag=PBField.initUInt32(0);
+  public final PBRepeatField<Long> rpt_uint64_uin_list=PBField.initRepeat(PBUInt64Field.__repeatHelper__);
+  public memberlist memberlist_opt=new memberlist();
+  public final PBUInt32Field uint32_member_num=PBField.initUInt32(0);
+  public final PBUInt32Field uint32_filter_method=PBField.initUInt32(0);
+  public final PBUInt32Field uint32_online_flag=PBField.initUInt32(0);
+}",1,Code Smell
+"@Data @NoArgsConstructor @AllArgsConstructor @Builder(toBuilder=true) @JsonInclude(NON_NULL) @JsonNaming(SnakeCaseStrategy.class) public class AnthropicCreateMessageRequest {
+  public String model;
+  public List<AnthropicMessage> messages;
+  public String system;
+  public int maxTokens;
+  public List<String> stopSequences;
+  public boolean stream;
+  public Double temperature;
+  public Double topP;
+  public Integer topK;
+  public List<AnthropicTool> tools;
+}
+",1,Code Smell
+"public class OrganizationMemberListAdapter extends RecyclerView.Adapter<OrganizationEntityViewHolder> {
+  private Fragment fragment;
+  private OrganizationEx organizationEx;
+  private OnOrganizationMemberClickListener onOrganizationMemberClickListener;
+  public OrganizationMemberListAdapter(  Fragment fragment){
+    this.fragment=fragment;
+  }
+  public void setOrganizationEx(  OrganizationEx organizationEx){
+    this.organizationEx=organizationEx;
+  }
+  public void setOnOrganizationMemberClickListener(  OnOrganizationMemberClickListener onOrganizationMemberClickListener){
+    this.onOrganizationMemberClickListener=onOrganizationMemberClickListener;
+  }
+  @NonNull @Override public OrganizationEntityViewHolder onCreateViewHolder(  @NonNull ViewGroup parent,  int viewType){
+    OrganizationEntityViewHolder holder;
+    View view;
+    LayoutInflater inflater=LayoutInflater.from(parent.getContext());
+    if (viewType == R.layout.organization_item_organization) {
+      view=inflater.inflate(R.layout.organization_item_organization,parent,false);
+      holder=new OrganizationViewHolder(view);
+    }
+ else {
+      view=inflater.inflate(R.layout.organization_item_employee,parent,false);
+      holder=new EmployeeViewHolder(view);
+    }
+    view.setOnClickListener(v -> {
+      if (onOrganizationMemberClickListener != null) {
+        int position=holder.getAdapterPosition();
+        if (position < subOrganizationCount()) {
+          Organization organization=organizationEx.subOrganizations.get(position);
+          onOrganizationMemberClickListener.onOrganizationClick(organization);
+        }
+ else {
+          Employee employee=organizationEx.employees.get(position - subOrganizationCount());
+          onOrganizationMemberClickListener.onEmployeeClick(employee);
+        }
+      }
+    }
+);
+    return holder;
+  }
+  @Override public void onBindViewHolder(  @NonNull OrganizationEntityViewHolder holder,  int position){
+    Object value;
+    if (position < subOrganizationCount()) {
+      value=organizationEx.subOrganizations.get(position);
+    }
+ else {
+      value=organizationEx.employees.get(position - subOrganizationCount());
+    }
+    holder.onBind(value);
+  }
+  @Override public int getItemViewType(  int position){
+    if (position < subOrganizationCount()) {
+      return R.layout.organization_item_organization;
+    }
+ else {
+      return R.layout.organization_item_employee;
+    }
+  }
+  @Override public int getItemCount(){
+    if (organizationEx == null) {
+      return 0;
+    }
+    return subOrganizationCount() + employeeCount();
+  }
+  private int subOrganizationCount(){
+    return organizationEx.subOrganizations == null ? 0 : organizationEx.subOrganizations.size();
+  }
+  private int employeeCount(){
+    return organizationEx.employees == null ? 0 : organizationEx.employees.size();
+  }
+interface OnOrganizationMemberClickListener {
+    void onOrganizationClick(    Organization organization);
+    void onEmployeeClick(    Employee employee);
+  }
+}
+",0,Clean Code
+"/** 
+ * @Description
+ * @Author luohaiyang
+ * @Date 2022/3/22
+ */
+public class MessageResponsePacket extends Packet {
+  private String fromUserId;
+  private String fromUserName;
+  private String message;
+  @Override public Byte getCommand(){
+    return MESSAGE_RESPONSE;
+  }
+  public String getMessage(){
+    return message;
+  }
+  public void setMessage(  String message){
+    this.message=message;
+  }
+  public String getFromUserId(){
+    return fromUserId;
+  }
+  public void setFromUserId(  String fromUserId){
+    this.fromUserId=fromUserId;
+  }
+  public String getFromUserName(){
+    return fromUserName;
+  }
+  public void setFromUserName(  String fromUserName){
+    this.fromUserName=fromUserName;
+  }
+}",1,Code Smell
+"/** 
+ * 进行词频统计
+ */
+public class CountBolt extends BaseRichBolt {
+  private Map<String,Integer> counts=new HashMap<>();
+  private OutputCollector collector;
+  @Override public void prepare(  Map stormConf,  TopologyContext context,  OutputCollector collector){
+    this.collector=collector;
+  }
+  @Override public void execute(  Tuple input){
+    String word=input.getStringByField(""word"");
+    Integer count=counts.get(word);
+    if (count == null) {
+      count=0;
+    }
+    count++;
+    counts.put(word,count);
+    collector.emit(new Values(word,String.valueOf(count)));
+  }
+  @Override public void declareOutputFields(  OutputFieldsDeclarer declarer){
+    declarer.declare(new Fields(""word"",""count""));
+  }
+}
+/** 
+ * 进行词频统计
+ */
+public class CountBolt extends BaseRichBolt {
+  private Map<String,Integer> counts=new HashMap<>();
+  private OutputCollector collector;
+  @Override public void prepare(  Map stormConf,  TopologyContext context,  OutputCollector collector){
+    this.collector=collector;
+  }
+  @Override public void execute(  Tuple input){
+    String word=input.getStringByField(""word"");
+    Integer count=counts.get(word);
+    if (count == null) {
+      count=0;
+    }
+    count++;
+    counts.put(word,count);
+    collector.emit(new Values(word,String.valueOf(count)));
+  }
+  @Override public void declareOutputFields(  OutputFieldsDeclarer declarer){
+    declarer.declare(new Fields(""word"",""count""));
+  }
+}
+",0,Clean Code
+"/** 
+ * @auther macrozheng
+ * @description 前台订单管理Service
+ * @date 2018/8/30
+ * @github https://github.com/macrozheng
+ */
+public interface OmsPortalOrderService {
+  /** 
+ * 根据提交信息生成订单
+ */
+  @Transactional CommonResult generateOrder(  OrderParam orderParam);
+  /** 
+ * 取消单个超时订单
+ */
+  @Transactional void cancelOrder(  Long orderId);
+}
+/** 
+ * @auther macrozheng
+ * @description 前台订单管理Service
+ * @date 2018/8/30
+ * @github https://github.com/macrozheng
+ */
+public interface OmsPortalOrderService {
+  /** 
+ * 根据提交信息生成订单
+ */
+  @Transactional CommonResult generateOrder(  OrderParam orderParam);
+  /** 
+ * 取消单个超时订单
+ */
+  @Transactional void cancelOrder(  Long orderId);
+}
+/** 
+ * @auther macrozheng
+ * @description 前台订单管理Service
+ * @date 2018/8/30
+ * @github https://github.com/macrozheng
+ */
+public interface OmsPortalOrderService {
+  /** 
+ * 根据提交信息生成订单
+ */
+  @Transactional CommonResult generateOrder(  OrderParam orderParam);
+  /** 
+ * 取消单个超时订单
+ */
+  @Transactional void cancelOrder(  Long orderId);
+}
+",0,Clean Code

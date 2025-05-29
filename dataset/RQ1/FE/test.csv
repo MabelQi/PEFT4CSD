@@ -1,0 +1,2706 @@
+text,label,text_label
+"public class HintTextView extends View implements FlashViews.Invertable {
+  private final AnimatedTextView.AnimatedTextDrawable textDrawable;
+  public HintTextView(  Context context){
+    super(context);
+    textDrawable=new AnimatedTextView.AnimatedTextDrawable(true,true,true);
+    textDrawable.setAnimationProperties(.35f,0,300,CubicBezierInterpolator.EASE_OUT_QUINT);
+    textDrawable.setTextColor(0xffffffff);
+    textDrawable.setTextSize(AndroidUtilities.dp(14));
+    textDrawable.setShadowLayer(AndroidUtilities.dp(1.4f),0,AndroidUtilities.dp(.4f),0x4C000000);
+    textDrawable.setGravity(Gravity.CENTER_HORIZONTAL);
+    textDrawable.setCallback(this);
+    textDrawable.setOverrideFullWidth(AndroidUtilities.displaySize.x);
+  }
+  public void setText(  CharSequence text,  boolean animated){
+    textDrawable.setText(text,animated);
+    invalidate();
+  }
+  @Override public void draw(  Canvas canvas){
+    super.draw(canvas);
+    textDrawable.setBounds(0,0,getWidth(),getHeight());
+    textDrawable.draw(canvas);
+  }
+  @Override protected boolean verifyDrawable(  @NonNull Drawable who){
+    return who == textDrawable || super.verifyDrawable(who);
+  }
+  @Override protected void onMeasure(  int widthMeasureSpec,  int heightMeasureSpec){
+    super.onMeasure(widthMeasureSpec,heightMeasureSpec);
+    textDrawable.setOverrideFullWidth(getMeasuredWidth());
+  }
+  public void setInvert(  float invert){
+    textDrawable.setTextColor(ColorUtils.blendARGB(0xffffffff,0xff000000,invert));
+  }
+}",1,Code Smell
+"/** 
+ * [200] 浠ょ墝鍒锋柊, 瀵逛护鐗岃繘琛屽埛鏂�. 涓嶅悓绫诲瀷鐨勪护鐗屽埛鏂颁笉鍚�
+ * @author xzzz
+ * @since 0.0.1
+ */
+@Slf4j public class RedisTokenExpireResetFilter {
+  /** 
+ * 閰嶇疆鏂囦欢鍐呭
+ */
+  private final TokenRepository tokenRepository;
+  public RedisTokenExpireResetFilter(  TokenRepository tokenRepository){
+    this.tokenRepository=tokenRepository;
+  }
+  /** 
+ * 鎵ц杩囨护鍣�
+ * @param request request
+ * @param response response
+ * @throws IOException io
+ * @throws ServletException servlet
+ */
+  public void doFilter(  ServletRequest request,  ServletResponse response) throws IOException, ServletException {
+    log.debug(""[AUTHORIZ] filter(200) 浠ょ墝缁湡"");
+    AccessToken accessToken=AuthContext.getContext();
+    if (accessToken != null && StrUtil.isNotBlank(accessToken.getToken()) && accessToken.getRequestRefresh()) {
+      accessToken.setExpire(System.currentTimeMillis() + (accessToken.getDuration() * 1000));
+      tokenRepository.saveToken(accessToken);
+      tokenRepository.saveUniqueToken(accessToken);
+      AuthContext.setContext(accessToken);
+    }
+ else {
+    }
+  }
+}",1,Code Smell
+"/** 
+ * 用户详细信息
+ * @author lengleng hccake
+ */
+@Slf4j @Primary @RequiredArgsConstructor public class PigUserDetailsServiceImpl implements PigUserDetailsService {
+  private final RemoteUserService remoteUserService;
+  private final CacheManager cacheManager;
+  /** 
+ * 用户名密码登录
+ * @param username 用户名
+ * @return
+ */
+  @Override @SneakyThrows public UserDetails loadUserByUsername(  String username){
+    Cache cache=cacheManager.getCache(CacheConstants.USER_DETAILS);
+    if (cache != null && cache.get(username) != null) {
+      return (PigUser)cache.get(username).get();
+    }
+    UserDTO userDTO=new UserDTO();
+    userDTO.setUsername(username);
+    R<UserInfo> result=remoteUserService.info(userDTO);
+    UserDetails userDetails=getUserDetails(result);
+    if (cache != null) {
+      cache.put(username,userDetails);
+    }
+    return userDetails;
+  }
+  @Override public int getOrder(){
+    return Integer.MIN_VALUE;
+  }
+}",1,Code Smell
+"/** 
+ * @author zengqiao
+ * @date 22/12/12
+ */
+@Api(tags=Constant.SWAGGER_API_TAG_PREFIX + ""MM2-MM2鑷韩-鐩稿叧鎺ュ彛(REST)"") @RestController @RequestMapping(ApiPrefix.API_V3_MM2_PREFIX) public class KafkaMirrorMakerController {
+  @Autowired private MirrorMakerManager mirrorMakerManager;
+  @ApiOperation(value=""鍒涘缓MM2"",notes="""") @PostMapping(value=""mirror-makers"") @ResponseBody public Result<Void> createMM2(  @Validated @RequestBody MirrorMakerCreateDTO dto){
+    return mirrorMakerManager.createMirrorMaker(dto,HttpRequestUtil.getOperator());
+  }
+  @ApiOperation(value=""鍒犻櫎MM2"",notes="""") @DeleteMapping(value=""mirror-makers"") @ResponseBody public Result<Void> deleteMM2(  @Validated @RequestBody MirrorMaker2DeleteDTO dto){
+    return mirrorMakerManager.deleteMirrorMaker(dto.getConnectClusterId(),dto.getConnectorName(),HttpRequestUtil.getOperator());
+  }
+  @ApiOperation(value=""鎿嶄綔MM2"",notes="""") @PutMapping(value=""mirror-makers"") @ResponseBody public Result<Void> operateMM2s(  @Validated @RequestBody MirrorMaker2ActionDTO dto){
+    if (ConnectActionEnum.RESTART.getValue().equals(dto.getAction())) {
+      return mirrorMakerManager.restartMirrorMaker(dto.getConnectClusterId(),dto.getConnectorName(),HttpRequestUtil.getOperator());
+    }
+ else     if (ConnectActionEnum.STOP.getValue().equals(dto.getAction())) {
+      return mirrorMakerManager.stopMirrorMaker(dto.getConnectClusterId(),dto.getConnectorName(),HttpRequestUtil.getOperator());
+    }
+ else     if (ConnectActionEnum.RESUME.getValue().equals(dto.getAction())) {
+      return mirrorMakerManager.resumeMirrorMaker(dto.getConnectClusterId(),dto.getConnectorName(),HttpRequestUtil.getOperator());
+    }
+    return Result.buildFailure(ResultStatus.PARAM_ILLEGAL);
+  }
+  @ApiOperation(value=""MM2閰嶇疆淇敼"",notes="""") @PutMapping(value=""mirror-makers-config"") @ResponseBody public Result<Void> modifyMM2s(  @Validated @RequestBody MirrorMakerCreateDTO dto){
+    return mirrorMakerManager.modifyMirrorMakerConfig(dto,HttpRequestUtil.getOperator());
+  }
+  @ApiOperation(value=""鏍￠獙MM2閰嶇疆"",notes="""") @PutMapping(value=""mirror-makers-config/validate"") @ResponseBody public Result<List<ConnectConfigInfosVO>> validateConnectors(  @Validated @RequestBody MirrorMakerCreateDTO dto){
+    return mirrorMakerManager.validateConnectors(dto);
+  }
+}",1,Code Smell
+"@RequiredArgsConstructor @Getter public class DatapackBiome implements Biome {
+  private final Key key;
+  private final Data data;
+  @Override public float getDownfall(){
+    return data.downfall;
+  }
+  @Override public float getTemperature(){
+    return data.temperature;
+  }
+  @Override public Color getWaterColor(){
+    return data.effects.waterColor;
+  }
+  @Override public Color getOverlayFoliageColor(){
+    return data.effects.foliageColor;
+  }
+  @Override public Color getOverlayGrassColor(){
+    return data.effects.grassColor;
+  }
+  @Override public GrassColorModifier getGrassColorModifier(){
+    return data.effects.grassColorModifier;
+  }
+@SuppressWarnings(""FieldMayBeFinal"") @Getter public static class Data {
+    private Effects effects=new Effects();
+    private float temperature=Biome.DEFAULT.getTemperature();
+    private float downfall=Biome.DEFAULT.getDownfall();
+  }
+@SuppressWarnings(""FieldMayBeFinal"") @Getter public static class Effects {
+    private Color waterColor=Biome.DEFAULT.getWaterColor();
+    private Color foliageColor=Biome.DEFAULT.getOverlayFoliageColor();
+    private Color grassColor=Biome.DEFAULT.getOverlayGrassColor();
+    private GrassColorModifier grassColorModifier=Biome.DEFAULT.getGrassColorModifier();
+  }
+}
+",1,Code Smell
+"public class WorkerThread extends Thread {
+  private final int id;
+  private WorkerThread(){
+    this.id=RenderManager.this.nextWorkerThreadIndex.getAndIncrement();
+    this.setName(""RenderManager-"" + RenderManager.this.id + ""-""+ this.id);
+  }
+  @Override @SuppressWarnings(""BusyWait"") public void run(){
+    try {
+      while (RenderManager.this.running) {
+        try {
+          RenderManager.this.doWork();
+        }
+ catch (        InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+catch (        Exception e) {
+          Logger.global.logError(""RenderManager("" + RenderManager.this.id + ""): WorkerThread(""+ this.id+ ""): Exception while doing some work!"",e);
+          try {
+            Thread.sleep(10000);
+          }
+ catch (          InterruptedException ie) {
+            Thread.currentThread().interrupt();
+          }
+        }
+      }
+    }
+  finally {
+synchronized (RenderManager.this.workerThreads) {
+        RenderManager.this.workerThreads.remove(this);
+        RenderManager.this.workerThreads.notifyAll();
+      }
+    }
+  }
+}",1,Code Smell
+"@SuppressLint(""ViewConstructor"") public class SubtitleWithCounterCell extends org.telegram.ui.Cells.HeaderCell {
+  private final AnimatedTextView counterTextView;
+  public SubtitleWithCounterCell(  @NonNull Context context,  Theme.ResourcesProvider resourcesProvider){
+    super(context,resourcesProvider);
+    counterTextView=new AnimatedTextView(context,false,true,true);
+    counterTextView.setAnimationProperties(.45f,0,240,CubicBezierInterpolator.EASE_OUT_QUINT);
+    counterTextView.setGravity(Gravity.CENTER_HORIZONTAL);
+    counterTextView.setTextSize(dp(15));
+    counterTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+    counterTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader,resourcesProvider));
+    addView(counterTextView,LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT,24,(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,24,0,24,0));
+    setBackgroundColor(Theme.getColor(Theme.key_dialogBackground,resourcesProvider));
+  }
+  public void updateCounter(  boolean animated,  int count){
+    CharSequence text=LocaleController.formatPluralString(""BoostingBoostsCountTitle"",count,count);
+    counterTextView.setText(text,animated);
+  }
+}",1,Code Smell
+"@Route(APIPath.Friend_Set_Alias) @HttpMethod(""POST"") public class AliasPutAction extends AdminAction {
+  @Override public boolean isTransactionAction(){
+    return true;
+  }
+  @Override public boolean action(  Request request,  Response response){
+    if (request.getNettyRequest() instanceof FullHttpRequest) {
+      InputUpdateAlias input=getRequestBody(request.getNettyRequest(),InputUpdateAlias.class);
+      if (!StringUtil.isNullOrEmpty(input.getOperator()) && !StringUtil.isNullOrEmpty(input.getTargetId())) {
+        WFCMessage.AddFriendRequest addFriendRequest=WFCMessage.AddFriendRequest.newBuilder().setTargetUid(input.getTargetId()).setReason(input.getAlias() == null ? """" : input.getAlias()).build();
+        sendApiMessage(response,input.getOperator(),IMTopic.SetFriendAliasTopic,addFriendRequest.toByteArray(),result -> {
+          ByteBuf byteBuf=Unpooled.buffer();
+          byteBuf.writeBytes(result);
+          ErrorCode errorCode=ErrorCode.fromCode(byteBuf.readByte());
+          if (errorCode == ErrorCode.ERROR_CODE_SUCCESS) {
+            byte[] data=new byte[byteBuf.readableBytes()];
+            byteBuf.readBytes(data);
+            String channelId=new String(data);
+            return new Result(ErrorCode.ERROR_CODE_SUCCESS,new OutputCreateChannel(channelId));
+          }
+ else {
+            return new Result(errorCode);
+          }
+        }
+);
+        return false;
+      }
+ else {
+        ErrorCode errorCode=messagesStore.setFriendAliasRequest(input.getOperator(),input.getTargetId(),input.getAlias(),new long[1]);
+        setResponseContent(RestResult.resultOf(errorCode),response);
+      }
+    }
+    return true;
+  }
+}",1,Code Smell
+"@Route(APIPath.Group_Get_Info) @HttpMethod(""POST"") public class GetGroupInfoAction extends AdminAction {
+  @Override public boolean isTransactionAction(){
+    return true;
+  }
+  @Override public boolean action(  Request request,  Response response){
+    if (request.getNettyRequest() instanceof FullHttpRequest) {
+      InputGetGroup inputGetGroup=getRequestBody(request.getNettyRequest(),InputGetGroup.class);
+      if (inputGetGroup != null && (!StringUtil.isNullOrEmpty(inputGetGroup.getGroupId()))) {
+        WFCMessage.GroupInfo groupInfo=messagesStore.getGroupInfo(inputGetGroup.getGroupId());
+        RestResult result;
+        if (groupInfo == null) {
+          result=RestResult.resultOf(ErrorCode.ERROR_CODE_NOT_EXIST);
+        }
+ else {
+          PojoGroupInfo pojoGroupInfo=new PojoGroupInfo();
+          pojoGroupInfo.setExtra(groupInfo.getExtra());
+          pojoGroupInfo.setName(groupInfo.getName());
+          pojoGroupInfo.setOwner(groupInfo.getOwner());
+          pojoGroupInfo.setPortrait(groupInfo.getPortrait());
+          pojoGroupInfo.setTarget_id(groupInfo.getTargetId());
+          pojoGroupInfo.setType(groupInfo.getType());
+          pojoGroupInfo.setMember_count(groupInfo.getMemberCount());
+          pojoGroupInfo.setMute(groupInfo.getMute());
+          pojoGroupInfo.setJoin_type(groupInfo.getJoinType());
+          pojoGroupInfo.setPrivate_chat(groupInfo.getPrivateChat());
+          pojoGroupInfo.setSearchable(groupInfo.getSearchable());
+          pojoGroupInfo.setMax_member_count(groupInfo.getMemberCount());
+          pojoGroupInfo.setHistory_message(groupInfo.getHistoryMessage());
+          pojoGroupInfo.setSuper_group(groupInfo.getSuperGroup() > 0);
+          pojoGroupInfo.setDeleted(groupInfo.getDeleted() > 0);
+          pojoGroupInfo.setUpdate_dt(groupInfo.getUpdateDt());
+          pojoGroupInfo.setMember_update_dt(groupInfo.getMemberUpdateDt());
+          result=RestResult.ok(pojoGroupInfo);
+        }
+        setResponseContent(result,response);
+      }
+ else {
+        setResponseContent(RestResult.resultOf(ErrorCode.INVALID_PARAMETER),response);
+      }
+    }
+    return true;
+  }
+}",1,Code Smell
+"/** 
+ * @author linyimin
+ */
+@CommandLine.Command(name=""config"",description=""configuration setting, use 'config -h' for more information"",version=""1.0"",mixinStandardHelpOptions=true) public class Config implements Runnable {
+  @CommandLine.ParentCommand CliCommands parent;
+  @CommandLine.Command(version=""1.0"",description=""config deployment branch, remote debug jvm host and port"",mixinStandardHelpOptions=true) public void set(){
+    setBranch();
+    setHost();
+    setPort();
+    OUT.print(""[INFO] configuration setting success. configuration - "");
+    OUT.printf(""branch: %s, host: %s, port: %s\n"",parent.getBranch(),parent.getHost(),parent.getPort());
+  }
+  @CommandLine.Command(version=""1.0"",description=""view config information"",mixinStandardHelpOptions=true) public void view(){
+    OUT.printf(""[INFO] configuration - branch: %s, host: %s, port: %s"",parent.getBranch(),parent.getHost(),parent.getPort());
+  }
+  @Override public void run(){
+    OUT.println(""configuration setting, use 'config -h' for more information"");
+  }
+  private void setBranch(){
+    String line=parent.getReader().readLine(currentBranchPrompt(),null,(MaskingCallback)null,null);
+    if (StringUtil.isNotEmpty(line)) {
+      this.parent.setBranch(line);
+    }
+  }
+  private void setHost(){
+    String line=parent.getReader().readLine(""jvm host (12.0.0.1) : "",null,(MaskingCallback)null,null);
+    if (StringUtil.isNotEmpty(line)) {
+      this.parent.setHost(line);
+    }
+  }
+  private void setPort(){
+    String line=parent.getReader().readLine(""jvm port (5005) : "",null,(MaskingCallback)null,null);
+    if (StringUtil.isNotEmpty(line)) {
+      this.parent.setPort(Integer.parseInt(line));
+    }
+  }
+  private String currentBranchPrompt(){
+    String prompt=""deployment branch"";
+    String currentBranch=GitUtil.currentBranch();
+    if (StringUtil.isNotEmpty(currentBranch)) {
+      return prompt + "" ("" + currentBranch+ "") : "";
+    }
+    return prompt + "" : "";
+  }
+}",1,Code Smell
+"@SuppressLint(""ViewConstructor"") public class DurationCell extends BaseCell {
+  protected final SimpleTextView totalTextView;
+  private Object code;
+  public DurationCell(  Context context,  Theme.ResourcesProvider resourcesProvider){
+    super(context,resourcesProvider);
+    imageView.setVisibility(GONE);
+    subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4,resourcesProvider));
+    totalTextView=new SimpleTextView(context);
+    totalTextView.setTextSize(16);
+    totalTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4,resourcesProvider));
+    totalTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+    addView(totalTextView);
+    totalTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,LayoutHelper.WRAP_CONTENT,Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT),LocaleController.isRTL ? 20 : 0,0,LocaleController.isRTL ? 0 : 20,0));
+  }
+  public void setDuration(  Object code,  int months,  int count,  long price,  CharSequence currency,  boolean needDivider,  boolean selected){
+    this.code=code;
+    if (months >= 12) {
+      titleTextView.setText(LocaleController.formatPluralString(""Years"",1));
+    }
+ else {
+      titleTextView.setText(LocaleController.formatPluralString(""Months"",months));
+    }
+    setSubtitle(BillingController.getInstance().formatCurrency(count > 0 ? (price / count) : price,currency.toString()) + "" x "" + count);
+    totalTextView.setText(BillingController.getInstance().formatCurrency(count > 0 ? price : 0,currency.toString()));
+    setDivider(needDivider);
+    radioButton.setChecked(selected,false);
+  }
+  public Object getGifCode(){
+    return code;
+  }
+  @Override protected boolean needCheck(){
+    return true;
+  }
+}",1,Code Smell
+"/** 
+ * Example Tests for the legacy  {@link MySqlSource}. 
+ */
+public class LegacyMySqlSourceExampleTest extends LegacyMySqlTestBase {
+  private final UniqueDatabase inventoryDatabase=new UniqueDatabase(MYSQL_CONTAINER,""inventory"",""mysqluser"",""mysqlpw"");
+  @Test @Ignore(""Test ignored because it won't stop and is used for manual test"") public void testConsumingAllEvents() throws Exception {
+    inventoryDatabase.createAndInitialize();
+    SourceFunction<String> sourceFunction=MySqlSource.<String>builder().hostname(MYSQL_CONTAINER.getHost()).port(MYSQL_CONTAINER.getDatabasePort()).databaseList(inventoryDatabase.getDatabaseName()).username(inventoryDatabase.getUsername()).password(inventoryDatabase.getPassword()).deserializer(new StringDebeziumDeserializationSchema()).build();
+    StreamExecutionEnvironment env=StreamExecutionEnvironment.getExecutionEnvironment();
+    env.addSource(sourceFunction).print().setParallelism(1);
+    env.execute(""Print MySQL Snapshot + Binlog"");
+    inventoryDatabase.dropDatabase();
+  }
+}",1,Code Smell
+"/** 
+ * @author : leix.xie
+ * @date : 2019/1/8 19:47
+ */
+public class TaskRunner implements Runnable {
+  private static final Logger logger=LoggerFactory.getLogger(TaskRunner.class);
+  private static QMonitorStore MONITOR_STORE=QMonitorStore.getInstance();
+  private static final TelnetStore TELNET_STORE=UrlEncodedTelnetStore.getInstance();
+  private static final String COMMAND=BistouryConstants.REQ_MONITOR_SNAPSHOT;
+  private static final String MIN_VERSION=""1.2.5"";
+  private static final TypeReference<TypeResponse<MetricsSnapshot>> TYPE_REFERENCE=new TypeReference<TypeResponse<MetricsSnapshot>>(){
+  }
+;
+  @Override public void run(){
+    Telnet telnet=tryGetTelnet();
+    if (telnet != null) {
+      report(telnet);
+    }
+  }
+  private void report(  final Telnet telnet){
+    try {
+      if (!legalVersion(telnet.getVersion())) {
+        return;
+      }
+      telnet.write(COMMAND);
+      byte[] result=readAll(telnet);
+      storeMetricsSnapshot(result);
+    }
+ catch (    Exception e) {
+      logger.error(""telnet write command error"",e);
+    }
+ finally {
+      telnet.close();
+    }
+  }
+  private byte[] readAll(  Telnet telnet) throws Exception {
+    ByteArrayOutputStream outputStream=new ByteArrayOutputStream();
+    while (true) {
+      byte[] bytes=telnet.read();
+      if (bytes == null) {
+        break;
+      }
+      outputStream.write(bytes);
+    }
+    return outputStream.toByteArray();
+  }
+  private void storeMetricsSnapshot(  byte[] content){
+    TypeResponse<MetricsSnapshot> typeResponse=JacksonSerializer.deSerialize(content,TYPE_REFERENCE);
+    if (!BistouryConstants.REQ_MONITOR_SNAPSHOT.equals(typeResponse.getType())) {
+      return;
+    }
+    CodeProcessResponse<MetricsSnapshot> responseData=typeResponse.getData();
+    if (responseData.getCode() != 0) {
+      logger.error(""get metrics snapshot fail: {}"",responseData.getMessage());
+      return;
+    }
+    MetricsSnapshot snapshot=responseData.getData();
+    MONITOR_STORE.store(snapshot);
+  }
+  private Telnet tryGetTelnet(){
+    try {
+      return TELNET_STORE.tryGetTelnet();
+    }
+ catch (    Exception e) {
+      logger.error(""try get telnet fail"",e);
+      return null;
+    }
+  }
+  private boolean legalVersion(  final String version){
+    try {
+      return VersionUtil.greaterEqualThanVersion(version,MIN_VERSION);
+    }
+ catch (    Exception e) {
+      return false;
+    }
+  }
+}",1,Code Smell
+"public class FavoriteModel extends BaseModel implements FavoriteContract.Model {
+  @Override public void getData(  int offset,  int limit,  boolean updateOrder,  FavoriteContract.LoadDataCallback callback){
+    List<AnimeListBean> list=DatabaseUtil.queryFavoriteByLimit(offset,limit,updateOrder);
+    if (list.size() > 0)     callback.success(list);
+ else     callback.error(Utils.getString(R.string.empty_favorite));
+  }
+  @Override public void getUpdateInfo(  int source,  List<AnimeUpdateInfoBean> beans,  FavoriteContract.LoadDataCallback callback){
+switch (source) {
+case 0:
+      new HttpGet(Sakura.YHDM_UPDATE,new Callback(){
+        @Override public void onFailure(        Call call,        IOException e){
+          callback.error(0);
+          callback.completion(true);
+        }
+        @Override public void onResponse(        Call call,        Response response){
+          try {
+            String source=getHtmlBody(response,false);
+            List<AnimeUpdateInfoBean> animeUpdateInfoBeans=YhdmJsoupUtils.getUpdateInfoList(source,beans);
+            if (animeUpdateInfoBeans.size() > 0)             DatabaseUtil.updateFavorite(animeUpdateInfoBeans);
+            callback.completion(true);
+          }
+ catch (          Exception e) {
+            e.printStackTrace();
+            callback.error(0);
+            callback.completion(true);
+          }
+        }
+      }
+);
+    break;
+case 1:
+  break;
+}
+}
+}",1,Code Smell
+"@Route(APIPath.Robot_Group_Modify_Info) @HttpMethod(""POST"") public class ModifyGroupInfoAction extends RobotAction {
+  @Override public boolean isTransactionAction(){
+    return true;
+  }
+  @Override public boolean action(  Request request,  Response response){
+    if (request.getNettyRequest() instanceof FullHttpRequest) {
+      InputModifyGroupInfo inputAddGroupMember=getRequestBody(request.getNettyRequest(),InputModifyGroupInfo.class);
+      inputAddGroupMember.setOperator(robot.getUid());
+      if (inputAddGroupMember.isValide()) {
+        sendApiRequest(response,IMTopic.ModifyGroupInfoTopic,inputAddGroupMember.toProtoGroupRequest().toByteArray(),result -> {
+          ByteBuf byteBuf=Unpooled.buffer();
+          byteBuf.writeBytes(result);
+          ErrorCode errorCode=ErrorCode.fromCode(byteBuf.readByte());
+          if (errorCode == ErrorCode.ERROR_CODE_SUCCESS) {
+            sendResponse(response,null,null);
+          }
+ else {
+            sendResponse(response,errorCode,null);
+          }
+        }
+);
+        return false;
+      }
+ else {
+        setResponseContent(RestResult.resultOf(ErrorCode.INVALID_PARAMETER),response);
+      }
+    }
+    return true;
+  }
+}
+",1,Code Smell
+"/** 
+ * BufferQueue
+ */
+public class BufferQueue<A> {
+  private final LinkedBlockingQueue<A> queue;
+  private final SizeSemaphore currentTokens;
+  private SizeSemaphore globalTokens;
+  private final AtomicLong offerCount=new AtomicLong(0);
+  private final AtomicLong pollCount=new AtomicLong(0);
+  /** 
+ * Constructor
+ * @param maxSizeKb
+ */
+  public BufferQueue(  int maxSizeKb){
+    this.queue=new LinkedBlockingQueue<>();
+    this.currentTokens=new SizeSemaphore(maxSizeKb,SizeSemaphore.ONEKB);
+  }
+  /** 
+ * Constructor
+ * @param maxSizeKb
+ * @param globalTokens
+ */
+  public BufferQueue(  int maxSizeKb,  SizeSemaphore globalTokens){
+    this(maxSizeKb);
+    this.globalTokens=globalTokens;
+  }
+  /** 
+ * pollRecord
+ */
+  public A pollRecord(){
+    A record=queue.poll();
+    this.pollCount.getAndIncrement();
+    return record;
+  }
+  /** 
+ * offer
+ */
+  public void offer(  A record){
+    if (record == null) {
+      return;
+    }
+    queue.offer(record);
+    this.offerCount.incrementAndGet();
+  }
+  /** 
+ * queue size
+ */
+  public int size(){
+    return queue.size();
+  }
+  /** 
+ * small change
+ */
+  public int leftKb(){
+    return currentTokens.leftSemaphore();
+  }
+  /** 
+ * availablePermits
+ */
+  public int availablePermits(){
+    return currentTokens.availablePermits();
+  }
+  /** 
+ * maxSizeKb
+ */
+  public int maxSizeKb(){
+    return currentTokens.maxSize();
+  }
+  /** 
+ * getIdleRate
+ */
+  public double getIdleRate(){
+    double remaining=currentTokens.availablePermits();
+    return remaining * 100.0 / currentTokens.maxSize();
+  }
+  /** 
+ * tryAcquire
+ */
+  public boolean tryAcquire(  long sizeInByte){
+    boolean cidResult=currentTokens.tryAcquire(sizeInByte);
+    if (!cidResult) {
+      return false;
+    }
+    if (this.globalTokens == null) {
+      return true;
+    }
+    boolean globalResult=this.globalTokens.tryAcquire(sizeInByte);
+    if (globalResult) {
+      return true;
+    }
+    currentTokens.release(sizeInByte);
+    return false;
+  }
+  /** 
+ * acquire
+ */
+  public void acquire(  long sizeInByte){
+    currentTokens.acquire(sizeInByte);
+    if (this.globalTokens != null) {
+      globalTokens.acquire(sizeInByte);
+    }
+  }
+  /** 
+ * release
+ */
+  public void release(  long sizeInByte){
+    if (this.globalTokens != null) {
+      this.globalTokens.release(sizeInByte);
+    }
+    this.currentTokens.release(sizeInByte);
+  }
+  /** 
+ * get offerCount
+ * @return the offerCount
+ */
+  public long getOfferCount(){
+    return offerCount.getAndSet(0);
+  }
+  /** 
+ * get pollCount
+ * @return the pollCount
+ */
+  public long getPollCount(){
+    return pollCount.getAndSet(0);
+  }
+}",1,Code Smell
+"/** 
+ * @author keli.wang
+ * @since 2017/3/15
+ */
+class DebuggerClassFileTransformer extends Transformer {
+  private static final Logger LOG=BistouryLoggger.getLogger();
+  private final ClassFileBuffer classFileBuffer;
+  private final String source;
+  private final String debugClassName;
+  DebuggerClassFileTransformer(  ClassFileBuffer classFileBuffer,  String source,  ResolvedSourceLocation location){
+    this.classFileBuffer=classFileBuffer;
+    this.source=source;
+    this.debugClassName=signatureToClassName(location.getClassSignature());
+  }
+  @Override protected byte[] transform(  final String className,  final Class<?> classBeingRedefined,  final ProtectionDomain protectionDomain,  final byte[] classBytes) throws IllegalClassFormatException {
+    if (!Objects.equals(className,debugClassName)) {
+      return null;
+    }
+    LOG.info(""debug class: {}"",className);
+    Lock lock=classFileBuffer.getLock();
+    lock.lock();
+    try {
+      final ClassReader classReader=new ClassReader(classFileBuffer.getClassBuffer(classBeingRedefined,classBytes));
+      final ClassMetadata classMetadata=new ClassMetadata();
+      classReader.accept(new MetadataCollector(classMetadata),ClassReader.SKIP_FRAMES);
+      final ClassWriter classWriter=new ClassWriter(computeFlag(classReader));
+      final ClassVisitor classVisitor=new DebuggerClassVisitor(new CheckClassAdapter(classWriter),source,classMetadata);
+      classReader.accept(classVisitor,ClassReader.SKIP_FRAMES);
+      byte[] bytes=classWriter.toByteArray();
+      classFileBuffer.setClassBuffer(classBeingRedefined,bytes);
+      return bytes;
+    }
+  finally {
+      lock.unlock();
+    }
+  }
+  private String signatureToClassName(  final String signature){
+    return Type.getType(signature).getInternalName();
+  }
+}",1,Code Smell
+"/** 
+ * The actual byte-buddy's interceptor to intercept class instance methods. In this class, it provides a bridge between byte-buddy and sky-walking plugin.
+ */
+public class InstMethodsInterWithOverrideArgs {
+  private static final ILog LOGGER=LogManager.getLogger(InstMethodsInterWithOverrideArgs.class);
+  /** 
+ * An  {@link InstanceMethodsAroundInterceptor} This name should only stay in {@link String}, the real  {@link Class}type will trigger classloader failure. If you want to know more, please check on books about Classloader or Classloader appointment mechanism.
+ */
+  private InstanceMethodsAroundInterceptor interceptor;
+  /** 
+ * @param instanceMethodsAroundInterceptorClassName class full name.
+ */
+  public InstMethodsInterWithOverrideArgs(  String instanceMethodsAroundInterceptorClassName,  ClassLoader classLoader){
+    try {
+      interceptor=InterceptorInstanceLoader.load(instanceMethodsAroundInterceptorClassName,classLoader);
+    }
+ catch (    Throwable t) {
+      throw new PluginException(""Can't create InstanceMethodsAroundInterceptor."",t);
+    }
+  }
+  /** 
+ * Intercept the target instance method.
+ * @param obj          target class instance.
+ * @param allArguments all method arguments
+ * @param method       method description.
+ * @param zuper        the origin call ref.
+ * @return the return value of target instance method.
+ * @throws Exception only throw exception because of zuper.call() or unexpected exception in sky-walking ( This is abug, if anything triggers this condition ).
+ */
+  @RuntimeType public Object intercept(  @This Object obj,  @AllArguments Object[] allArguments,  @Origin Method method,  @Morph OverrideCallable zuper) throws Throwable {
+    EnhancedInstance targetObject=(EnhancedInstance)obj;
+    MethodInterceptResult result=new MethodInterceptResult();
+    try {
+      interceptor.beforeMethod(targetObject,method,allArguments,method.getParameterTypes(),result);
+    }
+ catch (    Throwable t) {
+      LOGGER.error(t,""class[{}] before method[{}] intercept failure"",obj.getClass(),method.getName());
+    }
+    Object ret=null;
+    try {
+      if (!result.isContinue()) {
+        ret=result._ret();
+      }
+ else {
+        ret=zuper.call(allArguments);
+      }
+    }
+ catch (    Throwable t) {
+      try {
+        interceptor.handleMethodException(targetObject,method,allArguments,method.getParameterTypes(),t);
+      }
+ catch (      Throwable t2) {
+        LOGGER.error(t2,""class[{}] handle method[{}] exception failure"",obj.getClass(),method.getName());
+      }
+      throw t;
+    }
+ finally {
+      try {
+        ret=interceptor.afterMethod(targetObject,method,allArguments,method.getParameterTypes(),ret);
+      }
+ catch (      Throwable t) {
+        LOGGER.error(t,""class[{}] after method[{}] intercept failure"",obj.getClass(),method.getName());
+      }
+    }
+    return ret;
+  }
+}",1,Code Smell
+"public class PostProcessRenderer {
+  private static Mesh mesh;
+  private static final MatrixStack matrices=new MatrixStack();
+  private PostProcessRenderer(){
+  }
+  @PreInit public static void init(){
+    mesh=new Mesh(DrawMode.Triangles,Mesh.Attrib.Vec2);
+    mesh.begin();
+    mesh.quad(mesh.vec2(-1,-1).next(),mesh.vec2(-1,1).next(),mesh.vec2(1,1).next(),mesh.vec2(1,-1).next());
+    mesh.end();
+  }
+  public static void beginRender(){
+    mesh.beginRender(matrices);
+  }
+  public static void render(){
+    mesh.render(matrices);
+  }
+  public static void endRender(){
+    mesh.endRender();
+  }
+}",1,Code Smell
+"public class AnimeListPresenter extends Presenter<AnimeListContract.View> implements AnimeListContract.LoadDataCallback {
+  private String url;
+  private int page;
+  private AnimeListContract.View view;
+  private AnimeListModel model;
+  private List<String> siliParams;
+  public AnimeListPresenter(  String url,  List<String> siliParams,  int page,  AnimeListContract.View view){
+    super(view);
+    this.url=url;
+    this.siliParams=siliParams;
+    this.page=page;
+    this.view=view;
+    model=new AnimeListModel();
+  }
+  public void loadData(  boolean isMain,  boolean isMovie,  boolean isImomoe,  boolean isToptic){
+    if (isMain) {
+      view.showLoadingView();
+      view.showEmptyVIew();
+    }
+    try {
+      model.getData(url,page,isMain,isMovie,isImomoe,isToptic,siliParams,this);
+    }
+ catch (    UnsupportedEncodingException e) {
+      e.printStackTrace();
+    }
+  }
+  @Override public void success(  boolean isMain,  List<AnimeListBean> list){
+    view.showSuccessView(isMain,list);
+  }
+  @Override public void error(  boolean isMain,  String msg){
+    view.showErrorView(isMain,msg);
+  }
+  @Override public void pageCount(  int count){
+    view.getPageCountSuccessView(count);
+  }
+  @Override public void error(  String msg){
+  }
+  @Override public void log(  String url){
+    view.showLog(url);
+  }
+}
+",1,Code Smell
+"@Component @RequiredArgsConstructor public class RoleRecordMapper {
+  private final JooqRecordHelper jooqRecordHelper;
+  public RoleDto mapRecordToDto(  final Record r,  final String policyFieldName){
+    final RolePojo pojo=r.into(ROLE).into(RolePojo.class);
+    final Set<PolicyPojo> policies=jooqRecordHelper.extractAggRelation(r,policyFieldName,PolicyPojo.class);
+    return new RoleDto(pojo,policies);
+  }
+  public RoleDto mapCTERecordToDto(  final Record r,  final String cteName,  final String policyFieldName){
+    final RolePojo rolePojo=jooqRecordHelper.remapCte(r,cteName,ROLE).into(RolePojo.class);
+    final Set<PolicyPojo> policies=jooqRecordHelper.extractAggRelation(r,policyFieldName,PolicyPojo.class);
+    return new RoleDto(rolePojo,policies);
+  }
+}
+",1,Code Smell
+"/** 
+ * A wrapper over IntArray implementing a growing set of int primitives. The elements in the array are sorted in ascending order.
+ */
+public class IntSet implements Iterable<Integer> {
+  final IntArray mArray=new IntArray();
+  /** 
+ * Appends the specified value to the set if it does not exist.
+ */
+  public void add(  int value){
+    int index=Arrays.binarySearch(mArray.mValues,0,mArray.mSize,value);
+    if (index < 0) {
+      mArray.add(-index - 1,value);
+    }
+  }
+  /** 
+ * Appends the specified IntSet's values to the set if they does not exist, then returns the original set that now also contains the new values.
+ */
+  public IntSet addAll(  IntSet other){
+    other.forEach(this::add);
+    return this;
+  }
+  /** 
+ * Removes the specified value from the set if it exist.
+ */
+  public void remove(  int value){
+    int index=Arrays.binarySearch(mArray.mValues,0,mArray.mSize,value);
+    if (index >= 0) {
+      mArray.removeIndex(index);
+    }
+  }
+  public boolean contains(  int value){
+    return Arrays.binarySearch(mArray.mValues,0,mArray.mSize,value) >= 0;
+  }
+  public boolean isEmpty(){
+    return mArray.isEmpty();
+  }
+  /** 
+ * Returns the number of values in this set.
+ */
+  public int size(){
+    return mArray.size();
+  }
+  public void clear(){
+    mArray.clear();
+  }
+  @Override public boolean equals(  Object obj){
+    if (obj == this) {
+      return true;
+    }
+    return (obj instanceof IntSet) && ((IntSet)obj).mArray.equals(mArray);
+  }
+  /** 
+ * Returns the wrapped IntArray. The elements in the array are sorted in ascending order.
+ */
+  public IntArray getArray(){
+    return mArray;
+  }
+  /** 
+ * Sets this set to be same as  {@param other}
+ */
+  public void copyFrom(  IntSet other){
+    mArray.copyFrom(other.mArray);
+  }
+  public static IntSet wrap(  IntArray array){
+    IntSet set=new IntSet();
+    set.mArray.addAll(array);
+    Arrays.sort(set.mArray.mValues,0,set.mArray.mSize);
+    return set;
+  }
+  /** 
+ * Returns an IntSet with the given values.
+ */
+  public static IntSet wrap(  int... array){
+    return wrap(IntArray.wrap(array));
+  }
+  /** 
+ * Returns an IntSet with the given values.
+ */
+  public static IntSet wrap(  Iterable<Integer> iterable){
+    IntSet set=new IntSet();
+    iterable.forEach(set::add);
+    return set;
+  }
+  @Override public Iterator<Integer> iterator(){
+    return mArray.iterator();
+  }
+  @Override public String toString(){
+    return ""IntSet{"" + mArray.toConcatString() + '}';
+  }
+}",1,Code Smell
+"/** 
+ * @author lengleng
+ * @date 2019 /2/1 密码解密工具类
+ */
+@Slf4j @Component @RequiredArgsConstructor public class PasswordDecoderFilter extends OncePerRequestFilter {
+  private final AuthSecurityConfigProperties authSecurityConfigProperties;
+  private static final String PASSWORD=""password"";
+  private static final String KEY_ALGORITHM=""AES"";
+static {
+    SecureUtil.disableBouncyCastle();
+  }
+  @Override protected void doFilterInternal(  HttpServletRequest request,  HttpServletResponse response,  FilterChain chain) throws ServletException, IOException {
+    if (!StrUtil.containsAnyIgnoreCase(request.getRequestURI(),SecurityConstants.OAUTH_TOKEN_URL)) {
+      chain.doFilter(request,response);
+      return;
+    }
+    RepeatBodyRequestWrapper requestWrapper=new RepeatBodyRequestWrapper(request);
+    Map<String,String[]> parameterMap=requestWrapper.getParameterMap();
+    AES aes=new AES(Mode.CFB,Padding.NoPadding,new SecretKeySpec(authSecurityConfigProperties.getEncodeKey().getBytes(),KEY_ALGORITHM),new IvParameterSpec(authSecurityConfigProperties.getEncodeKey().getBytes()));
+    parameterMap.forEach((k,v) -> {
+      String[] values=parameterMap.get(k);
+      if (!PASSWORD.equals(k) || ArrayUtil.isEmpty(values)) {
+        return;
+      }
+      String decryptPassword=aes.decryptStr(values[0]);
+      parameterMap.put(k,new String[]{decryptPassword});
+    }
+);
+    chain.doFilter(requestWrapper,response);
+  }
+}",1,Code Smell
+"@Route(APIPath.Create_Group) @HttpMethod(""POST"") public class CreateGroupAction extends AdminAction {
+  @Override public boolean isTransactionAction(){
+    return true;
+  }
+  @Override public boolean action(  Request request,  Response response){
+    if (request.getNettyRequest() instanceof FullHttpRequest) {
+      InputCreateGroup inputCreateGroup=getRequestBody(request.getNettyRequest(),InputCreateGroup.class);
+      if (inputCreateGroup.isValide()) {
+        sendApiMessage(response,inputCreateGroup.getOperator(),IMTopic.CreateGroupTopic,inputCreateGroup.toProtoGroupRequest().toByteArray(),result -> {
+          ByteBuf byteBuf=Unpooled.buffer();
+          byteBuf.writeBytes(result);
+          ErrorCode errorCode=ErrorCode.fromCode(byteBuf.readByte());
+          if (errorCode == ErrorCode.ERROR_CODE_SUCCESS) {
+            byte[] data=new byte[byteBuf.readableBytes()];
+            byteBuf.readBytes(data);
+            String groupId=new String(data);
+            return new Result(ErrorCode.ERROR_CODE_SUCCESS,new OutputCreateGroupResult(groupId));
+          }
+ else {
+            return new Result(errorCode);
+          }
+        }
+);
+        return false;
+      }
+ else {
+        setResponseContent(RestResult.resultOf(ErrorCode.INVALID_PARAMETER),response);
+      }
+    }
+    return true;
+  }
+}
+",1,Code Smell
+"/** 
+ * 请求统计分析埋点过滤器
+ * @author zlt
+ * @date 2019/10/7<p> Blog: http://zlt2000.gitee.io Github: https://github.com/zlt2000
+ */
+@Component public class RequestStatisticsFilter implements GlobalFilter, Ordered {
+  @Override public Mono<Void> filter(  ServerWebExchange exchange,  GatewayFilterChain chain){
+    ServerHttpRequest request=exchange.getRequest();
+    Map<String,String> headers=request.getHeaders().toSingleValueMap();
+    UserAgent userAgent=UserAgent.parseUserAgentString(headers.get(""User-Agent""));
+    PointUtil.debug(""1"",""request-statistics"",""ip="" + ReactiveAddrUtil.getRemoteAddr(request) + ""&browser=""+ getBrowser(userAgent.getBrowser().name())+ ""&operatingSystem=""+ getOperatingSystem(userAgent.getOperatingSystem().name()));
+    return chain.filter(exchange);
+  }
+  @Override public int getOrder(){
+    return 0;
+  }
+  private String getBrowser(  String browser){
+    if (StrUtil.isNotEmpty(browser)) {
+      if (browser.contains(""CHROME"")) {
+        return ""CHROME"";
+      }
+ else       if (browser.contains(""FIREFOX"")) {
+        return ""FIREFOX"";
+      }
+ else       if (browser.contains(""SAFARI"")) {
+        return ""SAFARI"";
+      }
+ else       if (browser.contains(""EDGE"")) {
+        return ""EDGE"";
+      }
+    }
+    return browser;
+  }
+  private String getOperatingSystem(  String operatingSystem){
+    if (StrUtil.isNotEmpty(operatingSystem)) {
+      if (operatingSystem.contains(""MAC_OS_X"")) {
+        return ""MAC_OS_X"";
+      }
+ else       if (operatingSystem.contains(""ANDROID"")) {
+        return ""ANDROID"";
+      }
+    }
+    return operatingSystem;
+  }
+}",1,Code Smell
+"/** 
+ * 操作日志使用spring event异步入库
+ * @author L.cm
+ */
+@Aspect @Slf4j @RequiredArgsConstructor public class SysLogAspect {
+  @Around(""@annotation(sysLog)"") @SneakyThrows public Object around(  ProceedingJoinPoint point,  com.pig4cloud.pig.common.log.annotation.SysLog sysLog){
+    String strClassName=point.getTarget().getClass().getName();
+    String strMethodName=point.getSignature().getName();
+    log.debug(""[类名]:{},[方法]:{}"",strClassName,strMethodName);
+    String value=sysLog.value();
+    String expression=sysLog.expression();
+    if (StrUtil.isNotBlank(expression)) {
+      MethodSignature signature=(MethodSignature)point.getSignature();
+      EvaluationContext context=SysLogUtils.getContext(point.getArgs(),signature.getMethod());
+      try {
+        value=SysLogUtils.getValue(context,expression,String.class);
+      }
+ catch (      Exception e) {
+        log.error(""@SysLog 解析SPEL {} 异常"",expression);
+      }
+    }
+    SysLogEventSource logVo=SysLogUtils.getSysLog();
+    logVo.setTitle(value);
+    if (StrUtil.isBlank(logVo.getParams())) {
+      logVo.setBody(point.getArgs());
+    }
+    Long startTime=System.currentTimeMillis();
+    Object obj;
+    try {
+      obj=point.proceed();
+    }
+ catch (    Exception e) {
+      logVo.setLogType(LogTypeEnum.ERROR.getType());
+      logVo.setException(e.getMessage());
+      throw e;
+    }
+ finally {
+      Long endTime=System.currentTimeMillis();
+      logVo.setTime(endTime - startTime);
+      SpringContextHolder.publishEvent(new SysLogEvent(logVo));
+    }
+    return obj;
+  }
+}",1,Code Smell
+"/** 
+ * The Postgres source enumerator that enumerates receive the split request and assign the split to source readers.
+ */
+@Internal public class PostgresSourceEnumerator extends IncrementalSourceEnumerator {
+  private final PostgresDialect postgresDialect;
+  private final PostgresSourceConfig sourceConfig;
+  private volatile boolean receiveOffsetCommitAck=false;
+  public PostgresSourceEnumerator(  SplitEnumeratorContext<SourceSplitBase> context,  PostgresSourceConfig sourceConfig,  SplitAssigner splitAssigner,  PostgresDialect postgresDialect,  Boundedness boundedness){
+    super(context,sourceConfig,splitAssigner,boundedness);
+    this.postgresDialect=postgresDialect;
+    this.sourceConfig=sourceConfig;
+  }
+  @Override public void start(){
+    createSlotForGlobalStreamSplit();
+    super.start();
+  }
+  @Override protected void assignSplits(){
+    if (sourceConfig.isScanNewlyAddedTableEnabled() && streamSplitTaskId != null && !receiveOffsetCommitAck && isNewlyAddedAssigning(splitAssigner.getAssignerStatus())) {
+      return;
+    }
+    super.assignSplits();
+  }
+  @Override public void handleSourceEvent(  int subtaskId,  SourceEvent sourceEvent){
+    if (sourceEvent instanceof OffsetCommitAckEvent) {
+      if (streamSplitTaskId != null && streamSplitTaskId == subtaskId) {
+        this.receiveOffsetCommitAck=true;
+      }
+ else {
+        throw new RuntimeException(""Receive SyncAssignStatusAck from wrong subtask"");
+      }
+    }
+ else {
+      super.handleSourceEvent(subtaskId,sourceEvent);
+    }
+  }
+  @Override protected void syncWithReaders(  int[] subtaskIds,  Throwable t){
+    super.syncWithReaders(subtaskIds,t);
+    if (!receiveOffsetCommitAck && sourceConfig.isScanNewlyAddedTableEnabled() && streamSplitTaskId != null) {
+      AssignerStatus assignerStatus=splitAssigner.getAssignerStatus();
+      context.sendEventToSourceReader(streamSplitTaskId,new OffsetCommitEvent(!isNewlyAddedAssigning(assignerStatus) && !isNewlyAddedAssigningSnapshotFinished(assignerStatus)));
+    }
+  }
+  /** 
+ * Create slot for the unique global stream split. <p>Currently all startup modes need read the stream split. We need open the slot before reading the globalStreamSplit to catch all data changes.
+ */
+  private void createSlotForGlobalStreamSplit(){
+    try (PostgresConnection connection=postgresDialect.openJdbcConnection()){
+      SlotState slotInfo=connection.getReplicationSlotState(postgresDialect.getSlotName(),postgresDialect.getPluginName());
+      if (slotInfo != null) {
+        return;
+      }
+      PostgresReplicationConnection replicationConnection=postgresDialect.openPostgresReplicationConnection(connection);
+      replicationConnection.createReplicationSlot();
+      replicationConnection.close(false);
+    }
+ catch (    Throwable t) {
+      throw new FlinkRuntimeException(String.format(""Fail to get or create slot for global stream split, the slot name is %s. Due to: "",postgresDialect.getSlotName()),t);
+    }
+  }
+}
+",1,Code Smell
+"/** 
+ * redis 鍞竴token 鎷︽埅鍣�, 鐢ㄤ簬澶勭悊鐢ㄦ埛澶氳澶囩櫥褰曟椂鐨� 鍞竴鏈夋晥token 鍒ゆ柇閫昏緫
+ * @author xzzz
+ */
+@Slf4j public class RedisTokenUniqueFilter {
+  /** 
+ * 閰嶇疆鏂囦欢鍐呭
+ */
+  private final TokenRepository tokenRepository;
+  public RedisTokenUniqueFilter(  TokenRepository tokenRepository){
+    this.tokenRepository=tokenRepository;
+  }
+  /** 
+ * 鎵ц杩囨护鍣�
+ * @param request  request
+ * @param response response
+ * @throws IOException      io
+ * @throws ServletException servlet
+ */
+  public void doFilter(  ServletRequest request,  ServletResponse response) throws IOException, ServletException {
+    boolean isWhiteList=Boolean.TRUE.equals(request.getAttribute(AuthConstant.WHITE_LIST_ATTRIBUTE_KEY));
+    if (isWhiteList) {
+      return;
+    }
+    AccessToken accessToken=AuthContext.getContext();
+    if (!accessToken.getMultiPlaceLogin()) {
+      String uniqueToken=tokenRepository.getUniqueToken(String.valueOf(accessToken.getUserId()));
+      if (!accessToken.getToken().equals(uniqueToken)) {
+        tokenRepository.remove(accessToken.getToken());
+        throw new AuthException(AuthRCode.ANOTHER_DEVICE_LOGIN);
+      }
+    }
+  }
+}",1,Code Smell
+"@Component @Slf4j public class LDAPSchedule {
+  @Autowired private LDAPBus ldapBus;
+  private int times;
+  @Scheduled(fixedRate=3600000) public void sync(){
+    if (times == 0) {
+      times++;
+      return;
+    }
+    if (!ldapBus.enabledLDAP()) {
+      log.info(""鏈厤缃甃DAP鏈嶅姟"");
+      return;
+    }
+    try {
+      ldapBus.departmentSync();
+    }
+ catch (    Exception e) {
+      log.error(""LDAP-閮ㄩ棬鍚屾澶辫触"",e);
+    }
+    try {
+      ldapBus.userSync();
+    }
+ catch (    Exception e) {
+      log.error(""LDAP-瀛﹀憳鍚屾澶辫触"",e);
+    }
+    log.info(""LDAP鍚屾鎴愬姛"");
+  }
+}",1,Code Smell
+"/** 
+ * @author lg99
+ */
+@RestController @RequestMapping(""/config"") public class ConfigController extends BaseController {
+  @Autowired InitConfig initConfig;
+  @Autowired GenericOauthService genericOauthService;
+  /** 
+ * return the basic information to UI
+ */
+  @GetMapping("""") @ResponseBody public RestResponse getConfigInfo(){
+    String[] locationArr=initConfig.getRemoteLocations().split(Constants.Symbol.COMMA);
+    Map<String,Object> map=new HashMap<>();
+    JSONArray result=new JSONArray();
+    result.addAll(Arrays.asList(locationArr));
+    map.put(TopicConfig.TTL,initConfig.getTtl());
+    map.put(Constants.KeyStr.REMOTELOCATIONS,result);
+    map.put(Constants.KeyStr.CONNECTION_URL,initConfig.getConnectUrl());
+    return SUCCESS_DATA(map);
+  }
+  /** 
+ * return the oauth2 config
+ */
+  @GetMapping(""/oauth2"") @ResponseBody public Object oauth2Config(){
+    Map<String,Object> map=new HashMap<>();
+    map.put(""enable"",genericOauthService.isEnable());
+    map.put(""name"",genericOauthService.serviceName());
+    return map;
+  }
+}",1,Code Smell
+"public class MagicBackupController extends MagicController implements MagicExceptionHandler {
+  private final MagicBackupService service;
+  public MagicBackupController(  MagicConfiguration configuration){
+    super(configuration);
+    this.service=configuration.getMagicBackupService();
+  }
+  @GetMapping(""/backups"") @ResponseBody public JsonBean<List<Backup>> backups(  Long timestamp){
+    if (service == null) {
+      return new JsonBean<>(Collections.emptyList());
+    }
+    return new JsonBean<>(service.backupList(timestamp == null ? System.currentTimeMillis() : timestamp));
+  }
+  @GetMapping(""/backup/{id}"") @ResponseBody public JsonBean<List<Backup>> backups(  @PathVariable(""id"") String id){
+    if (service == null || StringUtils.isBlank(id)) {
+      return new JsonBean<>(Collections.emptyList());
+    }
+    return new JsonBean<>(service.backupById(id));
+  }
+  @GetMapping(""/backup/rollback"") @ResponseBody public JsonBean<Boolean> rollback(  String id,  Long timestamp) throws IOException {
+    notNull(service,BACKUP_NOT_ENABLED);
+    Backup backup=service.backupInfo(id,timestamp);
+    if (""full"".equals(id)) {
+      service.doBackupAll(""杩樺師鍏ㄩ噺澶囦唤鍓嶏紝绯荤粺鑷姩鍏ㄩ噺澶囦唤"",WebUtils.currentUserName());
+      configuration.getMagicAPIService().upload(new ByteArrayInputStream(backup.getContent()),Constants.UPLOAD_MODE_FULL);
+      return new JsonBean<>(true);
+    }
+    if (backup.getType().endsWith(""-group"")) {
+      Group group=JsonUtils.readValue(backup.getContent(),Group.class);
+      return new JsonBean<>(MagicConfiguration.getMagicResourceService().saveGroup(group));
+    }
+    MagicEntity entity=configuration.getMagicDynamicRegistries().stream().map(MagicDynamicRegistry::getMagicResourceStorage).filter(it -> it.folder().equals(backup.getType())).map(it -> it.read(backup.getContent())).findFirst().orElse(null);
+    if (entity != null) {
+      return new JsonBean<>(MagicConfiguration.getMagicResourceService().saveFile(entity));
+    }
+    return new JsonBean<>(false);
+  }
+  @GetMapping(""/backup"") @ResponseBody public JsonBean<String> backup(  Long timestamp,  String id){
+    notNull(service,BACKUP_NOT_ENABLED);
+    notBlank(id,PARAMETER_INVALID);
+    notNull(timestamp,PARAMETER_INVALID);
+    Backup backup=service.backupInfo(id,timestamp);
+    MagicEntity entity=JsonUtils.readValue(backup.getContent(),MagicEntity.class);
+    return new JsonBean<>(entity == null ? null : entity.getScript());
+  }
+  @PostMapping(""/backup/full"") @ResponseBody public JsonBean<Boolean> doBackup() throws IOException {
+    notNull(service,BACKUP_NOT_ENABLED);
+    service.doBackupAll(""涓诲姩鍏ㄩ噺澶囦唤"",WebUtils.currentUserName());
+    return new JsonBean<>(true);
+  }
+}
+",1,Code Smell
+"class SQLServerDialectTest {
+  SQLServerDialect dialect=new SQLServerDialect();
+  @Test void testWithSelectForUpdate(){
+    String statement=""select jobAsJson from jobrunr_jobs j where state = :state AND serverTag in ('DEFAULT') AND (j.mutex is null or j.mutex not in (select distinct mutexInUse from jobrunr_jobs where mutexInUse is not null)) "" + dialect.limit() + dialect.selectForUpdateSkipLocked();
+    assertThat(dialect.escape(statement)).isEqualTo(""select jobAsJson from jobrunr_jobs j with(UPDLOCK, ROWLOCK, READPAST) where state = :state AND serverTag in ('DEFAULT') AND (j.mutex is null or j.mutex not in (select distinct mutexInUse from jobrunr_jobs where mutexInUse is not null)) OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY"");
+  }
+  @Test void testWithoutSelectForUpdate(){
+    String statement=""select jobAsJson from jobrunr_jobs j where state = :state AND serverTag in ('DEFAULT') AND (j.mutex is null or j.mutex not in (select distinct mutexInUse from jobrunr_jobs where mutexInUse is not null)) "" + dialect.limit();
+    assertThat(dialect.escape(statement)).isEqualTo(""select jobAsJson from jobrunr_jobs j where state = :state AND serverTag in ('DEFAULT') AND (j.mutex is null or j.mutex not in (select distinct mutexInUse from jobrunr_jobs where mutexInUse is not null)) OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY"");
+  }
+}",0,Clean Code
+"/** 
+ * A decoded Dalvik instruction which contains the payload for a  {@code packed-switch} instruction.
+ */
+public final class PackedSwitchPayloadDecodedInstruction extends DecodedInstruction {
+  /** 
+ * first key value 
+ */
+  private final int firstKey;
+  /** 
+ * array of target addresses. These are absolute, not relative, addresses.
+ */
+  private final int[] targets;
+  /** 
+ * Constructs an instance.
+ */
+  public PackedSwitchPayloadDecodedInstruction(  InstructionCodec format,  int opcode,  int firstKey,  int[] targets){
+    super(format,opcode,0,null,0,0L);
+    this.firstKey=firstKey;
+    this.targets=targets;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public int getRegisterCount(){
+    return 0;
+  }
+  public int getFirstKey(){
+    return firstKey;
+  }
+  public int[] getTargets(){
+    return targets;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public DecodedInstruction withIndex(  int newIndex){
+    throw new UnsupportedOperationException(""no index in instruction"");
+  }
+}",0,Clean Code
+"public class MultiCallOngoingMessageContent extends MessageContent {
+  private String callId;
+  private String initiator;
+  private boolean audioOnly;
+  private List<String> targets;
+  public MultiCallOngoingMessageContent(){
+  }
+  public MultiCallOngoingMessageContent(  String callId,  String initiator,  boolean audioOnly,  List<String> targets){
+    this.callId=callId;
+    this.initiator=initiator;
+    this.audioOnly=audioOnly;
+    this.targets=targets;
+  }
+  @Override public int getContentType(){
+    return ProtoConstants.ContentType.Call_Multi_Call_Ongoing;
+  }
+  @Override public int getPersistFlag(){
+    return ProtoConstants.PersistFlag.Transparent;
+  }
+  @Override public MessagePayload encode(){
+    MessagePayload payload=super.encode();
+    payload.setContent(callId);
+    JSONObject object=new JSONObject();
+    object.put(""initiator"",this.initiator);
+    JSONArray arr=new JSONArray();
+    for (int i=0; i < targets.size(); i++) {
+      arr.add(i,targets.get(i));
+    }
+    object.put(""targets"",arr);
+    object.put(""audioOnly"",this.audioOnly ? 1 : 0);
+    payload.setBase64edData(Base64.getEncoder().encodeToString(object.toString().getBytes()));
+    return payload;
+  }
+  @Override public void decode(  MessagePayload payload){
+    super.decode(payload);
+    this.callId=payload.getContent();
+    try {
+      JSONObject object=(JSONObject)new JSONParser().parse(new String(Base64.getDecoder().decode(payload.getBase64edData())));
+      this.initiator=(String)object.get(""initiator"");
+      this.targets=new ArrayList<>();
+      JSONArray array=(JSONArray)object.get(""targets"");
+      if (array != null) {
+        for (int i=0; i < array.size(); i++) {
+          targets.add((String)array.get(i));
+        }
+      }
+      this.audioOnly=(int)object.get(""audioOnly"") == 1;
+    }
+ catch (    ParseException e) {
+      e.printStackTrace();
+    }
+  }
+  public String getCallId(){
+    return callId;
+  }
+  public void setCallId(  String callId){
+    this.callId=callId;
+  }
+  public String getInitiator(){
+    return initiator;
+  }
+  public void setInitiator(  String initiator){
+    this.initiator=initiator;
+  }
+  public boolean isAudioOnly(){
+    return audioOnly;
+  }
+  public void setAudioOnly(  boolean audioOnly){
+    this.audioOnly=audioOnly;
+  }
+  public List<String> getTargets(){
+    return targets;
+  }
+  public void setTargets(  List<String> targets){
+    this.targets=targets;
+  }
+}",0,Clean Code
+"/** 
+ * springboot鐜涓嬮噸鏂板姞杞借鍒欐祴璇�
+ * @author Bryan.Zhang
+ * @since 2.5.0
+ */
+@ExtendWith(SpringExtension.class) @TestPropertySource(value=""classpath:/reload/application.properties"") @SpringBootTest(classes=ReloadELDeclMultiSpringbootTest.class) @EnableAutoConfiguration @ComponentScan({""com.yomahub.liteflow.test.reload.cmp""}) public class ReloadELDeclMultiSpringbootTest extends BaseTest {
+  @Resource private FlowExecutor flowExecutor;
+  @Test public void testReload() throws Exception {
+    flowExecutor.reloadRule();
+    LiteflowResponse response=flowExecutor.execute2Resp(""chain1"",""arg"");
+    Assertions.assertTrue(response.isSuccess());
+  }
+}",0,Clean Code
+"/** 
+ * Identifies a method or constructor.
+ * @param < D > the type declaring this field
+ * @param < R > the return type of this method
+ */
+public final class MethodId<D,R> {
+  final TypeId<D> declaringType;
+  final TypeId<R> returnType;
+  final String name;
+  final TypeList parameters;
+  /** 
+ * cached converted state 
+ */
+  final CstNat nat;
+  final CstMethodRef constant;
+  MethodId(  TypeId<D> declaringType,  TypeId<R> returnType,  String name,  TypeList parameters){
+    if (declaringType == null || returnType == null || name == null || parameters == null) {
+      throw new NullPointerException();
+    }
+    this.declaringType=declaringType;
+    this.returnType=returnType;
+    this.name=name;
+    this.parameters=parameters;
+    this.nat=new CstNat(new CstString(name),new CstString(descriptor(false)));
+    this.constant=new CstMethodRef(declaringType.constant,nat);
+  }
+  public TypeId<D> getDeclaringType(){
+    return declaringType;
+  }
+  public TypeId<R> getReturnType(){
+    return returnType;
+  }
+  /** 
+ * Returns true if this method is a constructor for its declaring class.
+ */
+  public boolean isConstructor(){
+    return name.equals(""<init>"");
+  }
+  /** 
+ * Returns true if this method is the static initializer for its declaring class.
+ */
+  public boolean isStaticInitializer(){
+    return name.equals(""<clinit>"");
+  }
+  /** 
+ * Returns the method's name. This is ""&lt;init&gt;"" if this is a constructor or ""&lt;clinit&gt;"" if a static initializer
+ */
+  public String getName(){
+    return name;
+  }
+  public List<TypeId<?>> getParameters(){
+    return parameters.asList();
+  }
+  /** 
+ * Returns a descriptor like ""(Ljava/lang/Class;[I)Ljava/lang/Object;"".
+ */
+  String descriptor(  boolean includeThis){
+    StringBuilder result=new StringBuilder();
+    result.append(""("");
+    if (includeThis) {
+      result.append(declaringType.name);
+    }
+    for (    TypeId t : parameters.types) {
+      result.append(t.name);
+    }
+    result.append("")"");
+    result.append(returnType.name);
+    return result.toString();
+  }
+  Prototype prototype(  boolean includeThis){
+    return Prototype.intern(descriptor(includeThis));
+  }
+  @Override public boolean equals(  Object o){
+    return o instanceof MethodId && ((MethodId<?,?>)o).declaringType.equals(declaringType) && ((MethodId<?,?>)o).name.equals(name)&& ((MethodId<?,?>)o).parameters.equals(parameters)&& ((MethodId<?,?>)o).returnType.equals(returnType);
+  }
+  @Override public int hashCode(){
+    int result=17;
+    result=31 * result + declaringType.hashCode();
+    result=31 * result + name.hashCode();
+    result=31 * result + parameters.hashCode();
+    result=31 * result + returnType.hashCode();
+    return result;
+  }
+  @Override public String toString(){
+    return declaringType + ""."" + name+ ""(""+ parameters+ "")"";
+  }
+}",0,Clean Code
+"public abstract class BaseRouter implements Router {
+  protected volatile AtomicBoolean bootstrapHooked=new AtomicBoolean(false);
+  public void initResourcesHook(){
+    XposedBridge.initXResources();
+  }
+  public void prepare(  boolean isSystem){
+    XposedInit.startsSystemServer=isSystem;
+  }
+  public void installBootstrapHooks(  boolean isSystem){
+    try {
+      if (!bootstrapHooked.compareAndSet(false,true)) {
+        return;
+      }
+      startBootstrapHook(isSystem);
+      XposedInit.initForZygote(isSystem);
+    }
+ catch (    Throwable t) {
+      Utils.logE(""error during Xposed initialization"",t);
+      XposedBridge.disableHooks=true;
+    }
+  }
+  public void loadModulesSafely(  boolean callInitZygote){
+    try {
+      XposedInit.loadModules(callInitZygote);
+    }
+ catch (    Exception exception) {
+      Utils.logE(""error loading module list"",exception);
+    }
+  }
+  public String parsePackageName(  String appDataDir){
+    if (TextUtils.isEmpty(appDataDir)) {
+      return """";
+    }
+    int lastIndex=appDataDir.lastIndexOf(""/"");
+    if (lastIndex < 1) {
+      return """";
+    }
+    return appDataDir.substring(lastIndex + 1);
+  }
+  @ApiSensitive(Level.LOW) public void startBootstrapHook(  boolean isSystem){
+    Utils.logD(""startBootstrapHook starts: isSystem = "" + isSystem);
+    ClassLoader classLoader=BaseRouter.class.getClassLoader();
+    if (isSystem) {
+      XposedHelpers.findAndHookMethod(SystemMainHooker.className,classLoader,SystemMainHooker.methodName,new SystemMain());
+    }
+    XposedHelpers.findAndHookMethod(HandleBindAppHooker.className,classLoader,HandleBindAppHooker.methodName,""android.app.ActivityThread$AppBindData"",new HandleBindApp());
+    XposedHelpers.findAndHookConstructor(LoadedApkConstructorHooker.className,classLoader,ActivityThread.class,ApplicationInfo.class,CompatibilityInfo.class,ClassLoader.class,boolean.class,boolean.class,boolean.class,new LoadedApkCstr());
+  }
+  public void startSystemServerHook(){
+    StartBootstrapServices sbsHooker=new StartBootstrapServices();
+    Object[] paramTypesAndCallback=Versions.hasR() ? new Object[]{""com.android.server.utils.TimingsTraceAndSlog"",sbsHooker} : new Object[]{sbsHooker};
+    XposedHelpers.findAndHookMethod(StartBootstrapServicesHooker.className,SystemMain.systemServerCL,StartBootstrapServicesHooker.methodName,paramTypesAndCallback);
+  }
+}",0,Clean Code
+"/** 
+ * end progress changed listener 
+ */
+private final class InnerHandler extends Handler {
+  @Override public void handleMessage(  Message msg){
+    super.handleMessage(msg);
+switch (msg.what) {
+case PLAY_ACTION:
+      Log.i(TAG,""Execute PLAY_ACTION"");
+    if (isMain) {
+      Toast.makeText(mContext,isSeek ? ""快进到："" + posTime : ""开始投屏"",Toast.LENGTH_SHORT).show();
+    }
+  isSeek=false;
+mClingPlayControl.setCurrentState(DLANPlayState.PLAY);
+postHandler.post(positionRunnable);
+break;
+case PAUSE_ACTION:
+Log.i(TAG,""Execute PAUSE_ACTION"");
+mClingPlayControl.setCurrentState(DLANPlayState.PAUSE);
+postHandler.post(positionRunnable);
+postHandler.removeCallbacksAndMessages(null);
+break;
+case STOP_ACTION:
+Log.i(TAG,""Execute STOP_ACTION"");
+mClingPlayControl.setCurrentState(DLANPlayState.STOP);
+postHandler.post(positionRunnable);
+postHandler.removeCallbacksAndMessages(null);
+mSeekProgress.setProgress(0);
+durationText.setText(String.format(refTimeText,""00:00:00"",""00:00:00""));
+break;
+case TRANSITIONING_ACTION:
+Log.i(TAG,""Execute TRANSITIONING_ACTION"");
+Toast.makeText(mContext,""正在连接"",Toast.LENGTH_SHORT).show();
+break;
+case ERROR_ACTION:
+Log.e(TAG,""Execute ERROR_ACTION"");
+Toast.makeText(mContext,""投放失败"",Toast.LENGTH_SHORT).show();
+postHandler.post(positionRunnable);
+postHandler.removeCallbacksAndMessages(null);
+break;
+}
+}
+}",0,Clean Code
+"/** 
+ * 最近更新列表实体
+ */
+public class AnimeUpdateBean {
+  private String number;
+  private String region;
+  private String title;
+  private String episodes;
+  private String url;
+  private String updateTime;
+  public String getNumber(){
+    return number;
+  }
+  public void setNumber(  String number){
+    this.number=number;
+  }
+  public String getRegion(){
+    return region;
+  }
+  public void setRegion(  String region){
+    this.region=region;
+  }
+  public String getTitle(){
+    return title;
+  }
+  public void setTitle(  String title){
+    this.title=title;
+  }
+  public String getEpisodes(){
+    return episodes;
+  }
+  public void setEpisodes(  String episodes){
+    this.episodes=episodes;
+  }
+  public String getUrl(){
+    return url;
+  }
+  public void setUrl(  String url){
+    this.url=url;
+  }
+  public String getUpdateTime(){
+    return updateTime;
+  }
+  public void setUpdateTime(  String updateTime){
+    this.updateTime=updateTime;
+  }
+}
+",0,Clean Code
+"/** 
+ * 授权码模式登录时设置租户id过滤器
+ * @author zlt
+ * @date 2020/3/29<p> Blog: https://zlt2000.gitee.io Github: https://github.com/zlt2000
+ */
+public class LoginProcessSetTenantFilter extends OncePerRequestFilter {
+  private static final String SAVED_REQUEST=""SPRING_SECURITY_SAVED_REQUEST"";
+  private RequestMatcher requiresAuthenticationRequestMatcher;
+  public LoginProcessSetTenantFilter(){
+    requiresAuthenticationRequestMatcher=new AntPathRequestMatcher(SecurityConstants.OAUTH_LOGIN_PRO_URL,HttpMethod.POST.name());
+  }
+  /** 
+ * 返回true代表不执行过滤器，false代表执行
+ */
+  @Override protected boolean shouldNotFilter(  HttpServletRequest request){
+    if (requiresAuthentication(request)) {
+      return false;
+    }
+    return true;
+  }
+  @Override protected void doFilterInternal(  HttpServletRequest request,  HttpServletResponse response,  FilterChain chain) throws ServletException, IOException {
+    try {
+      DefaultSavedRequest savedRequest=(DefaultSavedRequest)request.getSession().getAttribute(SAVED_REQUEST);
+      if (savedRequest != null) {
+        String[] clientIds=savedRequest.getParameterValues(""client_id"");
+        if (ArrayUtil.isNotEmpty(clientIds)) {
+          TenantContextHolder.setTenant(clientIds[0]);
+        }
+      }
+      chain.doFilter(request,response);
+    }
+  finally {
+      TenantContextHolder.clear();
+    }
+  }
+  private boolean requiresAuthentication(  HttpServletRequest request){
+    return requiresAuthenticationRequestMatcher.matches(request);
+  }
+}",0,Clean Code
+"/** 
+ * 娴佺▼鎵ц寮傚父 鍗曞厓娴嬭瘯
+ * @author zendwang
+ */
+public class Exception1Test extends BaseTest {
+  private static FlowExecutor flowExecutor;
+  @BeforeAll public static void init(){
+    LiteflowConfig config=new LiteflowConfig();
+    config.setRuleSource(""exception/flow.el.xml"");
+    config.setWhenMaxWaitSeconds(1);
+    flowExecutor=FlowExecutorHolder.loadInstance(config);
+  }
+  /** 
+ * 楠岃瘉 chain 鑺傜偣閲嶅鐨勫紓甯�
+ */
+  @Test public void testChainDuplicateException(){
+    Assertions.assertThrows(ChainDuplicateException.class,() -> {
+      LiteflowConfig config=LiteflowConfigGetter.get();
+      config.setRuleSource(""exception/flow-exception.el.xml"");
+      flowExecutor.reloadRule();
+    }
+);
+  }
+  @Test public void testConfigErrorException(){
+    Assertions.assertThrows(ConfigErrorException.class,() -> {
+      flowExecutor.setLiteflowConfig(null);
+      flowExecutor.reloadRule();
+    }
+);
+  }
+  @Test public void testFlowExecutorNotInitException(){
+    Assertions.assertThrows(FlowExecutorNotInitException.class,() -> {
+      LiteflowConfig config=LiteflowConfigGetter.get();
+      config.setRuleSource(""error/flow.txt"");
+      flowExecutor.reloadRule();
+    }
+);
+  }
+}",0,Clean Code
+"public class RestResult {
+  int code;
+  String msg;
+  Object result;
+  public static RestResult ok(  Object object){
+    return resultOf(ErrorCode.ERROR_CODE_SUCCESS,ErrorCode.ERROR_CODE_SUCCESS.getMsg(),object);
+  }
+  public static RestResult ok(){
+    return resultOf(ErrorCode.ERROR_CODE_SUCCESS,ErrorCode.ERROR_CODE_SUCCESS.getMsg(),null);
+  }
+  public static RestResult resultOf(  ErrorCode errorCode){
+    return resultOf(errorCode,errorCode.msg,null);
+  }
+  public static RestResult resultOf(  ErrorCode errorCode,  String msg){
+    return resultOf(errorCode,msg,null);
+  }
+  public static RestResult resultOf(  ErrorCode errorCode,  String msg,  Object object){
+    RestResult result=new RestResult();
+    result.code=errorCode.code;
+    result.msg=msg;
+    result.result=object;
+    return result;
+  }
+  public void setErrorCode(  ErrorCode errorCode){
+    setCode(errorCode.code);
+  }
+  public int getCode(){
+    return code;
+  }
+  public void setCode(  int code){
+    this.code=code;
+  }
+  public String getMsg(){
+    return msg;
+  }
+  public void setMsg(  String msg){
+    this.msg=msg;
+  }
+  public Object getResult(){
+    return result;
+  }
+  public void setResult(  Object result){
+    this.result=result;
+  }
+}
+",0,Clean Code
+"/** 
+ * @author zhenyu.nie created on 2019 2019/11/4 11:06
+ */
+public class TestJob {
+  private static final Logger logger=LoggerFactory.getLogger(TestJob.class);
+  private static final ListeningExecutorService executor=MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+  private static ResponseJobStore jobStore=new DefaultResponseJobStore();
+  public static void main(  String[] args) throws Exception {
+    final String id=""xx"";
+    final Job job=new Job(id);
+    jobStore.submit(job);
+    Thread.sleep(2000);
+    new Thread(new Runnable(){
+      @Override public void run(){
+        try {
+          jobStore.pause(id);
+          Thread.sleep(5000);
+          jobStore.resume(id);
+          Thread.sleep(5000);
+          jobStore.setWritable(false);
+          Thread.sleep(2000);
+          jobStore.stop(id);
+          Thread.sleep(5000);
+          jobStore.resume(id);
+        }
+ catch (        Exception e) {
+        }
+      }
+    }
+).start();
+    System.in.read();
+    System.out.println(jobStore);
+    jobStore.submit(new Job(""11""));
+    System.in.read();
+    System.out.println(jobStore);
+    System.in.read();
+    jobStore.setWritable(true);
+    Thread.sleep(5000);
+    System.out.println(jobStore);
+    System.in.read();
+    jobStore.setWritable(false);
+    Thread.sleep(5000);
+    System.out.println(jobStore);
+    System.in.read();
+    jobStore.setWritable(true);
+    System.in.read();
+    System.out.println(jobStore);
+    System.in.read();
+  }
+private static class Job implements ContinueResponseJob {
+    private final String id;
+    private int i=15;
+    private Job(    String id){
+      this.id=id;
+    }
+    @Override public String getId(){
+      return id;
+    }
+    @Override public void init() throws Exception {
+      logger.info(""init"");
+    }
+    @Override public boolean doResponse() throws Exception {
+      if (i-- > 0) {
+        logger.info(""response"");
+        Thread.sleep(1500);
+        return false;
+      }
+      return true;
+    }
+    @Override public void clear(){
+      logger.info(""clear"");
+    }
+    @Override public void finish() throws Exception {
+      logger.info(""finish"");
+    }
+    @Override public void error(    Throwable t){
+      logger.info(""error {}"",t.getClass().getName());
+    }
+    @Override public void cancel(){
+      logger.info(""cancel"");
+    }
+    @Override public ListeningExecutorService getExecutor(){
+      return executor;
+    }
+    @Override public String toString(){
+      return ""Job{"" + ""id='"" + id + '\''+ '}';
+    }
+  }
+}",0,Clean Code
+"/** 
+ * A  {@link BaseImageTranslator} that post-process the {@link NDArray} into {@link DetectedObjects}with boundaries.
+ */
+public abstract class ObjectDetectionTranslator extends BaseImageTranslator<DetectedObjects> {
+  protected float threshold;
+  private SynsetLoader synsetLoader;
+  protected List<String> classes;
+  protected boolean applyRatio;
+  protected boolean removePadding;
+  /** 
+ * Creates the  {@link ObjectDetectionTranslator} from the given builder.
+ * @param builder the builder for the translator
+ */
+  protected ObjectDetectionTranslator(  ObjectDetectionBuilder<?> builder){
+    super(builder);
+    this.threshold=builder.threshold;
+    this.synsetLoader=builder.synsetLoader;
+    this.applyRatio=builder.applyRatio;
+    this.removePadding=builder.removePadding;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public void prepare(  TranslatorContext ctx) throws Exception {
+    if (classes == null) {
+      classes=synsetLoader.load(ctx.getModel());
+    }
+  }
+  /** 
+ * The base builder for the object detection translator. 
+ */
+@SuppressWarnings(""rawtypes"") public abstract static class ObjectDetectionBuilder<T extends ObjectDetectionBuilder> extends ClassificationBuilder<T> {
+    protected float threshold=0.2f;
+    protected boolean applyRatio;
+    protected boolean removePadding;
+    /** 
+ * Sets the threshold for prediction accuracy. <p>Predictions below the threshold will be dropped.
+ * @param threshold the threshold for the prediction accuracy
+ * @return this builder
+ */
+    public T optThreshold(    float threshold){
+      this.threshold=threshold;
+      return self();
+    }
+    /** 
+ * Determine Whether to divide output object width/height on the inference result. Default false. <p>DetectedObject value should always bring a ratio based on the width/height instead of actual width/height. Most of the model will produce ratio as the inference output. This function is aimed to cover those who produce the pixel value. Make this to true to divide the width/height in postprocessing in order to get ratio in detectedObjects.
+ * @param value whether to apply ratio
+ * @return this builder
+ */
+    public T optApplyRatio(    boolean value){
+      this.applyRatio=value;
+      return self();
+    }
+    /** 
+ * {@inheritDoc} 
+ */
+    @Override protected void configPostProcess(    Map<String,?> arguments){
+      super.configPostProcess(arguments);
+      if (ArgumentsUtil.booleanValue(arguments,""optApplyRatio"") || ArgumentsUtil.booleanValue(arguments,""applyRatio"")) {
+        optApplyRatio(true);
+      }
+      threshold=ArgumentsUtil.floatValue(arguments,""threshold"",0.2f);
+      String centerFit=ArgumentsUtil.stringValue(arguments,""centerFit"",""false"");
+      removePadding=""true"".equals(centerFit);
+    }
+  }
+}",0,Clean Code
+"class InternalRepublisher {
+  private static final Logger LOG=LoggerFactory.getLogger(InternalRepublisher.class);
+  private final PersistentQueueMessageSender messageSender;
+  InternalRepublisher(  PersistentQueueMessageSender messageSender){
+    this.messageSender=messageSender;
+  }
+  void publishRetained(  ClientSession targetSession,  Collection<IMessagesStore.StoredMessage> messages){
+    for (    IMessagesStore.StoredMessage storedMsg : messages) {
+      MqttPublishMessage publishMsg=retainedPublish(storedMsg);
+      if (storedMsg.getQos() != MqttQoS.AT_MOST_ONCE) {
+        LOG.debug(""Adding message to inflight zone. ClientId={}, topic={}"",targetSession.clientID,storedMsg.getTopic());
+        int packetID=targetSession.inFlightAckWaiting(storedMsg);
+        publishMsg=retainedPublish(storedMsg,packetID);
+      }
+      this.messageSender.sendPublish(targetSession,publishMsg);
+    }
+  }
+  void publishStored(  ClientSession clientSession,  Queue<IMessagesStore.StoredMessage> publishedEvents){
+    IMessagesStore.StoredMessage pubEvt;
+    while ((pubEvt=publishedEvents.poll()) != null) {
+      LOG.debug(""Adding message ot inflight zone. ClientId={}, guid={}, topic={}"",clientSession.clientID,pubEvt.getGuid(),pubEvt.getTopic());
+      int messageId=clientSession.inFlightAckWaiting(pubEvt);
+      MqttPublishMessage publishMsg=notRetainedPublish(pubEvt);
+      if (publishMsg.fixedHeader().qosLevel() != MqttQoS.AT_MOST_ONCE) {
+        publishMsg=notRetainedPublish(pubEvt,messageId);
+      }
+      this.messageSender.sendPublish(clientSession,publishMsg);
+    }
+  }
+  private MqttPublishMessage notRetainedPublish(  IMessagesStore.StoredMessage storedMessage,  Integer messageID){
+    return createPublishForQos(storedMessage.getTopic(),storedMessage.getQos(),storedMessage.getPayload(),false,messageID);
+  }
+  private MqttPublishMessage notRetainedPublish(  IMessagesStore.StoredMessage storedMessage){
+    return createPublishForQos(storedMessage.getTopic(),storedMessage.getQos(),storedMessage.getPayload(),false,0);
+  }
+  private MqttPublishMessage retainedPublish(  IMessagesStore.StoredMessage storedMessage){
+    return createPublishForQos(storedMessage.getTopic(),storedMessage.getQos(),storedMessage.getPayload(),true,0);
+  }
+  private MqttPublishMessage retainedPublish(  IMessagesStore.StoredMessage storedMessage,  Integer packetID){
+    return createPublishForQos(storedMessage.getTopic(),storedMessage.getQos(),storedMessage.getPayload(),true,packetID);
+  }
+  public static MqttPublishMessage createPublishForQos(  String topic,  MqttQoS qos,  ByteBuf message,  boolean retained,  int messageId){
+    MqttFixedHeader fixedHeader=new MqttFixedHeader(MqttMessageType.PUBLISH,false,qos,retained,0);
+    MqttPublishVariableHeader varHeader=new MqttPublishVariableHeader(topic,messageId);
+    return new MqttPublishMessage(fixedHeader,varHeader,message);
+  }
+}",0,Clean Code
+"@Route(APIPath.Robot_Group_Set_Member_Extra) @HttpMethod(""POST"") public class ModifyGroupMemberExtraAction extends RobotAction {
+  @Override public boolean isTransactionAction(){
+    return true;
+  }
+  @Override public boolean action(  Request request,  Response response){
+    if (request.getNettyRequest() instanceof FullHttpRequest) {
+      InputSetGroupMemberExtra inputSetGroupMemberExtra=getRequestBody(request.getNettyRequest(),InputSetGroupMemberExtra.class);
+      inputSetGroupMemberExtra.setOperator(robot.getUid());
+      if (inputSetGroupMemberExtra.isValide()) {
+        sendApiRequest(response,IMTopic.ModifyGroupMemberExtraTopic,inputSetGroupMemberExtra.toProtoGroupRequest().toByteArray(),result -> {
+          ByteBuf byteBuf=Unpooled.buffer();
+          byteBuf.writeBytes(result);
+          ErrorCode errorCode=ErrorCode.fromCode(byteBuf.readByte());
+          if (errorCode == ErrorCode.ERROR_CODE_SUCCESS) {
+            sendResponse(response,null,null);
+          }
+ else {
+            sendResponse(response,errorCode,null);
+          }
+        }
+);
+        return false;
+      }
+ else {
+        response.setStatus(HttpResponseStatus.OK);
+        RestResult result=RestResult.resultOf(ErrorCode.INVALID_PARAMETER);
+        response.setContent(gson.toJson(result));
+      }
+    }
+    return true;
+  }
+}
+",0,Clean Code
+"/** 
+ * {@code NegativeBinomialOutput} is a {@link DistributionOutput} for the negative binomialdistribution.
+ */
+public final class NegativeBinomialOutput extends DistributionOutput {
+  /** 
+ * Construct a negative binomial output with two arguments,  {@code total_count} and {@code logits}.
+ */
+  public NegativeBinomialOutput(){
+    argsDim=new PairList<>(2);
+    argsDim.add(""total_count"",1);
+    argsDim.add(""logits"",1);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public NDList domainMap(  NDList arrays){
+    NDArray totalCount=arrays.get(0);
+    NDArray logits=arrays.get(1);
+    totalCount=totalCount.getNDArrayInternal().softPlus().squeeze(-1);
+    logits=logits.squeeze(-1);
+    totalCount.setName(""total_count"");
+    logits.setName(""logits"");
+    return new NDList(totalCount,logits);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public Distribution.DistributionBuilder<?> distributionBuilder(){
+    return NegativeBinomial.builder();
+  }
+}",0,Clean Code
+"/** 
+ * {@code StudentTOutput} is a {@link DistributionOutput} for the Student's t-test distribution. 
+ */
+public class StudentTOutput extends DistributionOutput {
+  /** 
+ * Construct a negative binomial output with two arguments,  {@code mu} and {@code sigma}. 
+ */
+  public StudentTOutput(){
+    argsDim=new PairList<>(3);
+    argsDim.add(""mu"",1);
+    argsDim.add(""sigma"",1);
+    argsDim.add(""nu"",1);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public NDList domainMap(  NDList arrays){
+    NDArray mu=arrays.get(0);
+    NDArray sigma=arrays.get(1);
+    NDArray nu=arrays.get(2);
+    mu=mu.squeeze(-1);
+    sigma=sigma.getNDArrayInternal().softPlus().squeeze(-1);
+    nu=nu.getNDArrayInternal().softPlus().add(2.).squeeze(-1);
+    mu.setName(""mu"");
+    sigma.setName(""sigma"");
+    nu.setName(""nu"");
+    return new NDList(mu,sigma,nu);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public Distribution.DistributionBuilder<?> distributionBuilder(){
+    return StudentT.builder();
+  }
+}",0,Clean Code
+"public class PushMessage {
+  public String sender;
+  public String senderName;
+  public String senderPortrait;
+  public int convType;
+  public String target;
+  public String targetName;
+  public String targetPortrait;
+  public String userId;
+  public int line;
+  public int cntType;
+  public long serverTime;
+  public int pushMessageType;
+  public int pushType;
+  public String pushContent;
+  public String pushData;
+  public int unReceivedMsg;
+  public int mentionedType;
+  public String packageName;
+  public String deviceToken;
+  public String voipDeviceToken;
+  public boolean isHiddenDetail;
+  public String language;
+  public boolean republish;
+  public long messageId;
+  public PushMessage(  String sender,  int conversationType,  String target,  int line,  int messageContentType,  long serverTime,  String senderName,  String senderPortrait,  String targetName,  String targetPortrait,  int unReceivedMsg,  int mentionedType,  boolean isHiddenDetail,  String language){
+    this.sender=sender;
+    this.convType=conversationType;
+    this.target=target;
+    this.senderName=senderName;
+    this.senderPortrait=senderPortrait;
+    this.targetName=targetName;
+    this.targetPortrait=targetPortrait;
+    this.line=line;
+    this.cntType=messageContentType;
+    this.serverTime=serverTime;
+    this.unReceivedMsg=unReceivedMsg;
+    if (cntType == 400 || cntType == 406) {
+      this.pushMessageType=PushServer.PushMessageType.PUSH_MESSAGE_TYPE_VOIP_INVITE;
+    }
+ else     if (cntType == 402) {
+      this.pushMessageType=PushServer.PushMessageType.PUSH_MESSAGE_TYPE_VOIP_BYE;
+    }
+ else     if (cntType == 401) {
+      this.pushMessageType=PushServer.PushMessageType.PUSH_MESSAGE_TYPE_VOIP_ANSWER;
+    }
+ else     if (cntType == 80) {
+      this.pushMessageType=PushServer.PushMessageType.PUSH_MESSAGE_TYPE_RECALLED;
+    }
+ else     if (cntType == 81) {
+      this.pushMessageType=PushServer.PushMessageType.PUSH_MESSAGE_TYPE_DELETED;
+    }
+ else {
+      this.pushMessageType=PushServer.PushMessageType.PUSH_MESSAGE_TYPE_NORMAL;
+    }
+    this.mentionedType=mentionedType;
+    this.isHiddenDetail=isHiddenDetail;
+    this.language=language;
+    this.republish=messageContentType == 80 || messageContentType == 81;
+  }
+  public PushMessage(  String sender,  String target,  long serverTime,  String senderName,  int unReceivedMsg,  String language,  int pushMessageType){
+    this.sender=sender;
+    this.target=target;
+    this.senderName=senderName;
+    this.serverTime=serverTime;
+    this.unReceivedMsg=unReceivedMsg;
+    this.pushMessageType=pushMessageType;
+    this.language=language;
+  }
+}",0,Clean Code
+"public interface UserStopResultOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  /** 
+ * <pre> 停驻用户 Id </pre> <code>uint32 stopUserId = 1;</code>
+ * @return The stopUserId.
+ */
+  int getStopUserId();
+  /** 
+ * <pre> 停驻在位置 X </pre> <code>float stopAtPosX = 2;</code>
+ * @return The stopAtPosX.
+ */
+  float getStopAtPosX();
+  /** 
+ * <pre> 停驻在位置 Y </pre> <code>float stopAtPosY = 3;</code>
+ * @return The stopAtPosY.
+ */
+  float getStopAtPosY();
+}
+public interface UserStopResultOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  /** 
+ * <pre> 停驻用户 Id </pre> <code>uint32 stopUserId = 1;</code>
+ * @return The stopUserId.
+ */
+  int getStopUserId();
+  /** 
+ * <pre> 停驻在位置 X </pre> <code>float stopAtPosX = 2;</code>
+ * @return The stopAtPosX.
+ */
+  float getStopAtPosX();
+  /** 
+ * <pre> 停驻在位置 Y </pre> <code>float stopAtPosY = 3;</code>
+ * @return The stopAtPosY.
+ */
+  float getStopAtPosY();
+}
+public interface UserStopResultOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  /** 
+ * <pre> 停驻用户 Id </pre> <code>uint32 stopUserId = 1;</code>
+ * @return The stopUserId.
+ */
+  int getStopUserId();
+  /** 
+ * <pre> 停驻在位置 X </pre> <code>float stopAtPosX = 2;</code>
+ * @return The stopAtPosX.
+ */
+  float getStopAtPosX();
+  /** 
+ * <pre> 停驻在位置 Y </pre> <code>float stopAtPosY = 3;</code>
+ * @return The stopAtPosY.
+ */
+  float getStopAtPosY();
+}",0,Clean Code
+"/** 
+ * Statistical data about a particular class.
+ */
+private static class Data {
+  /** 
+ * {@code non-null;} name to use as a label 
+ */
+  private final String name;
+  /** 
+ * {@code >= 0;} number of instances 
+ */
+  private int count;
+  /** 
+ * {@code >= 0;} total size of instances in bytes 
+ */
+  private int totalSize;
+  /** 
+ * {@code >= 0;} largest size of any individual item 
+ */
+  private int largestSize;
+  /** 
+ * {@code >= 0;} smallest size of any individual item 
+ */
+  private int smallestSize;
+  /** 
+ * Constructs an instance for the given item.
+ * @param item {@code non-null;} item in question
+ * @param name {@code non-null;} type name to use
+ */
+  public Data(  Item item,  String name){
+    int size=item.writeSize();
+    this.name=name;
+    this.count=1;
+    this.totalSize=size;
+    this.largestSize=size;
+    this.smallestSize=size;
+  }
+  /** 
+ * Incorporates a new item. This assumes the type name matches.
+ * @param item {@code non-null;} item to incorporate
+ */
+  public void add(  Item item){
+    int size=item.writeSize();
+    count++;
+    totalSize+=size;
+    if (size > largestSize) {
+      largestSize=size;
+    }
+    if (size < smallestSize) {
+      smallestSize=size;
+    }
+  }
+  /** 
+ * Writes this instance as an annotation.
+ * @param out {@code non-null;} where to write to
+ */
+  public void writeAnnotation(  AnnotatedOutput out){
+    out.annotate(toHuman());
+  }
+  /** 
+ * Generates a human-readable string for this data item.
+ * @return string for human consumption.
+ */
+  public String toHuman(){
+    StringBuilder sb=new StringBuilder();
+    sb.append(""  "" + name + "": ""+ count+ "" item""+ (count == 1 ? """" : ""s"")+ ""; ""+ totalSize+ "" bytes total\n"");
+    if (smallestSize == largestSize) {
+      sb.append(""    "" + smallestSize + "" bytes/item\n"");
+    }
+ else {
+      int average=totalSize / count;
+      sb.append(""    "" + smallestSize + ""..""+ largestSize+ "" bytes/item; average ""+ average+ ""\n"");
+    }
+    return sb.toString();
+  }
+}",0,Clean Code
+"/** 
+ * @author zhenyu.nie created on 2019 2019/1/9 18:19
+ */
+public class KvUtils {
+  public static final String CPU_JSTACK_PREFIX=""cj-"";
+  public static String getThreadNumKey(  String timestamp){
+    return CPU_JSTACK_PREFIX + timestamp + ""-threadNum"";
+  }
+  public static String getThreadMomentCpuTimeKey(  String timestamp){
+    return getThreadMomentCpuTimeKey(timestamp,null);
+  }
+  public static String getThreadMomentCpuTimeKey(  String timestamp,  String threadId){
+    if (Strings.isNullOrEmpty(threadId)) {
+      return CPU_JSTACK_PREFIX + timestamp + ""-totalCpuTime"";
+    }
+ else {
+      return CPU_JSTACK_PREFIX + timestamp + ""-cputime-""+ threadId;
+    }
+  }
+  public static String getThreadMinuteCpuTimeKey(  String timestamp){
+    return getThreadMinuteCpuTimeKey(timestamp,null);
+  }
+  public static String getThreadMinuteCpuTimeKey(  String timestamp,  String threadId){
+    if (Strings.isNullOrEmpty(threadId)) {
+      return CPU_JSTACK_PREFIX + timestamp + ""-totalMinuteCpuTime"";
+    }
+ else {
+      return CPU_JSTACK_PREFIX + timestamp + ""-minuteCpuTime-""+ threadId;
+    }
+  }
+  public static String getJStackResultKey(  String timestamp){
+    return CPU_JSTACK_PREFIX + timestamp + ""-jstack"";
+  }
+  public static String getThreadInfoKey(  String timestamp){
+    return CPU_JSTACK_PREFIX + timestamp + ""-threadinfo"";
+  }
+  public static String getCollectSuccessKey(  String timestamp){
+    return CPU_JSTACK_PREFIX + timestamp + ""-success"";
+  }
+}",0,Clean Code
+"public class ImageClassificationTranslatorFactoryTest {
+  private ImageClassificationTranslatorFactory factory;
+  @BeforeClass public void setUp(){
+    factory=new ImageClassificationTranslatorFactory();
+  }
+  @Test public void testGetSupportedTypes(){
+    Assert.assertEquals(factory.getSupportedTypes().size(),6);
+  }
+  @Test public void testNewInstance(){
+    Map<String,String> arguments=new HashMap<>();
+    try (Model model=Model.newInstance(""test"")){
+      arguments.put(""resizeShort"",""true"");
+      arguments.put(""resize"",""true"");
+      Translator<Image,Classifications> translator1=factory.newInstance(Image.class,Classifications.class,model,arguments);
+      Assert.assertTrue(translator1 instanceof ImageClassificationTranslator);
+      arguments.put(""resize"",""224"");
+      arguments.put(""resizeShort"",""224"");
+      Translator<Path,Classifications> translator2=factory.newInstance(Path.class,Classifications.class,model,arguments);
+      Assert.assertTrue(translator2 instanceof BasicTranslator);
+      arguments.put(""resize"",""224,224"");
+      arguments.put(""resizeShort"",""224,500,BICUBIC"");
+      Translator<URL,Classifications> translator3=factory.newInstance(URL.class,Classifications.class,model,arguments);
+      Assert.assertTrue(translator3 instanceof BasicTranslator);
+      arguments.put(""resize"",""2,224,BICUBIC"");
+      arguments.put(""resizeShort"",""224,500,BILINEAR"");
+      arguments.put(""centerCrop"",""true"");
+      Translator<InputStream,Classifications> translator4=factory.newInstance(InputStream.class,Classifications.class,model,arguments);
+      Assert.assertTrue(translator4 instanceof BasicTranslator);
+      Translator<Input,Output> translator5=factory.newInstance(Input.class,Output.class,model,arguments);
+      Assert.assertTrue(translator5 instanceof ImageServingTranslator);
+      Translator<String,Classifications> translator6=factory.newInstance(String.class,Classifications.class,model,arguments);
+      Assert.assertTrue(translator6 instanceof BasicTranslator);
+      Assert.assertThrows(IllegalArgumentException.class,() -> factory.newInstance(Image.class,Output.class,model,arguments));
+      arguments.put(""centerCrop"",""false"");
+      Assert.assertThrows(IllegalArgumentException.class,() -> factory.newInstance(Image.class,Classifications.class,model,arguments));
+    }
+   }
+}",0,Clean Code
+"public interface QuitGroupRequestOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  /** 
+ * <code>required string group_id = 1;</code>
+ */
+  boolean hasGroupId();
+  /** 
+ * <code>required string group_id = 1;</code>
+ */
+  java.lang.String getGroupId();
+  /** 
+ * <code>required string group_id = 1;</code>
+ */
+  com.google.protobuf.ByteString getGroupIdBytes();
+  /** 
+ * <code>repeated int32 to_line = 2;</code>
+ */
+  java.util.List<java.lang.Integer> getToLineList();
+  /** 
+ * <code>repeated int32 to_line = 2;</code>
+ */
+  int getToLineCount();
+  /** 
+ * <code>repeated int32 to_line = 2;</code>
+ */
+  int getToLine(  int index);
+  /** 
+ * <code>optional .MessageContent notify_content = 3;</code>
+ */
+  boolean hasNotifyContent();
+  /** 
+ * <code>optional .MessageContent notify_content = 3;</code>
+ */
+  cn.wildfirechat.proto.WFCMessage.MessageContent getNotifyContent();
+  /** 
+ * <code>optional .MessageContent notify_content = 3;</code>
+ */
+  cn.wildfirechat.proto.WFCMessage.MessageContentOrBuilder getNotifyContentOrBuilder();
+  /** 
+ * <code>optional int32 keep_msg = 4;</code>
+ */
+  boolean hasKeepMsg();
+  /** 
+ * <code>optional int32 keep_msg = 4;</code>
+ */
+  int getKeepMsg();
+}",0,Clean Code
+"public class CombinedRenderTask<T extends RenderTask> implements RenderTask {
+  private final String description;
+  private final List<T> tasks;
+  private int currentTaskIndex;
+  public CombinedRenderTask(  String description,  Collection<T> tasks){
+    this.description=description;
+    this.tasks=Collections.unmodifiableList(new ArrayList<>(tasks));
+    this.currentTaskIndex=0;
+  }
+  @Override public void doWork() throws Exception {
+    T task;
+synchronized (this) {
+      if (!hasMoreWork())       return;
+      task=this.tasks.get(this.currentTaskIndex);
+      if (!task.hasMoreWork()) {
+        this.currentTaskIndex++;
+        return;
+      }
+    }
+    task.doWork();
+  }
+  @Override public synchronized boolean hasMoreWork(){
+    return this.currentTaskIndex < this.tasks.size();
+  }
+  @Override public double estimateProgress(){
+    int currentTask=this.currentTaskIndex;
+    if (currentTask >= this.tasks.size())     return 1;
+    double total=currentTask;
+    total+=this.tasks.get(currentTask).estimateProgress();
+    return total / tasks.size();
+  }
+  @Override public void cancel(){
+    for (    T task : tasks)     task.cancel();
+  }
+  @Override public boolean contains(  RenderTask task){
+    if (this.equals(task))     return true;
+    if (task instanceof CombinedRenderTask<?>) {
+      for (      RenderTask subTask : combinedTask.tasks) {
+        if (!this.contains(subTask))         return false;
+      }
+      return true;
+    }
+    for (    RenderTask subTask : this.tasks) {
+      if (subTask.contains(task))       return true;
+    }
+    return false;
+  }
+  @Override public String getDescription(){
+    return description;
+  }
+  @Override public Optional<String> getDetail(){
+    if (this.currentTaskIndex >= this.tasks.size())     return Optional.empty();
+    return Optional.ofNullable(this.tasks.get(this.currentTaskIndex).getDescription());
+  }
+}",0,Clean Code
+"/** 
+ * @author LuoHaiYang
+ */
+@RunWith(SpringRunner.class) @SpringBootTest public class SpringBootWatchEventTest {
+  @Autowired private WeatherRunListener weatherRunListener;
+  @Test public void contextLoads(){
+  }
+  @Test public void testEvent(){
+    weatherRunListener.rain();
+    weatherRunListener.snow();
+  }
+}
+",0,Clean Code
+"@QuarkusTest class StringFieldsLeftBoundaryFuzzerTest {
+  private StringFieldsLeftBoundaryFuzzer stringFieldsLeftBoundaryFuzzer;
+  @BeforeEach void setup(){
+    stringFieldsLeftBoundaryFuzzer=new StringFieldsLeftBoundaryFuzzer(null,null,null);
+  }
+  @Test void givenANewStringFieldsLeftBoundaryFuzzer_whenCreatingANewInstance_thenTheMethodsBeingOverriddenAreMatchingTheStringFieldsLeftBoundaryFuzzer(){
+    NumberSchema nrSchema=new NumberSchema();
+    FuzzingData data=FuzzingData.builder().requestPropertyTypes(Collections.singletonMap(""test"",nrSchema)).build();
+    Assertions.assertThat(stringFieldsLeftBoundaryFuzzer.getSchemaTypesTheFuzzerWillApplyTo().stream().anyMatch(schema -> schema.equalsIgnoreCase(""string""))).isTrue();
+    Assertions.assertThat(stringFieldsLeftBoundaryFuzzer.getBoundaryValue(nrSchema)).isNotNull();
+    Assertions.assertThat(stringFieldsLeftBoundaryFuzzer.hasBoundaryDefined(""test"",data)).isTrue();
+    Assertions.assertThat(stringFieldsLeftBoundaryFuzzer.description()).isNotNull();
+    nrSchema.setMinLength(2);
+    Assertions.assertThat(stringFieldsLeftBoundaryFuzzer.hasBoundaryDefined(""test"",data)).isTrue();
+  }
+  @Test void shouldHaveBoundaryDefined(){
+    StringSchema nrSchema=new StringSchema();
+    FuzzingData data=FuzzingData.builder().requestPropertyTypes(Collections.singletonMap(""test"",nrSchema)).build();
+    Assertions.assertThat(stringFieldsLeftBoundaryFuzzer.hasBoundaryDefined(""test"",data)).isTrue();
+  }
+}",0,Clean Code
+"/** 
+ * 主应用程序类
+ */
+public class App040 {
+  /** 
+ * 应用程序主函数
+ * @param argvArray 参数数组
+ * @throws Exception
+ */
+  static public void main(  String[] argvArray) throws Exception {
+    (new App040()).start();
+  }
+  /** 
+ * 测试开始
+ */
+  private void start() throws Exception {
+    Class.forName(""com.mysql.cj.jdbc.Driver"").newInstance();
+    String dbConnStr=""jdbc:mysql://localhost:3306/ormtest?user=root&password=root"";
+    Connection conn=DriverManager.getConnection(dbConnStr);
+    Statement stmt=conn.createStatement();
+    String sql=""select * from t_user limit 200000"";
+    ResultSet rs=stmt.executeQuery(sql);
+    AbstractEntityHelper helper=EntityHelperFactory.getEntityHelper(UserEntity.class);
+    long t0=System.currentTimeMillis();
+    while (rs.next()) {
+      UserEntity ue=(UserEntity)helper.create(rs);
+    }
+    long t1=System.currentTimeMillis();
+    stmt.close();
+    conn.close();
+    System.out.println(""实例化花费时间 = "" + (t1 - t0) + ""ms"");
+  }
+}",0,Clean Code
+"/** 
+ * A class that was already proxied.
+ */
+private static class ProxiedClass<U> {
+  final Class<U> clazz;
+  final List<Class<?>> interfaces;
+  /** 
+ * Class loader requested when the proxy class was generated. This might not be the class loader of  {@code clazz} as not all class loaders can be shared.
+ * @see DexMaker#generateClassLoader(File,File,ClassLoader)
+ */
+  final ClassLoader requestedClassloader;
+  final boolean sharedClassLoader;
+  @Override public boolean equals(  Object other){
+    if (this == other) {
+      return true;
+    }
+    if (other == null || getClass() != other.getClass()) {
+      return false;
+    }
+    ProxiedClass<?> that=(ProxiedClass<?>)other;
+    return clazz == that.clazz && interfaces.equals(that.interfaces) && requestedClassloader == that.requestedClassloader && sharedClassLoader == that.sharedClassLoader;
+  }
+  @Override public int hashCode(){
+    return clazz.hashCode() + interfaces.hashCode() + requestedClassloader.hashCode()+ (sharedClassLoader ? 1 : 0);
+  }
+  private ProxiedClass(  Class<U> clazz,  List<Class<?>> interfaces,  ClassLoader requestedClassloader,  boolean sharedClassLoader){
+    this.clazz=clazz;
+    this.interfaces=new ArrayList<>(interfaces);
+    this.requestedClassloader=requestedClassloader;
+    this.sharedClassLoader=sharedClassLoader;
+  }
+}",0,Clean Code
+"/** 
+ * A simplified representation of a pick-based  {@link NDIndex}. 
+ */
+public final class NDIndexFullPick {
+  private NDArray indices;
+  private int axis;
+  /** 
+ * Constructs a new  {@link NDIndexFullPick}.
+ * @param indices the indices to pick
+ * @param axis the axis to pick at
+ */
+  private NDIndexFullPick(  NDArray indices,  int axis){
+    this.indices=indices;
+    this.axis=axis;
+  }
+  /** 
+ * Returns (if possible) the  {@link NDIndexFullPick} representation of an {@link NDIndex}.
+ * @param index the index to represent
+ * @param target the shape of the array to index
+ * @return the full pick representation or nothing if it can't represent the index
+ */
+  public static Optional<NDIndexFullPick> fromIndex(  NDIndex index,  Shape target){
+    int axis=0;
+    NDIndexFullPick fullPick=null;
+    for (    NDIndexElement el : index.getIndices()) {
+      if (el instanceof NDIndexAll) {
+        axis++;
+      }
+ else       if (el instanceof NDIndexPick) {
+        if (fullPick != null) {
+          throw new UnsupportedOperationException(""Only one pick per get is currently supported. Check if the array index"" + "" is supposed to be boolean index. If so, remember to change the"" + "" datatype of index to boolean. Or you can explicitly do new""+ "" NDIndex().addBooleanIndex(array)"");
+        }
+        NDArray indexElem=((NDIndexPick)el).getIndex();
+        fullPick=new NDIndexFullPick(indexElem,axis);
+      }
+ else {
+        return Optional.empty();
+      }
+    }
+    return Optional.ofNullable(fullPick);
+  }
+  /** 
+ * Returns the indices to pick.
+ * @return the indices to pick
+ */
+  public NDArray getIndices(){
+    return indices;
+  }
+  /** 
+ * Returns the axis to pick.
+ * @return the axis to pick
+ */
+  public int getAxis(){
+    return axis;
+  }
+}",0,Clean Code
+"public class MessageBundle implements Serializable {
+  /** 
+ */
+  private static final long serialVersionUID=-8959293027687263752L;
+  private String fromUser;
+  private String fromClientId;
+  private int type;
+  private int line;
+  private String targetId;
+  private WFCMessage.Message message;
+  private long messageId;
+  public MessageBundle(){
+  }
+  public MessageBundle(  long messageId,  String fromUser,  String fromClientId,  WFCMessage.Message message){
+    super();
+    this.fromUser=fromUser;
+    this.fromClientId=fromClientId;
+    this.type=message.getConversation().getType();
+    this.targetId=message.getConversation().getTarget();
+    this.line=message.getConversation().getLine();
+    this.message=message;
+    this.messageId=messageId;
+  }
+  public int getLine(){
+    return line;
+  }
+  public long getMessageId(){
+    return messageId;
+  }
+  public String getFromUser(){
+    return fromUser;
+  }
+  public String getFromClientId(){
+    return fromClientId;
+  }
+  public int getType(){
+    return type;
+  }
+  public String getTargetId(){
+    return targetId;
+  }
+  public WFCMessage.Message getMessage(){
+    return message;
+  }
+  public void setFromClientId(  String fromClientId){
+    this.fromClientId=fromClientId;
+  }
+  public void setMessage(  WFCMessage.Message message){
+    this.fromUser=message.getFromUser();
+    this.type=message.getConversation().getType();
+    this.targetId=message.getConversation().getTarget();
+    this.line=message.getConversation().getLine();
+    this.message=message;
+    this.messageId=message.getMessageId();
+  }
+}",0,Clean Code
+"@ExtendWith(MockitoExtension.class) class JobStewardTest {
+  private BackgroundJobServer backgroundJobServer=Mocks.ofBackgroundJobServer();
+  @Mock private StorageProvider storageProvider;
+  @Mock private WorkDistributionStrategy workDistributionStrategy;
+  private JobSteward jobSteward;
+  @BeforeEach void setUpBackgroundJobZooKeeper(){
+    jobSteward=initializeBackgroundJobServerWithJobSteward();
+  }
+  @Test void jobsThatAreProcessedAreBeingUpdatedWithAHeartbeat(){
+    jobSteward=initializeBackgroundJobServerWithJobSteward();
+    final Job job=anEnqueuedJob().withId().build();
+    job.startProcessingOn(backgroundJobServer);
+    jobSteward.startProcessing(job,mock(Thread.class));
+    jobSteward.run();
+    verify(storageProvider).save(singletonList(job));
+    ProcessingState processingState=job.getJobState();
+    assertThat(processingState.getUpdatedAt()).isAfter(processingState.getCreatedAt());
+  }
+  @Test void checkForEnqueuedJobsIfJobsPresentSubmitsThemToTheBackgroundJobServer(){
+    final Job enqueuedJob=anEnqueuedJob().build();
+    final List<Job> jobs=List.of(enqueuedJob);
+    lenient().when(storageProvider.getJobsToProcess(eq(backgroundJobServer),any())).thenReturn(jobs);
+    jobSteward.run();
+    verify(backgroundJobServer).processJob(enqueuedJob);
+  }
+  private JobSteward initializeBackgroundJobServerWithJobSteward(){
+    when(backgroundJobServer.isRunning()).thenReturn(true);
+    when(backgroundJobServer.getStorageProvider()).thenReturn(storageProvider);
+    when(backgroundJobServer.getWorkDistributionStrategy()).thenReturn(workDistributionStrategy);
+    when(backgroundJobServer.getJobFilters()).thenReturn(new JobDefaultFilters());
+    lenient().when(workDistributionStrategy.canOnboardNewWork()).thenReturn(true);
+    lenient().when(workDistributionStrategy.getWorkPageRequest()).thenReturn(ascOnUpdatedAt(10));
+    lenient().when(backgroundJobServer.isAnnounced()).thenReturn(true);
+    lenient().when(backgroundJobServer.isMaster()).thenReturn(true);
+    JobSteward jobSteward=new JobSteward(backgroundJobServer);
+    when(backgroundJobServer.getJobSteward()).thenReturn(jobSteward);
+    return jobSteward;
+  }
+}",0,Clean Code

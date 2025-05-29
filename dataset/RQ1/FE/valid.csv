@@ -1,0 +1,2870 @@
+text,label,text_label
+"@SuppressWarnings(""UnstableApiUsage"") public class BukkitCommandSource implements CommandSource {
+  private final CommandSourceStack delegate;
+  public BukkitCommandSource(  CommandSourceStack delegate){
+    this.delegate=delegate;
+  }
+  @Override public void sendMessage(  Component text){
+    delegate.getSender().sendMessage(text.compact());
+  }
+  @Override public boolean hasPermission(  String permission){
+    return delegate.getSender().hasPermission(permission);
+  }
+  @Override public Optional<Vector3d> getPosition(){
+    if (delegate.getSender() instanceof ConsoleCommandSender)     return Optional.empty();
+    Location location=delegate.getLocation();
+    return Optional.of(new Vector3d(location.getX(),location.getY(),location.getZ()));
+  }
+  @Override public Optional<ServerWorld> getWorld(){
+    if (delegate.getSender() instanceof ConsoleCommandSender)     return Optional.empty();
+    ServerWorld serverWorld=BukkitPlugin.getInstance().getServerWorld(delegate.getLocation().getWorld());
+    return Optional.ofNullable(serverWorld);
+  }
+}
+public class BukkitCommandSource implements CommandSource {
+  private final CommandSender delegate;
+  public BukkitCommandSource(  CommandSender delegate){
+    this.delegate=delegate;
+  }
+  @Override public void sendMessage(  Component text){
+    if (TextFormat.lineCount(text) > 1)     text=Component.newline().append(text).appendNewline();
+    delegate.spigot().sendMessage(ComponentSerializer.parse(GsonComponentSerializer.gson().serialize(text.compact())));
+  }
+  @Override public boolean hasPermission(  String permission){
+    return delegate.hasPermission(permission);
+  }
+  @Override public Optional<Vector3d> getPosition(){
+    Location location=getLocation();
+    if (location != null) {
+      return Optional.of(new Vector3d(location.getX(),location.getY(),location.getZ()));
+    }
+    return Optional.empty();
+  }
+  @Override public Optional<ServerWorld> getWorld(){
+    Location location=getLocation();
+    if (location != null) {
+      ServerWorld serverWorld=BukkitPlugin.getInstance().getServerWorld(location.getWorld());
+      return Optional.ofNullable(serverWorld);
+    }
+    return Optional.empty();
+  }
+  private Location getLocation(){
+    Location location=null;
+    if (delegate instanceof Entity) {
+      location=((Entity)delegate).getLocation();
+    }
+    if (delegate instanceof BlockCommandSender) {
+      location=((BlockCommandSender)delegate).getBlock().getLocation();
+    }
+    return location;
+  }
+}",1,Code Smell
+"public class MagiskDenyListRule extends RuleEntry {
+  @NonNull private final MagiskProcess mMagiskProcess;
+  public MagiskDenyListRule(  @NonNull MagiskProcess magiskProcess){
+    super(magiskProcess.packageName,magiskProcess.name,RuleType.MAGISK_DENY_LIST);
+    mMagiskProcess=magiskProcess;
+  }
+  public MagiskDenyListRule(  @NonNull String packageName,  @NonNull String processName,  @NonNull StringTokenizer tokenizer) throws IllegalArgumentException {
+    super(packageName,processName,RuleType.MAGISK_DENY_LIST);
+    mMagiskProcess=new MagiskProcess(packageName,name);
+    mMagiskProcess.setAppZygote(name.endsWith(""_zygote""));
+    if (tokenizer.hasMoreElements()) {
+      mMagiskProcess.setEnabled(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+    }
+ else     throw new IllegalArgumentException(""Invalid format: isHidden not found"");
+    if (tokenizer.hasMoreElements()) {
+      mMagiskProcess.setIsolatedProcess(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+    }
+  }
+  public String getProcessName(){
+    return name;
+  }
+  @NonNull public MagiskProcess getMagiskProcess(){
+    return mMagiskProcess;
+  }
+  @NonNull @Override public String toString(){
+    return ""MagiskDenyListRule{"" + ""packageName='"" + packageName + '\''+ ""processName='""+ name+ '\''+ "", isDenied=""+ mMagiskProcess.isEnabled()+ "", isIsolated=""+ mMagiskProcess.isIsolatedProcess()+ "", isAppZygote=""+ mMagiskProcess.isAppZygote()+ '}';
+  }
+  @NonNull @Override public String flattenToString(  boolean isExternal){
+    return addPackageWithTab(isExternal) + name + ""\t""+ type.name()+ ""\t""+ mMagiskProcess.isEnabled()+ ""\t""+ mMagiskProcess.isIsolatedProcess();
+  }
+  @Override public boolean equals(  Object o){
+    if (this == o)     return true;
+    if (!(o instanceof MagiskDenyListRule))     return false;
+    if (!super.equals(o))     return false;
+    MagiskDenyListRule that=(MagiskDenyListRule)o;
+    return mMagiskProcess.isEnabled() == that.mMagiskProcess.isEnabled() && mMagiskProcess.isIsolatedProcess() == that.mMagiskProcess.isIsolatedProcess();
+  }
+  @Override public int hashCode(){
+    return Objects.hash(super.hashCode(),mMagiskProcess.isEnabled(),mMagiskProcess.isIsolatedProcess());
+  }
+}
+",1,Code Smell
+"/** 
+ * @author lym
+ * @description
+ * @date 2022/8/26 11:01
+ */
+@RestController public class TestController {
+  @Autowired private GrpcAuthService grpcAuthService;
+  @RequestMapping(""test"") public void test(){
+    System.out.println(""鐧诲綍鍓嶏細"" + grpcAuthService.isLogin());
+    System.out.println(""鐧诲綍鍓嶏細"" + StpUtil.isLogin());
+    StpUtil.login(1);
+    System.out.println(""鐧诲綍鍚庯細"" + grpcAuthService.isLogin());
+    System.out.println(""鐧诲綍鍚庯細"" + StpUtil.getTokenValue());
+    System.out.println(""鐧诲綍鍚庯細"" + StpUtil.getLoginId());
+  }
+  @RequestMapping(""test2"") public String test2(){
+    System.out.println(""鐧诲綍鍓嶏細"" + grpcAuthService.isLogin());
+    System.out.println(""鐧诲綍鍓嶏細"" + StpUtil.isLogin());
+    String token=grpcAuthService.login(3);
+    System.out.println(""鐧诲綍鍚庯細"" + grpcAuthService.isLogin());
+    System.out.println(""鐧诲綍鍚庯細"" + StpUtil.getTokenValue());
+    System.out.println(""鐧诲綍鍚庯細"" + StpUtil.getLoginId());
+    assert StpUtil.getTokenValue().equals(token);
+    return token;
+  }
+}",1,Code Smell
+"@Aspect @Component public class LockAspect {
+  private final RedisDistributedLock redisDistributedLock;
+  public LockAspect(  RedisDistributedLock redisDistributedLock){
+    this.redisDistributedLock=redisDistributedLock;
+  }
+  @Around(""@annotation(xyz.playedu.common.annotation.Lock)"") public Object around(  ProceedingJoinPoint joinPoint) throws Throwable {
+    MethodSignature signature=(MethodSignature)joinPoint.getSignature();
+    Method method=signature.getMethod();
+    Lock distributedLock=method.getAnnotation(Lock.class);
+    String key=distributedLock.key();
+    long expire=distributedLock.expire();
+    TimeUnit timeUnit=distributedLock.timeUnit();
+    boolean success=redisDistributedLock.tryLock(key,expire,timeUnit);
+    if (!success) {
+      throw new LimitException(""璇风◢鍚庡啀璇�"");
+    }
+    try {
+      return joinPoint.proceed();
+    }
+  finally {
+      redisDistributedLock.releaseLock(key);
+    }
+  }
+}
+",1,Code Smell
+"@Slf4j @RestController public class YoutubeController {
+  private final YoutubeService youtubeService;
+  private final SubscriptionService subscriptionService;
+  public YoutubeController(  YoutubeService youtubeService,  SubscriptionService subscriptionService){
+    this.youtubeService=youtubeService;
+    this.subscriptionService=subscriptionService;
+  }
+  @GetMapping(""/youtube"") public Object browse(  String ids,  String wd,  String sort,  String time,  String t,  @RequestParam(required=false,defaultValue=""1"") Integer pg,  HttpServletRequest request) throws IOException {
+    return browse("""",ids,wd,sort,time,t,pg,request);
+  }
+  @GetMapping(""/youtube/{token}"") public Object browse(  @PathVariable String token,  String ids,  String wd,  String sort,  String time,  String t,  @RequestParam(required=false,defaultValue=""1"") Integer pg,  HttpServletRequest request) throws IOException {
+    subscriptionService.checkToken(token);
+    log.debug(""{} {} {}"",request.getMethod(),request.getRequestURI(),decodeUrl(request.getQueryString()));
+    if (ids != null && !ids.isEmpty()) {
+      if (ids.equals(""recommend"")) {
+        return youtubeService.home();
+      }
+      return youtubeService.detail(ids);
+    }
+ else     if (wd != null && !wd.isEmpty()) {
+      return youtubeService.search(wd,sort,time,pg);
+    }
+ else     if (t != null && !t.isEmpty()) {
+      if (t.equals(""0"")) {
+        return youtubeService.home();
+      }
+      return youtubeService.list(t,sort,time,pg);
+    }
+    return youtubeService.category();
+  }
+  @GetMapping(""/watch"") public Object play(  String id,  HttpServletRequest request){
+    return play("""",id,request);
+  }
+  @GetMapping(""/watch/{token}"") public Object play(  @PathVariable String token,  String id,  HttpServletRequest request){
+    subscriptionService.checkToken(token);
+    String client=request.getHeader(""X-CLIENT"");
+    log.debug(""{} {} {} {}"",request.getMethod(),request.getRequestURI(),decodeUrl(request.getQueryString()),client);
+    return youtubeService.play(token,id,client);
+  }
+  @GetMapping(""/youtube-proxy"") public void proxy(  String id,  @RequestParam(defaultValue=""18"") int q,  HttpServletRequest request,  HttpServletResponse response) throws IOException {
+    proxy("""",id,q,request,response);
+  }
+  @GetMapping(""/youtube-proxy/{token}"") public void proxy(  @PathVariable String token,  String id,  @RequestParam(defaultValue=""18"") int q,  HttpServletRequest request,  HttpServletResponse response) throws IOException {
+    subscriptionService.checkToken(token);
+    log.debug(""{} {} {}"",request.getMethod(),request.getRequestURI(),decodeUrl(request.getQueryString()));
+    youtubeService.proxy(id,q,request,response);
+  }
+  private String decodeUrl(  String text){
+    if (text == null || text.isEmpty()) {
+      return """";
+    }
+    try {
+      return URLDecoder.decode(text,""UTF-8"");
+    }
+ catch (    Exception e) {
+      return text;
+    }
+  }
+}",1,Code Smell
+"/** 
+ * Use the current classloader to read all plugin define file. The file must be named 'hippo4j-plugin.def'
+ */
+public class PluginResourcesResolver {
+  private static final ILog LOGGER=LogManager.getLogger(PluginResourcesResolver.class);
+  public List<URL> getResources(){
+    List<URL> cfgUrlPaths=new ArrayList<URL>();
+    Enumeration<URL> urls;
+    try {
+      urls=AgentClassLoader.getDefault().getResources(""hippo4j-plugin.def"");
+      while (urls.hasMoreElements()) {
+        URL pluginUrl=urls.nextElement();
+        cfgUrlPaths.add(pluginUrl);
+        LOGGER.info(""find hippo4j plugin define in {}"",pluginUrl);
+      }
+      return cfgUrlPaths;
+    }
+ catch (    IOException e) {
+      LOGGER.error(""read resources failure."",e);
+    }
+    return null;
+  }
+}",1,Code Smell
+"public class MagiskHideRule extends RuleEntry {
+  @NonNull private final MagiskProcess mMagiskProcess;
+  public MagiskHideRule(  @NonNull MagiskProcess magiskProcess){
+    super(magiskProcess.packageName,magiskProcess.name,RuleType.MAGISK_HIDE);
+    mMagiskProcess=magiskProcess;
+  }
+  public MagiskHideRule(  @NonNull String packageName,  @NonNull String processName,  @NonNull StringTokenizer tokenizer) throws IllegalArgumentException {
+    super(packageName,processName.equals(STUB) ? packageName : processName,RuleType.MAGISK_HIDE);
+    mMagiskProcess=new MagiskProcess(packageName,name);
+    mMagiskProcess.setAppZygote(name.endsWith(""_zygote""));
+    if (tokenizer.hasMoreElements()) {
+      mMagiskProcess.setEnabled(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+    }
+ else     throw new IllegalArgumentException(""Invalid format: isHidden not found"");
+    if (tokenizer.hasMoreElements()) {
+      mMagiskProcess.setIsolatedProcess(Boolean.parseBoolean(tokenizer.nextElement().toString()));
+    }
+  }
+  @NonNull public MagiskProcess getMagiskProcess(){
+    return mMagiskProcess;
+  }
+  @NonNull @Override public String toString(){
+    return ""MagiskHideRule{"" + ""packageName='"" + packageName + '\''+ ""processName='""+ name+ '\''+ "", isHidden=""+ mMagiskProcess.isEnabled()+ "", isIsolated=""+ mMagiskProcess.isIsolatedProcess()+ "", isAppZygote=""+ mMagiskProcess.isAppZygote()+ '}';
+  }
+  @NonNull @Override public String flattenToString(  boolean isExternal){
+    return addPackageWithTab(isExternal) + name + ""\t""+ type.name()+ ""\t""+ mMagiskProcess.isEnabled()+ ""\t""+ mMagiskProcess.isIsolatedProcess();
+  }
+  @Override public boolean equals(  Object o){
+    if (this == o)     return true;
+    if (!(o instanceof MagiskHideRule))     return false;
+    if (!super.equals(o))     return false;
+    MagiskHideRule that=(MagiskHideRule)o;
+    return mMagiskProcess.isEnabled() == that.mMagiskProcess.isEnabled() && mMagiskProcess.isIsolatedProcess() == that.mMagiskProcess.isIsolatedProcess();
+  }
+  @Override public int hashCode(){
+    return Objects.hash(super.hashCode(),mMagiskProcess.isEnabled(),mMagiskProcess.isIsolatedProcess());
+  }
+}
+",1,Code Smell
+"/** 
+ * This component is used to adapt the information contained within keys coming via EFGS to the requirements of the CWA client with respect to the ENF version that its using. This is needed because some of the fields might carry information aligned with EFGS spec that is not fully compliant with ENF spec, or simply not compliant with the needs of the CWA client (i.e we need to adapt how infectiousness/transmission risk gets calculated). <p>One important thing to note is that these field adaptations are performed on the fly prior to distribution. These changes are not persistent, such that no previous EFGS provided information is lost.
+ */
+@Component public class EnfParameterAdapter {
+  private TransmissionRiskLevelEncoding trlEncoding;
+  public EnfParameterAdapter(  TransmissionRiskLevelEncoding trlEncoding){
+    this.trlEncoding=trlEncoding;
+  }
+  /** 
+ * Given the collection of keys, create another one with all original elements but with ENF related content transformations applied.
+ * @param diagnosisKeys collection of DiagnosisKey to adapt
+ * @return updated collection of DiagnosisKey
+ */
+  public Collection<DiagnosisKey> adaptKeys(  Collection<DiagnosisKey> diagnosisKeys){
+    diagnosisKeys.forEach(k -> {
+      k.setReportType(trlEncoding.getReportTypeForTransmissionRiskLevel(k.getTransmissionRiskLevel()));
+      k.setDaysSinceOnsetOfSymptoms(trlEncoding.getDaysSinceSymptomsForTransmissionRiskLevel(k.getTransmissionRiskLevel()));
+    }
+);
+    return diagnosisKeys;
+  }
+}
+",1,Code Smell
+"/** 
+ * The actual byte-buddy's interceptor to intercept class instance methods. In this class, it provides a bridge between byte-buddy and sky-walking plugin.
+ */
+public class InstMethodsInterV2WithOverrideArgs {
+  private static final ILog LOGGER=LogManager.getLogger(InstMethodsInterV2WithOverrideArgs.class);
+  /** 
+ * An  {@link InstanceMethodsAroundInterceptorV2} This name should only stay in {@link String}, the real  {@link Class}type will trigger classloader failure. If you want to know more, please check on books about Classloader or Classloader appointment mechanism.
+ */
+  private InstanceMethodsAroundInterceptorV2 interceptor;
+  /** 
+ * @param instanceMethodsAroundInterceptorClassName class full name.
+ */
+  public InstMethodsInterV2WithOverrideArgs(  String instanceMethodsAroundInterceptorClassName,  ClassLoader classLoader){
+    try {
+      interceptor=InterceptorInstanceLoader.load(instanceMethodsAroundInterceptorClassName,classLoader);
+    }
+ catch (    Throwable t) {
+      throw new PluginException(""Can't create InstanceMethodsAroundInterceptor."",t);
+    }
+  }
+  /** 
+ * Intercept the target instance method.
+ * @param obj          target class instance.
+ * @param allArguments all method arguments
+ * @param method       method description.
+ * @param zuper        the origin call ref.
+ * @return the return value of target instance method.
+ * @throws Exception only throw exception because of zuper.call() or unexpected exception in sky-walking ( This is abug, if anything triggers this condition ).
+ */
+  @RuntimeType public Object intercept(  @This Object obj,  @AllArguments Object[] allArguments,  @Origin Method method,  @Morph OverrideCallable zuper) throws Throwable {
+    EnhancedInstance targetObject=(EnhancedInstance)obj;
+    MethodInvocationContext context=new MethodInvocationContext();
+    try {
+      interceptor.beforeMethod(targetObject,method,allArguments,method.getParameterTypes(),context);
+    }
+ catch (    Throwable t) {
+      LOGGER.error(t,""class[{}] before method[{}] intercept failure"",obj.getClass(),method.getName());
+    }
+    Object ret=null;
+    try {
+      if (!context.isContinue()) {
+        ret=context._ret();
+      }
+ else {
+        ret=zuper.call(allArguments);
+      }
+    }
+ catch (    Throwable t) {
+      try {
+        interceptor.handleMethodException(targetObject,method,allArguments,method.getParameterTypes(),t,context);
+      }
+ catch (      Throwable t2) {
+        LOGGER.error(t2,""class[{}] handle method[{}] exception failure"",obj.getClass(),method.getName());
+      }
+      throw t;
+    }
+ finally {
+      try {
+        ret=interceptor.afterMethod(targetObject,method,allArguments,method.getParameterTypes(),ret,context);
+      }
+ catch (      Throwable t) {
+        LOGGER.error(t,""class[{}] after method[{}] intercept failure"",obj.getClass(),method.getName());
+      }
+    }
+    return ret;
+  }
+}",1,Code Smell
+"/** 
+ * 鐢ㄦ埛楠岃瘉澶勭悊
+ * @author ruoyi
+ */
+@Service public class UserDetailsServiceImpl implements UserDetailsService {
+  private static final Logger log=LoggerFactory.getLogger(UserDetailsServiceImpl.class);
+  @Autowired private SysUserService userService;
+  @Autowired private SysPasswordService passwordService;
+  @Autowired private SysPermissionService permissionService;
+  @Override public UserDetails loadUserByUsername(  String username) throws UsernameNotFoundException {
+    SysUserEntity user=userService.selectUserByUserName(username);
+    if (StringUtils.isNull(user)) {
+      log.info(""鐧诲綍鐢ㄦ埛锛歿} 涓嶅瓨鍦."",username);
+      throw new UserPasswordNotMatchException();
+    }
+ else     if (UserStatusEnum.DELETED.getCode().equals(user.getStatus())) {
+      log.info(""鐧诲綍鐢ㄦ埛锛歿} 宸茶鍒犻櫎."",username);
+      throw new ServiceException(""瀵逛笉璧凤紝鎮ㄧ殑璐﹀彿锛"" + username + "" 宸茶鍒犻櫎"");
+    }
+ else     if (UserStatusEnum.DISABLE.getCode().equals(user.getStatus())) {
+      log.info(""鐧诲綍鐢ㄦ埛锛歿} 宸茶鍋滅敤."",username);
+      throw new ServiceException(""瀵逛笉璧凤紝鎮ㄧ殑璐﹀彿锛"" + username + "" 宸插仠鐢"");
+    }
+    passwordService.validate(user);
+    return createLoginUser(user);
+  }
+  public UserDetails createLoginUser(  SysUserEntity user){
+    return new LoginUser(user.getUserId(),user,permissionService.getMenuPermission(user),permissionService.getResources(user));
+  }
+}
+",1,Code Smell
+"@SuppressWarnings(""FieldCanBeLocal"") public class LocationDirectionCell extends FrameLayout {
+  private final Theme.ResourcesProvider resourcesProvider;
+  private SimpleTextView buttonTextView;
+  private FrameLayout frameLayout;
+  public LocationDirectionCell(  Context context,  Theme.ResourcesProvider resourcesProvider){
+    super(context);
+    this.resourcesProvider=resourcesProvider;
+    frameLayout=new FrameLayout(context);
+    frameLayout.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton),8));
+    addView(frameLayout,LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,48,Gravity.LEFT | Gravity.TOP,16,10,16,0));
+    buttonTextView=new SimpleTextView(context);
+    buttonTextView.setPadding(AndroidUtilities.dp(34),0,AndroidUtilities.dp(34),0);
+    buttonTextView.setGravity(Gravity.CENTER);
+    buttonTextView.setDrawablePadding(AndroidUtilities.dp(8));
+    buttonTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+    buttonTextView.setTextSize(14);
+    buttonTextView.setText(LocaleController.getString(""Directions"",R.string.Directions));
+    buttonTextView.setLeftDrawable(R.drawable.filled_directions);
+    buttonTextView.setTypeface(AndroidUtilities.getTypeface(""fonts/rmedium.ttf""));
+    frameLayout.addView(buttonTextView,LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT,LayoutHelper.MATCH_PARENT));
+  }
+  @Override protected void onMeasure(  int widthMeasureSpec,  int heightMeasureSpec){
+    super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec),MeasureSpec.EXACTLY),MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(73),MeasureSpec.EXACTLY));
+  }
+  public void setOnButtonClick(  OnClickListener onButtonClick){
+    frameLayout.setOnClickListener(onButtonClick);
+  }
+  private int getThemedColor(  int key){
+    return Theme.getColor(key,resourcesProvider);
+  }
+}",1,Code Smell
+"/** 
+ * User Team Management
+ * @author Jiaju Zhuang
+ */
+@RequestMapping(""/api/admin/user/team"") @RestController public class UserTeamAdminController {
+  private static final TeamUserSelector TEAM_USER_SELECTOR=TeamUserSelector.builder().team(Boolean.TRUE).build();
+  @Resource private TeamUserService teamUserService;
+  @Resource private UserTeamAdminConverter userTeamAdminConverter;
+  /** 
+ * Pagination query
+ * @param request
+ * @return
+ * @version 2.1.0
+ */
+  @GetMapping(""/page"") public WebPageResult<UserTeamPageQueryVO> page(  @Valid UserPageCommonQueryRequest request){
+    return teamUserService.comprehensivePageQuery(userTeamAdminConverter.request2param(request),TEAM_USER_SELECTOR).mapToWeb(userTeamAdminConverter::dto2vo);
+  }
+  /** 
+ * create
+ * @param request
+ * @return
+ * @version 2.1.0
+ */
+  @PostMapping(""/batch_create"") public ActionResult bacthCreate(  @Valid @RequestBody UserTeamBatchCreateRequest request){
+    request.getTeamIdList().forEach(teamId -> {
+      TeamUserPageQueryParam teamUserPageQueryParam=new TeamUserPageQueryParam();
+      teamUserPageQueryParam.setTeamId(teamId);
+      teamUserPageQueryParam.setUserId(request.getUserId());
+      teamUserPageQueryParam.queryOne();
+      if (teamUserService.pageQuery(teamUserPageQueryParam,null).hasData()) {
+        return;
+      }
+      teamUserService.create(TeamUserCreatParam.builder().teamId(teamId).userId(request.getUserId()).build());
+    }
+);
+    return ActionResult.isSuccess();
+  }
+  /** 
+ * delete
+ * @param id
+ * @return
+ */
+  @DeleteMapping(""/{id}"") public DataResult<Boolean> delete(  @PathVariable Long id){
+    return teamUserService.delete(id).toBooleaSuccessnDataResult();
+  }
+}",1,Code Smell
+"@Component @RequiredArgsConstructor public class PostgreSQLSessionHousekeepingJob {
+  private final JooqReactiveOperations jooqReactiveOperations;
+  @ReactiveTransactional public Mono<Integer> runHousekeeping(){
+    final SelectConditionStep<Record1<String>> idQuery=DSL.select(SPRING_SESSION.PRIMARY_ID).from(SPRING_SESSION).where(SPRING_SESSION.EXPIRY_TIME.lessThan(Instant.now().getEpochSecond()));
+    return jooqReactiveOperations.flux(idQuery).map(Record1::value1).collectList().flatMap(ids -> jooqReactiveOperations.mono(buildDeleteAttributesQuery(ids)).then(jooqReactiveOperations.mono(buildDeleteSessionQuery(ids))));
+  }
+  private DeleteConditionStep<SpringSessionRecord> buildDeleteSessionQuery(  final List<String> ids){
+    return DSL.deleteFrom(SPRING_SESSION).where(SPRING_SESSION.PRIMARY_ID.in(ids));
+  }
+  private DeleteConditionStep<SpringSessionAttributesRecord> buildDeleteAttributesQuery(  final List<String> ids){
+    return DSL.deleteFrom(SPRING_SESSION_ATTRIBUTES).where(SPRING_SESSION_ATTRIBUTES.SESSION_PRIMARY_ID.in(ids));
+  }
+}",1,Code Smell
+"public class MCAWorldRegionWatchService implements WatchService<Vector2i> {
+  private final Path regionFolder;
+  private final java.nio.file.WatchService watchService;
+  private boolean initialized;
+  public MCAWorldRegionWatchService(  Path regionFolder) throws IOException {
+    this.regionFolder=regionFolder;
+    this.watchService=regionFolder.getFileSystem().newWatchService();
+  }
+  @Override public @Nullable List<Vector2i> poll() throws IOException {
+    if (!ensureInitialization())     return null;
+    try {
+      WatchKey key=watchService.poll();
+      if (key == null)       return null;
+      return processWatchKey(key);
+    }
+ catch (    ClosedWatchServiceException e) {
+      throw new ClosedException(e);
+    }
+  }
+  @Override public @Nullable List<Vector2i> poll(  long timeout,  TimeUnit unit) throws IOException, InterruptedException {
+    long endTime=System.currentTimeMillis() + unit.toMillis(timeout);
+    FileHelper.awaitExistence(regionFolder,timeout,unit);
+    if (!ensureInitialization())     return null;
+    long now=System.currentTimeMillis();
+    if (now >= endTime)     return null;
+    try {
+      WatchKey key=watchService.poll(endTime - now,TimeUnit.MILLISECONDS);
+      if (key == null)       return null;
+      return processWatchKey(key);
+    }
+ catch (    ClosedWatchServiceException e) {
+      throw new ClosedException(e);
+    }
+  }
+  @Override public List<Vector2i> take() throws IOException, InterruptedException {
+    while (!ensureInitialization())     FileHelper.awaitExistence(regionFolder,1,TimeUnit.HOURS);
+    try {
+      WatchKey key=watchService.take();
+      return processWatchKey(key);
+    }
+ catch (    ClosedWatchServiceException e) {
+      throw new ClosedException(e);
+    }
+  }
+  @SuppressWarnings(""BooleanMethodIsAlwaysInverted"") private synchronized boolean ensureInitialization() throws IOException {
+    if (initialized)     return true;
+    if (!Files.exists(regionFolder))     return false;
+    regionFolder.register(this.watchService,StandardWatchEventKinds.ENTRY_CREATE,StandardWatchEventKinds.ENTRY_MODIFY,StandardWatchEventKinds.ENTRY_DELETE);
+    initialized=true;
+    return true;
+  }
+  @Override public void close() throws IOException {
+    watchService.close();
+  }
+  private List<Vector2i> processWatchKey(  WatchKey key){
+    try {
+      return key.pollEvents().stream().map(event -> {
+        if (event.context() instanceof Path) {
+          return RegionType.regionForFileName(path.getFileName().toString());
+        }
+ else {
+          return null;
+        }
+      }
+).filter(Objects::nonNull).toList();
+    }
+  finally {
+      key.reset();
+    }
+  }
+}",1,Code Smell
+"/** 
+ * 抽象Processor监控指标汇报，通过Processor定义通用体。
+ * @since 16 September 2015
+ */
+public abstract class AbstractProcessorMetricsReportor implements MetricsReportor {
+  private MetricProcessor processor;
+  private Metrics metrics;
+  public AbstractProcessorMetricsReportor(  MetricProcessor processor,  Metrics metrics){
+    this.processor=processor;
+    this.metrics=metrics;
+  }
+  protected abstract void prepare(  String name,  MetricsSnapshot snapshot);
+  protected void doStore(  String name,  MetricsSnapshot snapshot){
+    List<MetricsData> metrics=new ArrayList<>();
+    for (    Map.Entry<MetricKey,Metric> e : this.metrics.metricCache.asMap().entrySet()) {
+      MetricKey key=e.getKey();
+      Metric value=e.getValue();
+      if (!Strings.isNullOrEmpty(name) && !name.equals(key.name)) {
+        continue;
+      }
+      MetricsData metricsData=processor.process(key,value);
+      metrics.add(metricsData);
+    }
+    snapshot.setMetricsData(metrics);
+  }
+  @Override public MetricsSnapshot report(  final String name){
+    MetricsSnapshot snapshot=new MetricsSnapshot();
+    prepare(name,snapshot);
+    doStore(name,snapshot);
+    return snapshot;
+  }
+interface MetricProcessor {
+    MetricsData process(    MetricKey key,    Metric value);
+  }
+}",1,Code Smell
+"/** 
+ * @author zengqiao
+ * @date 22/02/23
+ */
+@Api(tags=Constant.SWAGGER_API_TAG_PREFIX + ""KafkaHealth-鐩稿叧鎺ュ彛(REST)"") @RestController @RequestMapping(ApiPrefix.API_V3_PREFIX) public class KafkaHealthController {
+  @Autowired private HealthStateService healthStateService;
+  @Autowired private HealthCheckResultService healthCheckResultService;
+  @ApiOperation(value=""闆嗙兢-鍋ュ悍妫�鏌ヨ鎯�"") @GetMapping(value=""clusters/{clusterPhyId}/health-detail"") @ResponseBody public Result<List<HealthScoreResultDetailVO>> getClusterHealthCheckResultDetail(  @PathVariable Long clusterPhyId,  @RequestParam(required=false) Integer dimensionCode){
+    HealthCheckDimensionEnum dimensionEnum=HealthCheckDimensionEnum.getByCode(dimensionCode);
+    if (!dimensionEnum.equals(HealthCheckDimensionEnum.UNKNOWN)) {
+      return Result.buildSuc(HealthScoreVOConverter.convert2HealthScoreResultDetailVOList(healthStateService.getDimensionHealthResult(clusterPhyId,Collections.singletonList(dimensionCode))));
+    }
+    return Result.buildSuc(HealthScoreVOConverter.convert2HealthScoreResultDetailVOList(healthStateService.getAllDimensionHealthResult(clusterPhyId)));
+  }
+  @ApiOperation(value=""闆嗙兢-鍋ュ悍妫�鏌ヨ鎯�"") @PostMapping(value=""clusters/{clusterPhyId}/health-detail"") @ResponseBody public Result<List<HealthScoreResultDetailVO>> getClusterHealthCheckResultDetail(  @PathVariable Long clusterPhyId,  @RequestBody List<Integer> dimensionCodeList){
+    if (dimensionCodeList.isEmpty()) {
+      return Result.buildSuc(HealthScoreVOConverter.convert2HealthScoreResultDetailVOList(healthStateService.getAllDimensionHealthResult(clusterPhyId)));
+    }
+    return Result.buildSuc(HealthScoreVOConverter.convert2HealthScoreResultDetailVOList(healthStateService.getDimensionHealthResult(clusterPhyId,dimensionCodeList)));
+  }
+  @ApiOperation(value=""鍏蜂綋璧勬簮-鍋ュ悍妫�鏌ヨ鎯�"") @GetMapping(value=""clusters/{clusterPhyId}/dimensions/{dimensionCode}/resources/{resName}/health-detail"") @ResponseBody public Result<List<HealthScoreBaseResultVO>> getClusterResHealthCheckResult(  @PathVariable Long clusterPhyId,  @PathVariable Integer dimensionCode,  @PathVariable String resName){
+    return Result.buildSuc(HealthScoreVOConverter.convert2HealthScoreBaseResultVOList(healthStateService.getResHealthResult(clusterPhyId,clusterPhyId,dimensionCode,resName)));
+  }
+  @ApiOperation(value=""鍋ュ悍妫�鏌ラ厤缃�"") @GetMapping(value=""clusters/{clusterPhyId}/health-configs"") @ResponseBody public Result<List<HealthCheckConfigVO>> getHealthCheckConfig(  @PathVariable Long clusterPhyId){
+    return Result.buildSuc(HealthScoreVOConverter.convert2HealthCheckConfigVOList(ConfigGroupEnum.HEALTH.name(),new ArrayList<>(healthCheckResultService.getClusterHealthConfig(clusterPhyId).values())));
+  }
+}",1,Code Smell
+"/** 
+ * @author leix.xie
+ * @date 2019/7/4 11:35
+ * @describe
+ */
+public class LoginInterceptorImpl implements LoginInterceptor {
+  private LoginManager loginManager;
+  private UserServiceImpl userService;
+  @Override public boolean preHandle(  HttpServletRequest request,  HttpServletResponse response,  Object handler) throws Exception {
+    boolean isLogin=loginManager.isLogin(request);
+    if (isLogin) {
+      setLoginContext(loginManager.current(request),request,response);
+      return true;
+    }
+ else {
+      String basePath=request.getScheme() + ""://"" + request.getServerName()+ "":""+ request.getServerPort()+ request.getContextPath();
+      if (""XMLHttpRequest"".equals(request.getHeader(""X-Requested-With""))) {
+        response.setHeader(""REDIRECT"",""REDIRECT"");
+        response.setHeader(""REDIRECT_PATH"",basePath + ""/login.html"");
+        response.setStatus(HttpServletResponse.SC_ACCEPTED);
+      }
+ else {
+        response.sendRedirect(basePath + ""/login.html"");
+      }
+      return false;
+    }
+  }
+  @Override public void postHandle(  HttpServletRequest request,  HttpServletResponse response,  Object handler,  ModelAndView modelAndView) throws Exception {
+  }
+  @Override public void afterCompletion(  HttpServletRequest request,  HttpServletResponse response,  Object handler,  Exception ex) throws Exception {
+  }
+  private void setLoginContext(  final String userCode,  HttpServletRequest request,  HttpServletResponse response){
+    LoginContext loginContext=new LoginContext();
+    loginContext.setLoginUser(userCode);
+    StringBuffer buffer=request.getRequestURL();
+    if (!Strings.isEmpty(request.getQueryString())) {
+      buffer.append(""?"").append(request.getQueryString());
+    }
+    loginContext.setReturnUrl(buffer.toString());
+    loginContext.setRemoteIP(request.getRemoteHost());
+    loginContext.setAdmin(this.userService.isAdmin(userCode));
+    loginContext.setToken(com.google.common.base.Strings.nullToEmpty(loginManager.token(request)));
+    request.setAttribute(LoginContext.CONTEXT,loginContext);
+  }
+  @Override public void setApplicationContext(  ApplicationContext applicationContext) throws BeansException {
+    loginManager=applicationContext.getBean(BistouryLoginManager.class);
+    userService=applicationContext.getBean(UserServiceImpl.class);
+  }
+}",1,Code Smell
+"@Route(APIPath.Channel_Application_Get_UserInfo) @HttpMethod(""POST"") public class ApplicationGetUserInfoAction extends ChannelAction {
+  @Override public boolean action(  Request request,  Response response){
+    if (request.getNettyRequest() instanceof FullHttpRequest) {
+      InputApplicationGetUserInfo inputUserToken=getRequestBody(request.getNettyRequest(),InputApplicationGetUserInfo.class);
+      RestResult result;
+      if (inputUserToken == null || StringUtil.isNullOrEmpty(inputUserToken.getAuthCode())) {
+        result=RestResult.resultOf(ErrorCode.INVALID_PARAMETER);
+      }
+ else {
+        String userId=messagesStore.verifyApplicationAuthCode(inputUserToken.getAuthCode(),channelInfo.getTargetId(),ProtoConstants.ApplicationType.ApplicationType_Channel);
+        if (userId != null) {
+          OutputApplicationUserInfo outputVerifyApplicationUser=new OutputApplicationUserInfo();
+          outputVerifyApplicationUser.setUserId(userId);
+          WFCMessage.User user=messagesStore.getUserInfo(userId);
+          if (user != null) {
+            outputVerifyApplicationUser.setDisplayName(user.getDisplayName());
+            outputVerifyApplicationUser.setPortraitUrl(user.getPortrait());
+          }
+          result=RestResult.ok(outputVerifyApplicationUser);
+        }
+ else {
+          result=RestResult.resultOf(ErrorCode.ERROR_CODE_APPLICATION_TOKEN_ERROR_OR_TIMEOUT);
+        }
+      }
+      response.setStatus(HttpResponseStatus.OK);
+      response.setContent(gson.toJson(result));
+    }
+    return true;
+  }
+}
+",1,Code Smell
+"/** 
+ * dump an arsc file
+ * @author bob
+ */
+public class ArscDumper {
+  public static void dump(  List<Pkg> pkgs){
+    for (int x=0; x < pkgs.size(); x++) {
+      Pkg pkg=pkgs.get(x);
+      System.out.println(String.format(""  Package %d id=%d name=%s typeCount=%d"",x,pkg.id,pkg.name,pkg.types.size()));
+      for (      Type type : pkg.types.values()) {
+        System.out.println(String.format(""    type %d %s"",type.id - 1,type.name));
+        int resPrefix=pkg.id << 24 | type.id << 16;
+        for (int i=0; i < type.specs.length; i++) {
+          ResSpec spec=type.getSpec(i);
+          System.out.println(String.format(""      spec 0x%08x 0x%08x %s"",resPrefix | spec.id,spec.flags,spec.name));
+        }
+        for (int i=0; i < type.configs.size(); i++) {
+          Config config=type.configs.get(i);
+          System.out.println(""      config"");
+          List<ResEntry> entries=new ArrayList<ResEntry>(config.resources.values());
+          for (int j=0; j < entries.size(); j++) {
+            ResEntry entry=entries.get(j);
+            System.out.println(String.format(""        resource 0x%08x %-20s: %s"",resPrefix | entry.spec.id,entry.spec.name,entry.value));
+          }
+        }
+      }
+    }
+  }
+  public static void main(  String... args) throws IOException {
+    if (args.length == 0) {
+      System.err.println(""asrc-dump file.arsc"");
+      return;
+    }
+    byte[] data=Util.readFile(new File(args[0]));
+    List<Pkg> pkgs=new ArscParser(data).parse();
+    dump(pkgs);
+  }
+}",1,Code Smell
+"/** 
+ * Represent  {@link ConfigMap} resource in kubernetes.
+ */
+public class KubernetesConfigMap extends KubernetesResource<ConfigMap> {
+  public KubernetesConfigMap(  ConfigMap configMap){
+    super(configMap);
+  }
+  public String getName(){
+    return this.getInternalResource().getMetadata().getName();
+  }
+  public String getResourceVersion(){
+    return this.getInternalResource().getMetadata().getResourceVersion();
+  }
+  public Map<String,String> getAnnotations(){
+    if (this.getInternalResource().getMetadata().getAnnotations() == null) {
+      this.getInternalResource().getMetadata().setAnnotations(new HashMap<>());
+    }
+    return this.getInternalResource().getMetadata().getAnnotations();
+  }
+  public Map<String,String> getData(){
+    if (this.getInternalResource().getData() == null) {
+      this.getInternalResource().setData(new HashMap<>());
+    }
+    return this.getInternalResource().getData();
+  }
+  public Map<String,String> getLabels(){
+    if (this.getInternalResource().getMetadata().getLabels() == null) {
+      this.getInternalResource().getMetadata().setLabels(new HashMap<>());
+    }
+    return this.getInternalResource().getMetadata().getLabels();
+  }
+}
+",1,Code Smell
+"@SuppressLint(""ViewConstructor"") public class VoIpHintView extends HintView2 {
+  private final Paint mainPaint=new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final VoIPBackgroundProvider backgroundProvider;
+  public VoIpHintView(  Context context,  int direction,  VoIPBackgroundProvider backgroundProvider,  boolean withCloseBtn){
+    super(context,direction);
+    this.backgroundProvider=backgroundProvider;
+    backgroundProvider.attach(this);
+    mainPaint.setPathEffect(new CornerPathEffect(rounding));
+    if (withCloseBtn) {
+      setCloseButton(true);
+    }
+  }
+  @Override protected void dispatchDraw(  Canvas canvas){
+    backgroundProvider.setDarkTranslation(getX(),getY());
+    super.dispatchDraw(canvas);
+  }
+  protected void drawBgPath(  Canvas canvas){
+    mainPaint.setShader(backgroundProvider.getDarkPaint().getShader());
+    int alpha=Math.min(backgroundPaint.getAlpha(),backgroundProvider.getDarkPaint().getAlpha());
+    canvas.saveLayerAlpha(0,0,getMeasuredWidth(),getMeasuredHeight(),alpha,Canvas.ALL_SAVE_FLAG);
+    canvas.drawPath(path,mainPaint);
+    if (backgroundProvider.isReveal()) {
+      mainPaint.setShader(backgroundProvider.getRevealDarkPaint().getShader());
+      canvas.drawPath(path,mainPaint);
+    }
+    canvas.restore();
+  }
+}",1,Code Smell
+"/** 
+ * @author zhangran
+ * @date 2022-06-02事件机制处理退出相关
+ */
+@Slf4j @Component public class PigLogoutSuccessEventHandler implements ApplicationListener<LogoutSuccessEvent> {
+  @Override public void onApplicationEvent(  LogoutSuccessEvent event){
+    Authentication authentication=(Authentication)event.getSource();
+    if (authentication instanceof PreAuthenticatedAuthenticationToken) {
+      handle(authentication);
+    }
+  }
+  /** 
+ * 处理退出成功方法 <p> 获取到登录的authentication 对象
+ * @param authentication 登录对象
+ */
+  public void handle(  Authentication authentication){
+    log.info(""用户：{} 退出成功"",authentication.getPrincipal());
+    SysLog logVo=SysLogUtils.getSysLog();
+    logVo.setTitle(""退出成功"");
+    WebUtils.getRequest().ifPresent(request -> {
+      logVo.setParams(request.getHeader(HttpHeaders.AUTHORIZATION));
+      String startTimeStr=request.getHeader(CommonConstants.REQUEST_START_TIME);
+      if (StrUtil.isNotBlank(startTimeStr)) {
+        Long startTime=Long.parseLong(startTimeStr);
+        Long endTime=System.currentTimeMillis();
+        logVo.setTime(endTime - startTime);
+      }
+    }
+);
+    if (authentication instanceof PreAuthenticatedAuthenticationToken) {
+      logVo.setServiceId(authentication.getCredentials().toString());
+    }
+    logVo.setCreateBy(authentication.getName());
+    SpringContextHolder.publishEvent(new SysLogEvent(logVo));
+  }
+}",1,Code Smell
+"/** 
+ * @author : leix.xie
+ * @date : 2019/2/12 16:59
+ */
+public class JarInfoClient implements InstrumentClient {
+  private static final Logger logger=BistouryLoggger.getLogger();
+  private final List<String> jarInfos;
+  JarInfoClient(  InstrumentInfo instrumentInfo){
+    logger.info(""start init jar info client"");
+    List<String> jarInfoList=ImmutableList.of();
+    try {
+      jarInfoList=listJar(instrumentInfo);
+      logger.info(""init jar info client success"");
+    }
+ catch (    Throwable e) {
+      destroy();
+      logger.error("""",""jar info client init error"",e);
+    }
+    jarInfos=jarInfoList;
+  }
+  public List<String> jarInfo(){
+    return jarInfos;
+  }
+  private List<String> listJar(  InstrumentInfo instrumentation){
+    return readJarInfos(instrumentation.getSystemClass());
+  }
+  private static List<String> readJarInfos(  Class clazz){
+    String serverManagerJarPath=clazz.getProtectionDomain().getCodeSource().getLocation().getPath();
+    File jarDir=new File(serverManagerJarPath).getParentFile();
+    List<FileBean> fileBeans=FileOperateFactory.listFiles(jarDir.getPath());
+    logger.info(""agent 扫描 jar 完成"");
+    List<String> result=Lists.transform(fileBeans,new Function<FileBean,String>(){
+      @Override public String apply(      FileBean file){
+        String name=file.getName();
+        return name.substring(name.lastIndexOf(File.separatorChar) + 1);
+      }
+    }
+);
+    return result;
+  }
+  @Override public void destroy(){
+  }
+}",1,Code Smell
+"/** 
+ * @author priyamvora
+ * @created 19/04/2021
+ */
+public class SnakeLadderService {
+  private final SnakeLadderDao snakeLadderDao;
+  public SnakeLadderService(  SnakeLadderDao snakeLadderDao){
+    this.snakeLadderDao=snakeLadderDao;
+  }
+  public Player playTurn(  Player currentPlayer){
+    Integer rollDice=snakeLadderDao.rollDice();
+    return snakeLadderDao.movePawn(currentPlayer.getId(),rollDice);
+  }
+  public Player getNextPlayer(){
+    return snakeLadderDao.getNextPlayer();
+  }
+  public void addSnake(  Integer start,  Integer end){
+    snakeLadderDao.addSnake(start,end);
+  }
+  public void addLadder(  Integer start,  Integer end){
+    snakeLadderDao.addLadder(start,end);
+  }
+  public void addNumberOfPlayers(  Integer numberOfPlayers){
+    snakeLadderDao.setNumberOfPlayers(numberOfPlayers);
+  }
+  public void addPlayer(  Integer id,  String name){
+    snakeLadderDao.addPlayer(id,name);
+  }
+  public Boolean hasCurrentPlayerWon(){
+    Player player=snakeLadderDao.hasCurrentPlayerWon();
+    return player != null;
+  }
+  public Boolean isGameEnded(){
+    return snakeLadderDao.isGameEnded();
+  }
+  public void setGameOverForPlayer(  Integer id){
+    snakeLadderDao.setGameOverForPlayer(id);
+  }
+  public void setNumberOfDiceRolls(  Integer numberOfDiceRolls){
+    snakeLadderDao.setNumberOfDiceRolls(numberOfDiceRolls);
+  }
+  public void setBoardSize(  Integer boardSize){
+    snakeLadderDao.setBoardSize(boardSize);
+  }
+}",1,Code Smell
+"/** 
+ * Folder Icon, an app folder in workspace.
+ */
+public class FolderIcon implements FolderDragTarget {
+  protected final UiObject2 mObject;
+  protected final LauncherInstrumentation mLauncher;
+  FolderIcon(  LauncherInstrumentation launcher,  UiObject2 icon){
+    mObject=icon;
+    mLauncher=launcher;
+  }
+  /** 
+ * Open and return a folder or raise assertion error.
+ */
+  @NonNull public Folder open(){
+    try (LauncherInstrumentation.Closable e=mLauncher.eventsCheck();LauncherInstrumentation.Closable c=mLauncher.addContextLayer(""open folder"")){
+      mLauncher.executeAndWaitForLauncherEvent(() -> mLauncher.clickLauncherObject(mObject),event -> TestProtocol.FOLDER_OPENED_MESSAGE.equals(event.getClassName().toString()),() -> ""Fail to open folder."",""open folder"");
+    }
+     return new Folder(mLauncher);
+  }
+  /** 
+ * This method requires public access, however should not be called in tests. 
+ */
+  @Override public Rect getDropLocationBounds(){
+    return mLauncher.getVisibleBounds(mObject.getParent());
+  }
+  /** 
+ * This method requires public access, however should not be called in tests. 
+ */
+  @Override public FolderIcon getTargetFolder(  Rect bounds){
+    return this;
+  }
+}",1,Code Smell
+"/** 
+ * WebSocket閫氳缂栬緫鏈嶅姟
+ * @author Administrator
+ */
+@ServerEndpoint(""/ws"") @Component public class WebSocketEditorServer {
+  public static Spider spider;
+  private SpiderWebSocketContext context;
+  @OnMessage public void onMessage(  String message,  Session session){
+    JSONObject event=JSON.parseObject(message);
+    String eventType=event.getString(""eventType"");
+    boolean isDebug=""debug"".equalsIgnoreCase(eventType);
+    if (""test"".equalsIgnoreCase(eventType) || isDebug) {
+      context=new SpiderWebSocketContext(session);
+      context.setDebug(isDebug);
+      context.setRunning(true);
+      new Thread(() -> {
+        String xml=event.getString(""message"");
+        if (xml != null) {
+          spider.runWithTest(SpiderFlowUtils.loadXMLFromString(xml),context);
+          context.write(new WebSocketEvent<>(""finish"",null));
+        }
+ else {
+          context.write(new WebSocketEvent<>(""error"",""xml涓嶆纭紒""));
+        }
+        context.setRunning(false);
+      }
+).start();
+    }
+ else     if (""stop"".equals(eventType) && context != null) {
+      context.setRunning(false);
+      context.stop();
+    }
+ else     if (""resume"".equalsIgnoreCase(eventType) && context != null) {
+      context.resume();
+    }
+  }
+  @OnClose public void onClose(  Session session){
+    context.setRunning(false);
+    context.stop();
+  }
+}
+",1,Code Smell
+"/** 
+ * 娴嬭瘯鑴氭湰鐨勫嵏杞藉拰閲嶈浇鍔熻兘
+ * @author DaleLee
+ */
+@ExtendWith(SpringExtension.class) @TestPropertySource(value=""classpath:/remove/application.properties"") @SpringBootTest(classes=LiteFlowLuaScriptRemoveELTest.class) @EnableAutoConfiguration public class LiteFlowLuaScriptRemoveELTest extends BaseTest {
+  @Resource private FlowExecutor flowExecutor;
+  private ScriptExecutor scriptExecutor=ScriptExecutorFactory.loadInstance().getScriptExecutor(ScriptTypeEnum.LUA.getDisplayName());
+  @Test public void testUnload(){
+    flowExecutor.reloadRule();
+    List<String> nodeIds=scriptExecutor.getNodeIds();
+    Assertions.assertEquals(2,nodeIds.size());
+    Assertions.assertTrue(nodeIds.contains(""s1""));
+    Assertions.assertTrue(nodeIds.contains(""s2""));
+    LiteflowResponse response=flowExecutor.execute2Resp(""chain1"",""arg"");
+    Assertions.assertTrue(response.isSuccess());
+    DefaultContext context=response.getFirstContextBean();
+    Assertions.assertEquals(Integer.valueOf(6),context.getData(""s1""));
+    scriptExecutor.unLoad(""s1"");
+    response=flowExecutor.execute2Resp(""chain1"",""arg"");
+    Assertions.assertFalse(response.isSuccess());
+    Assertions.assertEquals(ScriptLoadException.class,response.getCause().getClass());
+    Assertions.assertEquals(""script for node[s1] is not loaded"",response.getMessage());
+    Assertions.assertFalse(scriptExecutor.getNodeIds().contains(""s1""));
+  }
+  @Test public void testRemove(){
+    flowExecutor.reloadRule();
+    LiteflowResponse response=flowExecutor.execute2Resp(""chain2"",""arg"");
+    Assertions.assertTrue(response.isSuccess());
+    DefaultContext context=response.getFirstContextBean();
+    Assertions.assertEquals(Integer.valueOf(5),context.getData(""s2""));
+    FlowBus.unloadScriptNode(""s2"");
+    response=flowExecutor.execute2Resp(""chain2"",""arg"");
+    Assertions.assertEquals(ScriptLoadException.class,response.getCause().getClass());
+    Assertions.assertThrows(ELParseException.class,() -> LiteFlowChainELBuilder.createChain().setChainId(""chain3"").setEL(""THEN(s2)"").build());
+    Assertions.assertFalse(FlowBus.containNode(""s2""));
+    Assertions.assertFalse(scriptExecutor.getNodeIds().contains(""s2""));
+  }
+  @Test public void testReloadScript(){
+    flowExecutor.reloadRule();
+    String script=""defaultContext:setData(\""s1\"",\""abc\"");"";
+    FlowBus.reloadScript(""s1"",script);
+    LiteflowResponse response=flowExecutor.execute2Resp(""chain1"",""arg"");
+    DefaultContext context=response.getFirstContextBean();
+    Assertions.assertEquals(""abc"",context.getData(""s1""));
+    Assertions.assertEquals(FlowBus.getNode(""s1"").getScript(),script);
+  }
+}",1,Code Smell
+"/** 
+ * The actual byte-buddy's interceptor to intercept class instance methods. In this class, it provides a bridge between byte-buddy and sky-walking plugin.
+ */
+public class InstMethodsInter {
+  private static final ILog LOGGER=LogManager.getLogger(InstMethodsInter.class);
+  /** 
+ * An  {@link InstanceMethodsAroundInterceptor} This name should only stay in {@link String}, the real  {@link Class}type will trigger classloader failure. If you want to know more, please check on books about Classloader or Classloader appointment mechanism.
+ */
+  private InstanceMethodsAroundInterceptor interceptor;
+  /** 
+ * @param instanceMethodsAroundInterceptorClassName class full name.
+ */
+  public InstMethodsInter(  String instanceMethodsAroundInterceptorClassName,  ClassLoader classLoader){
+    try {
+      interceptor=InterceptorInstanceLoader.load(instanceMethodsAroundInterceptorClassName,classLoader);
+    }
+ catch (    Throwable t) {
+      throw new PluginException(""Can't create InstanceMethodsAroundInterceptor."",t);
+    }
+  }
+  /** 
+ * Intercept the target instance method.
+ * @param obj          target class instance.
+ * @param allArguments all method arguments
+ * @param method       method description.
+ * @param zuper        the origin call ref.
+ * @return the return value of target instance method.
+ * @throws Exception only throw exception because of zuper.call() or unexpected exception in sky-walking ( This is abug, if anything triggers this condition ).
+ */
+  @RuntimeType public Object intercept(  @This Object obj,  @AllArguments Object[] allArguments,  @SuperCall Callable<?> zuper,  @Origin Method method) throws Throwable {
+    EnhancedInstance targetObject=(EnhancedInstance)obj;
+    MethodInterceptResult result=new MethodInterceptResult();
+    try {
+      interceptor.beforeMethod(targetObject,method,allArguments,method.getParameterTypes(),result);
+    }
+ catch (    Throwable t) {
+      LOGGER.error(t,""class[{}] before method[{}] intercept failure"",obj.getClass(),method.getName());
+    }
+    Object ret=null;
+    try {
+      if (!result.isContinue()) {
+        ret=result._ret();
+      }
+ else {
+        ret=zuper.call();
+      }
+    }
+ catch (    Throwable t) {
+      try {
+        interceptor.handleMethodException(targetObject,method,allArguments,method.getParameterTypes(),t);
+      }
+ catch (      Throwable t2) {
+        LOGGER.error(t2,""class[{}] handle method[{}] exception failure"",obj.getClass(),method.getName());
+      }
+      throw t;
+    }
+ finally {
+      try {
+        ret=interceptor.afterMethod(targetObject,method,allArguments,method.getParameterTypes(),ret);
+      }
+ catch (      Throwable t) {
+        LOGGER.error(t,""class[{}] after method[{}] intercept failure"",obj.getClass(),method.getName());
+      }
+    }
+    return ret;
+  }
+}",1,Code Smell
+"/** 
+ * Represents dot attributes.
+ */
+public class DotAttributes {
+  private static final DotAttributes EMPTY=new DotAttributes(Maps.newMultiMap());
+  /** 
+ * Stores attributes, i.e,. name-value pairs.
+ */
+  private final MultiMap<String,String> attrs;
+  /** 
+ * The string representation of attributes of this object that Dot can recognize.
+ */
+  private final String attrsString;
+  private DotAttributes(  MultiMap<String,String> attrs){
+    this.attrs=attrs;
+    this.attrsString=toString(attrs);
+  }
+  /** 
+ * Converts attributes in given multimap to Dot-recognizable string.
+ */
+  private static String toString(  MultiMap<String,String> attrs){
+    StringJoiner joiner=new StringJoiner("","");
+    attrs.keySet().forEach(name -> {
+      Set<String> values=attrs.get(name);
+      if (values.size() == 1) {
+        joiner.add(name + '=' + CollectionUtils.getOne(values));
+      }
+ else {
+        String value=values.stream().collect(Collectors.joining("","",""\"""",""\""""));
+        joiner.add(name + '=' + value);
+      }
+    }
+);
+    return joiner.toString();
+  }
+  /** 
+ * @return a new {@link DotAttributes} with attributed updated by given input.
+ */
+  public DotAttributes update(  String... input){
+    if ((input.length & 1) != 0) {
+      throw new IllegalArgumentException(""input.length should be even"");
+    }
+    MultiMap<String,String> newAttrs=Maps.newMultiMap();
+    for (int i=0; i < input.length; i+=2) {
+      newAttrs.put(input[i],input[i + 1]);
+    }
+    attrs.keySet().forEach(name -> {
+      if (!newAttrs.containsKey(name)) {
+        newAttrs.putAll(name,attrs.get(name));
+      }
+    }
+);
+    return new DotAttributes(newAttrs);
+  }
+  /** 
+ * @return a new {@link DotAttributes} with attributed in given input added.
+ */
+  public DotAttributes add(  String... input){
+    if ((input.length & 1) != 0) {
+      throw new IllegalArgumentException(""input.length should be even"");
+    }
+    MultiMap<String,String> newAttrs=Maps.newMultiMap();
+    newAttrs.putAll(attrs);
+    for (int i=0; i < input.length; i+=2) {
+      newAttrs.put(input[i],input[i + 1]);
+    }
+    return new DotAttributes(newAttrs);
+  }
+  /** 
+ * @return a {@link DotAttributes} containing attributes specified by input.
+ */
+  public static DotAttributes of(  String... input){
+    return input.length == 0 ? EMPTY : EMPTY.add(input);
+  }
+  @Override public String toString(){
+    return attrsString;
+  }
+}",1,Code Smell
+"/** 
+ * This is the default skin implementation for  {@link MFXPaginatedTableView}. <p></p> Extends  {@link MFXTableViewSkin} and just modifies the footer node to add a{@link MFXPagination} control to it, responsible for changing the current page.<p></p> Little side note as a reminder too: <p> The layoutChildren(...) method has been overridden because it's the best place to properly initialize the virtual flow minHeight property, since it's needed to wait until the cellHeight is retrieved. It's also needed to move the viewport to the current page (if not 1), and for some reason it's needed to delay the update with a  {@link PauseTransition} otherwise an exceptionis thrown.
+ */
+public class MFXPaginatedTableViewSkin<T> extends MFXTableViewSkin<T> {
+  private final MFXPagination pagination;
+  private boolean init=false;
+  public MFXPaginatedTableViewSkin(  MFXPaginatedTableView<T> tableView,  SimpleVirtualFlow<T,MFXTableRow<T>> rowsFlow){
+    super(tableView,rowsFlow);
+    rowsFlow.setMinHeight(Region.USE_PREF_SIZE);
+    rowsFlow.setMaxHeight(Region.USE_PREF_SIZE);
+    pagination=new MFXPagination();
+    pagination.pagesToShowProperty().bind(tableView.pagesToShowProperty());
+    pagination.maxPageProperty().bind(tableView.maxPageProperty());
+    pagination.setCurrentPage(tableView.getCurrentPage());
+    tableView.currentPageProperty().bindBidirectional(pagination.currentPageProperty());
+    container.getChildren().remove(footer);
+    container.getChildren().add(buildFooter());
+    addListeners();
+  }
+  private void addListeners(){
+    MFXPaginatedTableView<T> tableView=(MFXPaginatedTableView<T>)getSkinnable();
+    tableView.virtualFlowInitializedProperty().addListener((observable,oldValue,newValue) -> {
+      if (!init && newValue) {
+        rowsFlow.prefHeightProperty().bind(Bindings.createDoubleBinding(() -> tableView.getRowsPerPage() * rowsFlow.getCellHeight(),tableView.rowsPerPageProperty()));
+        int current=tableView.getCurrentPage();
+        if (current != 1) {
+          PauseBuilder.build().setDuration(20).setOnFinished(event -> tableView.goToPage(current)).getAnimation().play();
+        }
+        init=true;
+      }
+    }
+);
+  }
+  @Override protected StackPane buildFooter(){
+    StackPane footer=super.buildFooter();
+    if (pagination == null)     return footer;
+    footer.getChildren().add(pagination);
+    StackPane.setAlignment(pagination,Pos.CENTER);
+    return footer;
+  }
+  @Override protected double computeMinWidth(  double height,  double topInset,  double rightInset,  double bottomInset,  double leftInset){
+    double footerWidth=leftInset + footer.prefWidth(-1) + pagination.prefWidth(-1) * 2 + 10 + rightInset;
+    return Math.max(footerWidth,super.computeMinWidth(height,topInset,rightInset,bottomInset,leftInset));
+  }
+}",1,Code Smell
+"public class PlayerSkinUpdater implements ServerEventListener {
+  private final Plugin plugin;
+  private final Map<UUID,Long> skinUpdates;
+  private SkinProvider skinProvider;
+  private PlayerIconFactory playerMarkerIconFactory;
+  public PlayerSkinUpdater(  Plugin plugin){
+    this.plugin=plugin;
+    this.skinUpdates=new ConcurrentHashMap<>();
+    skinProvider=new MojangSkinProvider();
+    playerMarkerIconFactory=new DefaultPlayerIconFactory();
+  }
+  public CompletableFuture<Void> updateSkin(  final UUID playerUuid){
+    long lastUpdate=skinUpdates.getOrDefault(playerUuid,0L);
+    long now=System.currentTimeMillis();
+    if (now - lastUpdate < TimeUnit.HOURS.toMillis(1))     return CompletableFuture.completedFuture(null);
+    skinUpdates.put(playerUuid,now);
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return skinProvider.load(playerUuid);
+      }
+ catch (      IOException e) {
+        throw new CompletionException(""The skin provider threw an exception while loading the skin for UUID: '"" + playerUuid + ""'!"",e);
+      }
+    }
+,BlueMap.THREAD_POOL).thenAcceptAsync(skin -> {
+      if (skin.isEmpty()) {
+        Logger.global.logDebug(""No player-skin provided for UUID: "" + playerUuid);
+        return;
+      }
+      Map<String,BmMap> maps=plugin.getBlueMap().getMaps();
+      if (maps == null) {
+        Logger.global.logDebug(""Could not update skin, since the plugin seems not to be ready."");
+        return;
+      }
+      BufferedImage playerHead=playerMarkerIconFactory.apply(playerUuid,skin.get());
+      for (      BmMap map : maps.values()) {
+        try (OutputStream out=map.getStorage().asset(""playerheads/"" + playerUuid + "".png"").write()){
+          ImageIO.write(playerHead,""png"",out);
+        }
+ catch (        IOException ex) {
+          Logger.global.logError(""Failed to write player skin to storage: "" + playerUuid,ex);
+        }
+      }
+    }
+,BlueMap.THREAD_POOL);
+  }
+  @Override public void onPlayerJoin(  UUID playerUuid){
+    updateSkin(playerUuid).exceptionally(ex -> {
+      Logger.global.logError(""Failed to update player skin: "" + playerUuid,ex);
+      return null;
+    }
+);
+  }
+  public SkinProvider getSkinProvider(){
+    return skinProvider;
+  }
+  public void setSkinProvider(  SkinProvider skinProvider){
+    this.skinProvider=Objects.requireNonNull(skinProvider,""skinProvider can not be null"");
+  }
+  public PlayerIconFactory getPlayerMarkerIconFactory(){
+    return playerMarkerIconFactory;
+  }
+  public void setPlayerMarkerIconFactory(  PlayerIconFactory playerMarkerIconFactory){
+    this.playerMarkerIconFactory=Objects.requireNonNull(playerMarkerIconFactory,""playerMarkerIconFactory can not be null"");
+  }
+}",1,Code Smell
+"/** 
+ * aws s3协议配置
+ * @author zlt
+ * @date 2021/2/11<p> Blog: http://zlt2000.gitee.io Github: https://github.com/zlt2000
+ */
+@Setter @Getter public class S3Properties {
+  /** 
+ * 用户名
+ */
+  private String accessKey;
+  /** 
+ * 密码
+ */
+  private String accessKeySecret;
+  /** 
+ * 访问端点
+ */
+  private String endpoint;
+  /** 
+ * bucket名称
+ */
+  private String bucketName;
+  /** 
+ * 区域
+ */
+  private String region;
+  /** 
+ * path-style
+ */
+  private Boolean pathStyleAccessEnabled=true;
+}",0,Clean Code
+"/** 
+ * Contains default  {@link TrainingListener} sets. 
+ */
+interface Defaults {
+  /** 
+ * A basic  {@link TrainingListener} set with the minimal recommended functionality.<p>This contains: <ul> <li> {@link EpochTrainingListener}<li> {@link EvaluatorTrainingListener}<li> {@link DivergenceCheckTrainingListener}</ul>
+ * @return the new set of listeners
+ */
+  static TrainingListener[] basic(){
+    return new TrainingListener[]{new EpochTrainingListener(),new EvaluatorTrainingListener(),new DivergenceCheckTrainingListener()};
+  }
+  /** 
+ * A default  {@link TrainingListener} set including batch output logging.<p>This contains: <ul> <li>Everything from  {@link Defaults#basic()}<li> {@link LoggingTrainingListener}</ul>
+ * @return the new set of listeners
+ */
+  static TrainingListener[] logging(){
+    return new TrainingListener[]{new EpochTrainingListener(),new EvaluatorTrainingListener(),new DivergenceCheckTrainingListener(),new LoggingTrainingListener()};
+  }
+  /** 
+ * A default  {@link TrainingListener} set including batch output logging.<p>This has the same listeners as  {@link Defaults#logging()}, but reduces the logging frequency.
+ * @param frequency the frequency of epoch to print out
+ * @return the new set of listeners
+ */
+  static TrainingListener[] logging(  int frequency){
+    return new TrainingListener[]{new EpochTrainingListener(),new EvaluatorTrainingListener(),new DivergenceCheckTrainingListener(),new LoggingTrainingListener(frequency)};
+  }
+  /** 
+ * A default  {@link TrainingListener} set including batch output logging and outputdirectory. <p>This contains: <ul> <li>Everything from  {@link Defaults#logging()}<li> {@link MemoryTrainingListener}<li> {@link TimeMeasureTrainingListener}</ul>
+ * @param outputDir the output directory to store created log files. Can't be null
+ * @return the new set of listeners
+ */
+  static TrainingListener[] logging(  String outputDir){
+    if (outputDir == null) {
+      throw new IllegalArgumentException(""The output directory can't be null"");
+    }
+    return new TrainingListener[]{new EpochTrainingListener(),new MemoryTrainingListener(outputDir),new EvaluatorTrainingListener(),new DivergenceCheckTrainingListener(),new LoggingTrainingListener(),new TimeMeasureTrainingListener(outputDir)};
+  }
+}
+",0,Clean Code
+"/** 
+ * {@code SimpleTextDecoder} implements a {@link Decoder} that employs a {@link RecurrentBlock} todecode text input.
+ */
+public class SimpleTextDecoder extends Decoder {
+  private static final byte VERSION=1;
+  /** 
+ * Contructs a new instance of  {@code SimpleTextDecoder} with the given {@link RecurrentBlock}. Use this constructor if you are planning to use pre-trained embeddings that don't need further training.
+ * @param recurrentBlock the recurrent block to be used to decode
+ * @param vocabSize the size of the {@link ai.djl.modality.nlp.Vocabulary}
+ */
+  public SimpleTextDecoder(  RecurrentBlock recurrentBlock,  int vocabSize){
+    this(null,recurrentBlock,vocabSize);
+  }
+  /** 
+ * Contructs a new instance of  {@code SimpleTextDecoder} with the given {@link RecurrentBlock}. Use this constructor if you are planning to use pre-trained embeddings that don't need further training.
+ * @param trainableTextEmbedding the {@link TrainableTextEmbedding} to train embeddings with
+ * @param recurrentBlock the recurrent block to be used to decode
+ * @param vocabSize the size of the {@link ai.djl.modality.nlp.Vocabulary}
+ */
+  public SimpleTextDecoder(  TrainableTextEmbedding trainableTextEmbedding,  RecurrentBlock recurrentBlock,  long vocabSize){
+    super(VERSION,getBlock(trainableTextEmbedding,recurrentBlock,vocabSize));
+  }
+  private static Block getBlock(  TrainableTextEmbedding trainableTextEmbedding,  RecurrentBlock recurrentBlock,  long vocabSize){
+    SequentialBlock sequentialBlock=new SequentialBlock();
+    sequentialBlock.add(trainableTextEmbedding).add(recurrentBlock).add(Linear.builder().setUnits(vocabSize).build());
+    return sequentialBlock;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected NDList forwardInternal(  ParameterStore parameterStore,  NDList inputs,  boolean training,  PairList<String,Object> params){
+    if (training) {
+      return block.forward(parameterStore,inputs,true,params);
+    }
+    Shape inputShape=inputs.get(0).getShape();
+    if (inputShape.get(1) != 1) {
+      throw new IllegalArgumentException(""Input sequence length must be 1 during prediction"");
+    }
+    NDList output=new NDList();
+    for (int i=0; i < 10; i++) {
+      inputs=block.forward(parameterStore,inputs,false);
+      inputs=new NDList(inputs.head().argMax(2));
+      output.add(inputs.head().transpose(1,0));
+    }
+    return new NDList(NDArrays.stack(output).transpose(2,1,0));
+  }
+}",0,Clean Code
+"/** 
+ * The builder for TensorFlow SSD translator. 
+ */
+public static class Builder extends ObjectDetectionBuilder<Builder> {
+  int maxBoxes=10;
+  String numDetectionsOutputName=""num_detections"";
+  String boundingBoxOutputName=""detection_boxes"";
+  String scoresOutputName=""detection_scores"";
+  String classLabelOutputName=""detection_class_labels"";
+  /** 
+ * Set the output name used for number of detections. <p>You can find the output names of TensorFlow models by calling `model.describeOutput()` after loading it.
+ * @param numDetectionsOutputName output name for number of detections
+ * @return this builder
+ */
+  public Builder optNumDetectionsOutputName(  String numDetectionsOutputName){
+    this.numDetectionsOutputName=numDetectionsOutputName;
+    return this;
+  }
+  /** 
+ * Set the output name used for bounding boxes. You can find the output names of TensorFlow models by calling `model.describeOutput()` after loading it.
+ * @param boundingBoxOutputName output name for bounding boxes
+ * @return this builder
+ */
+  public Builder optBoundingBoxOutputName(  String boundingBoxOutputName){
+    this.boundingBoxOutputName=boundingBoxOutputName;
+    return this;
+  }
+  /** 
+ * Set the output name used for detection scores. You can find the output names of TensorFlow models by calling `model.describeOutput()` after loading it.
+ * @param scoresOutputName output name for detection scores
+ * @return this builder
+ */
+  public Builder optScoresOutputName(  String scoresOutputName){
+    this.scoresOutputName=scoresOutputName;
+    return this;
+  }
+  /** 
+ * Set the output name used for class label. You can find the output names of TensorFlow models by calling `model.describeOutput()` after loading it.
+ * @param classLabelOutputName output name for class label
+ * @return this builder
+ */
+  public Builder optClassLabelOutputName(  String classLabelOutputName){
+    this.classLabelOutputName=classLabelOutputName;
+    return this;
+  }
+  /** 
+ * Set the maximum number of bounding boxes to display.
+ * @param maxBoxes maximum number of bounding boxes to display
+ * @return this builder
+ */
+  public Builder optMaxBoxes(  int maxBoxes){
+    this.maxBoxes=maxBoxes;
+    return this;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected Builder self(){
+    return this;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected void configPreProcess(  Map<String,?> arguments){
+    super.configPreProcess(arguments);
+    optBatchifier(null);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override protected void configPostProcess(  Map<String,?> arguments){
+    super.configPostProcess(arguments);
+    maxBoxes=ArgumentsUtil.intValue(arguments,""maxBoxes"",10);
+    threshold=ArgumentsUtil.floatValue(arguments,""threshold"",0.4f);
+    numDetectionsOutputName=ArgumentsUtil.stringValue(arguments,""numDetectionsOutputName"",""num_detections"");
+    boundingBoxOutputName=ArgumentsUtil.stringValue(arguments,""boundingBoxOutputName"",""detection_boxes"");
+    scoresOutputName=ArgumentsUtil.stringValue(arguments,""scoresOutputName"",""detection_scores"");
+    classLabelOutputName=ArgumentsUtil.stringValue(arguments,""classLabelOutputName"",""detection_class_labels"");
+  }
+  /** 
+ * Builds the translator.
+ * @return the new translator
+ */
+  public TfSsdTranslator build(){
+    validate();
+    return new TfSsdTranslator(this);
+  }
+}",0,Clean Code
+"/** 
+ * Instruction format  {@code 22c}. See the instruction format spec for details.
+ */
+public final class Form22c extends InsnFormat {
+  /** 
+ * {@code non-null;} unique instance of this class 
+ */
+  public static final InsnFormat THE_ONE=new Form22c();
+  /** 
+ * Constructs an instance. This class is not publicly instantiable. Use  {@link #THE_ONE}.
+ */
+  private Form22c(){
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public String insnArgString(  DalvInsn insn){
+    RegisterSpecList regs=insn.getRegisters();
+    return regs.get(0).regString() + "", "" + regs.get(1).regString()+ "", ""+ insn.cstString();
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public String insnCommentString(  DalvInsn insn,  boolean noteIndices){
+    if (noteIndices) {
+      return insn.cstComment();
+    }
+ else {
+      return """";
+    }
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public int codeSize(){
+    return 2;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public boolean isCompatible(  DalvInsn insn){
+    RegisterSpecList regs=insn.getRegisters();
+    if (!((insn instanceof CstInsn) && (regs.size() == 2) && unsignedFitsInNibble(regs.get(0).getReg())&& unsignedFitsInNibble(regs.get(1).getReg()))) {
+      return false;
+    }
+    CstInsn ci=(CstInsn)insn;
+    int cpi=ci.getIndex();
+    if (!unsignedFitsInShort(cpi)) {
+      return false;
+    }
+    Constant cst=ci.getConstant();
+    return (cst instanceof CstType) || (cst instanceof CstFieldRef);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public BitSet compatibleRegs(  DalvInsn insn){
+    RegisterSpecList regs=insn.getRegisters();
+    BitSet bits=new BitSet(2);
+    bits.set(0,unsignedFitsInNibble(regs.get(0).getReg()));
+    bits.set(1,unsignedFitsInNibble(regs.get(1).getReg()));
+    return bits;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public void writeTo(  AnnotatedOutput out,  DalvInsn insn){
+    RegisterSpecList regs=insn.getRegisters();
+    int cpi=((CstInsn)insn).getIndex();
+    write(out,opcodeUnit(insn,makeByte(regs.get(0).getReg(),regs.get(1).getReg())),(short)cpi);
+  }
+}",0,Clean Code
+"public abstract class NodeVisitor {
+  public static final int TYPE_FIRST_INT=0x10;
+  public static final int TYPE_INT_BOOLEAN=0x12;
+  public static final int TYPE_INT_HEX=0x11;
+  public static final int TYPE_REFERENCE=0x01;
+  public static final int TYPE_STRING=0x03;
+  protected NodeVisitor nv;
+  public NodeVisitor(){
+    super();
+  }
+  public NodeVisitor(  NodeVisitor nv){
+    super();
+    this.nv=nv;
+  }
+  /** 
+ * add attribute to the node
+ * @param ns
+ * @param name
+ * @param resourceId
+ * @param type {@link #TYPE_STRING} or others
+ * @param obj a string for  {@link #TYPE_STRING} ,and Integer for others
+ */
+  public void attr(  String ns,  String name,  int resourceId,  int type,  Object obj){
+    if (nv != null) {
+      nv.attr(ns,name,resourceId,type,obj);
+    }
+  }
+  /** 
+ * create a child node
+ * @param ns
+ * @param name
+ * @return
+ */
+  public NodeVisitor child(  String ns,  String name){
+    if (nv != null) {
+      return nv.child(ns,name);
+    }
+    return null;
+  }
+  /** 
+ * end the visit
+ */
+  public void end(){
+    if (nv != null) {
+      nv.end();
+    }
+  }
+  /** 
+ * line number in the .xml
+ * @param ln
+ */
+  public void line(  int ln){
+    if (nv != null) {
+      nv.line(ln);
+    }
+  }
+  /** 
+ * the node text
+ * @param value
+ */
+  public void text(  int lineNumber,  String value){
+    if (nv != null) {
+      nv.text(lineNumber,value);
+    }
+  }
+}",0,Clean Code
+"public interface Server {
+  @DebugDump @Nullable String getMinecraftVersion();
+  /** 
+ * Returns the Folder containing the configurations for the plugin
+ */
+  @DebugDump Path getConfigFolder();
+  /** 
+ * Returns the folder that contains the mod-jars
+ */
+  @DebugDump Optional<Path> getModsFolder();
+  /** 
+ * Gives the possibility to override the metrics-setting in the config
+ */
+  @DebugDump default Tristate isMetricsEnabled(){
+    return Tristate.UNDEFINED;
+  }
+  /** 
+ * Returns the correct  {@link ServerWorld} for a {@link World} if there is any.
+ */
+  default Optional<ServerWorld> getServerWorld(  World world){
+    if (world instanceof MCAWorld) {
+      MCAWorld mcaWorld=(MCAWorld)world;
+      return getLoadedServerWorlds().stream().filter(serverWorld -> serverWorld.getWorldFolder().toAbsolutePath().normalize().equals(mcaWorld.getWorldFolder().toAbsolutePath().normalize()) && serverWorld.getDimension().equals(mcaWorld.getDimension())).findAny();
+    }
+    return Optional.empty();
+  }
+  /** 
+ * Returns the correct  {@link ServerWorld} for any Object if there is any, this should return the correct ServerWorldfor any implementation-specific object that represent or identify a world in any way.<br> Used for the API implementation.
+ */
+  default Optional<ServerWorld> getServerWorld(  Object world){
+    if (world instanceof World)     return getServerWorld((World)world);
+    return Optional.empty();
+  }
+  /** 
+ * Returns all loaded worlds of this server.
+ */
+  @DebugDump Collection<ServerWorld> getLoadedServerWorlds();
+  /** 
+ * Returns a collection of the states of players that are currently online
+ */
+  @DebugDump Collection<Player> getOnlinePlayers();
+  /** 
+ * Registers a ServerEventListener, every method of this interface should be called on the specified events
+ */
+  void registerListener(  ServerEventListener listener);
+  /** 
+ * Removes all registered listeners
+ */
+  void unregisterAllListeners();
+}
+",0,Clean Code
+"public static final class Config {
+  private String library;
+  private String packageName;
+  private String output;
+  private String[] headerFiles;
+  private String mappingFile;
+  public Config(  CommandLine cmd){
+    library=cmd.getOptionValue(""library"");
+    packageName=cmd.getOptionValue(""package"");
+    output=cmd.getOptionValue(""output"");
+    headerFiles=cmd.getOptionValues(""header"");
+    mappingFile=cmd.getOptionValue(""mappingFile"");
+  }
+  public static Options getOptions(){
+    Options options=new Options();
+    options.addOption(Option.builder(""l"").longOpt(""library"").hasArg().required().argName(""LIBRARY"").desc(""library name"").build());
+    options.addOption(Option.builder(""p"").longOpt(""package"").required().hasArg().argName(""PACKAGE"").desc(""Java package name"").build());
+    options.addOption(Option.builder(""o"").longOpt(""output"").required().hasArg().argName(""OUTPUT"").desc(""output directory"").build());
+    options.addOption(Option.builder(""f"").longOpt(""header"").required().hasArgs().argName(""HEADER"").desc(""Header files"").build());
+    options.addOption(Option.builder(""m"").longOpt(""mappingFile"").hasArg().argName(""MAPPING_FILE"").desc(""Type mappingFile config file"").build());
+    return options;
+  }
+  public String getLibrary(){
+    return library;
+  }
+  public String getPackageName(){
+    return packageName;
+  }
+  public String getOutput(){
+    return output;
+  }
+  public String[] getHeaderFiles(){
+    return headerFiles;
+  }
+  public String getMappingFile(){
+    return mappingFile;
+  }
+}
+",0,Clean Code
+"/** 
+ * Attribute class for standard  {@code SourceDebugExtension} attributes.
+ */
+public final class AttSourceDebugExtension extends BaseAttribute {
+  /** 
+ * {@code non-null;} attribute name for attributes of this type 
+ */
+  public static final String ATTRIBUTE_NAME=""SourceDebugExtension"";
+  /** 
+ * {@code non-null;} Contents of SMAP 
+ */
+  private final CstString smapString;
+  /** 
+ * Constructs an instance.
+ * @param smapString {@code non-null;} the SMAP data from the class file.
+ */
+  public AttSourceDebugExtension(  CstString smapString){
+    super(ATTRIBUTE_NAME);
+    if (smapString == null) {
+      throw new NullPointerException(""smapString == null"");
+    }
+    this.smapString=smapString;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public int byteLength(){
+    return 6 + smapString.getUtf8Size();
+  }
+  /** 
+ * Gets the SMAP data of this instance.
+ * @return {@code non-null;} the SMAP data.
+ */
+  public CstString getSmapString(){
+    return smapString;
+  }
+}",0,Clean Code
+"@WebFilter(filterName=""authFilter"",urlPatterns=""/h5/account/*"") public class AuthorizationFilter implements Filter {
+  @Reference(version=""1.0.0"") IAccountService accountSrv;
+  @Override public void init(  FilterConfig filterConfig) throws ServletException {
+    System.err.println(""AuthorizationFilter init~"");
+  }
+  @Override public void doFilter(  ServletRequest req,  ServletResponse resp,  FilterChain chain) throws IOException, ServletException {
+    HttpServletRequest request=(HttpServletRequest)req;
+    HttpServletResponse response=(HttpServletResponse)resp;
+    User user=(User)request.getSession().getAttribute(""user"");
+    if (null == user || null == user.getNickname()) {
+      String uri=((HttpServletRequest)req).getRequestURI();
+      String url=""https://open.weixin.qq.com/connect/oauth2/authorize?appid="" + WxConfig.getAppId() + ""&redirect_uri=""+ WxConfig.getDomain()+ ""/auth?uri=""+ uri+ ""&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect"";
+      response.sendRedirect(url);
+    }
+ else {
+      System.err.println(""user:"" + ToStringBuilder.reflectionToString(user));
+      String isCheckReg=(String)request.getSession().getAttribute(""isCheckReg"");
+      if (null == isCheckReg || !""yes"".equals(isCheckReg)) {
+        Account account=accountSrv.findByOpendid(user.getOpenid());
+        if (null != account) {
+          request.getSession().setAttribute(""member"",account);
+        }
+        request.getSession().setAttribute(""isCheckReg"",""yes"");
+      }
+      chain.doFilter(request,response);
+    }
+  }
+  @Override public void destroy(){
+  }
+}",0,Clean Code
+"public interface FriendRequestOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  /** 
+ * <code>optional string from_uid = 1;</code>
+ */
+  boolean hasFromUid();
+  /** 
+ * <code>optional string from_uid = 1;</code>
+ */
+  java.lang.String getFromUid();
+  /** 
+ * <code>optional string from_uid = 1;</code>
+ */
+  com.google.protobuf.ByteString getFromUidBytes();
+  /** 
+ * <code>required string to_uid = 2;</code>
+ */
+  boolean hasToUid();
+  /** 
+ * <code>required string to_uid = 2;</code>
+ */
+  java.lang.String getToUid();
+  /** 
+ * <code>required string to_uid = 2;</code>
+ */
+  com.google.protobuf.ByteString getToUidBytes();
+  /** 
+ * <code>required string reason = 3;</code>
+ */
+  boolean hasReason();
+  /** 
+ * <code>required string reason = 3;</code>
+ */
+  java.lang.String getReason();
+  /** 
+ * <code>required string reason = 3;</code>
+ */
+  com.google.protobuf.ByteString getReasonBytes();
+  /** 
+ * <code>optional int32 status = 4;</code>
+ */
+  boolean hasStatus();
+  /** 
+ * <code>optional int32 status = 4;</code>
+ */
+  int getStatus();
+  /** 
+ * <code>optional int64 update_dt = 5;</code>
+ */
+  boolean hasUpdateDt();
+  /** 
+ * <code>optional int64 update_dt = 5;</code>
+ */
+  long getUpdateDt();
+  /** 
+ * <code>optional bool from_read_status = 6;</code>
+ */
+  boolean hasFromReadStatus();
+  /** 
+ * <code>optional bool from_read_status = 6;</code>
+ */
+  boolean getFromReadStatus();
+  /** 
+ * <code>optional bool to_read_status = 7;</code>
+ */
+  boolean hasToReadStatus();
+  /** 
+ * <code>optional bool to_read_status = 7;</code>
+ */
+  boolean getToReadStatus();
+  /** 
+ * <code>optional string extra = 8;</code>
+ */
+  boolean hasExtra();
+  /** 
+ * <code>optional string extra = 8;</code>
+ */
+  java.lang.String getExtra();
+  /** 
+ * <code>optional string extra = 8;</code>
+ */
+  com.google.protobuf.ByteString getExtraBytes();
+}",0,Clean Code
+"public interface HandleFriendRequestOrBuilder extends com.google.protobuf.MessageOrBuilder {
+  /** 
+ * <code>required string target_uid = 1;</code>
+ */
+  boolean hasTargetUid();
+  /** 
+ * <code>required string target_uid = 1;</code>
+ */
+  java.lang.String getTargetUid();
+  /** 
+ * <code>required string target_uid = 1;</code>
+ */
+  com.google.protobuf.ByteString getTargetUidBytes();
+  /** 
+ * <code>required int32 status = 2;</code>
+ */
+  boolean hasStatus();
+  /** 
+ * <code>required int32 status = 2;</code>
+ */
+  int getStatus();
+  /** 
+ * <code>optional string extra = 3;</code>
+ */
+  boolean hasExtra();
+  /** 
+ * <code>optional string extra = 3;</code>
+ */
+  java.lang.String getExtra();
+  /** 
+ * <code>optional string extra = 3;</code>
+ */
+  com.google.protobuf.ByteString getExtraBytes();
+}",0,Clean Code
+"/** 
+ * @author Pablo Sanchidrian Herrera
+ * @author John Jairo Moreno Rojas
+ */
+public class MessageToPromptConverterTest {
+  private MessageToPromptConverter converter;
+  @Before public void setUp(){
+    converter=MessageToPromptConverter.create().withHumanPrompt("""").withAssistantPrompt("""");
+  }
+  @Test public void testSingleUserMessage(){
+    Message userMessage=new UserMessage(""User message"");
+    String expected=""User message"";
+    Assert.assertEquals(expected,converter.messageToString(userMessage));
+  }
+  @Test public void testSingleAssistantMessage(){
+    Message assistantMessage=new AssistantMessage(""Assistant message"");
+    String expected=""Assistant message"";
+    Assert.assertEquals(expected,converter.messageToString(assistantMessage));
+  }
+  @Disabled public void testFunctionMessageType(){
+    Message functionMessage=new FunctionMessage(""Function message"");
+    Exception exception=Assert.assertThrows(IllegalArgumentException.class,() -> {
+      converter.messageToString(functionMessage);
+    }
+);
+  }
+  @Test public void testSystemMessageType(){
+    Message systemMessage=new SystemMessage(""System message"");
+    String expected=""System message"";
+    Assert.assertEquals(expected,converter.messageToString(systemMessage));
+  }
+  @Test public void testCustomHumanPrompt(){
+    converter.withHumanPrompt(""Custom Human: "");
+    Message userMessage=new UserMessage(""User message"");
+    String expected=""Custom Human: User message"";
+    Assert.assertEquals(expected,converter.messageToString(userMessage));
+  }
+  @Test public void testCustomAssistantPrompt(){
+    converter.withAssistantPrompt(""Custom Assistant: "");
+    Message assistantMessage=new AssistantMessage(""Assistant message"");
+    String expected=""Custom Assistant: Assistant message"";
+    Assert.assertEquals(expected,converter.messageToString(assistantMessage));
+  }
+  @Test public void testEmptyMessageList(){
+    String expected="""";
+    Assert.assertEquals(expected,converter.toPrompt(List.of()));
+  }
+  @Test public void testSystemMessageList(){
+    String msg=""this is a LLM prompt"";
+    SystemMessage message=new SystemMessage(msg);
+    Assert.assertEquals(msg,converter.toPrompt(List.of(message)));
+  }
+  @Test public void testUserMessageList(){
+    List<Message> messages=List.of(new UserMessage(""User message""));
+    String expected=""User message"";
+    Assert.assertEquals(expected,converter.toPrompt(messages));
+  }
+  @Disabled public void testUnsupportedMessageType(){
+    List<Message> messages=List.of(new FunctionMessage(""Unsupported message""));
+    Exception exception=Assert.assertThrows(IllegalArgumentException.class,() -> {
+      converter.toPrompt(messages);
+    }
+);
+  }
+}
+",0,Clean Code
+"/** 
+ * File I/O utilities.
+ */
+public final class FileUtils {
+  private FileUtils(){
+  }
+  /** 
+ * Reads the named file, translating  {@link IOException} to a{@link RuntimeException} of some sort.
+ * @param fileName {@code non-null;} name of the file to read
+ * @return {@code non-null;} contents of the file
+ */
+  public static byte[] readFile(  String fileName){
+    File file=new File(fileName);
+    return readFile(file);
+  }
+  /** 
+ * Reads the given file, translating  {@link IOException} to a{@link RuntimeException} of some sort.
+ * @param file {@code non-null;} the file to read
+ * @return {@code non-null;} contents of the file
+ */
+  public static byte[] readFile(  File file){
+    if (!file.exists()) {
+      throw new RuntimeException(file + "": file not found"");
+    }
+    if (!file.isFile()) {
+      throw new RuntimeException(file + "": not a file"");
+    }
+    if (!file.canRead()) {
+      throw new RuntimeException(file + "": file not readable"");
+    }
+    long longLength=file.length();
+    int length=(int)longLength;
+    if (length != longLength) {
+      throw new RuntimeException(file + "": file too long"");
+    }
+    byte[] result=new byte[length];
+    try {
+      FileInputStream in=new FileInputStream(file);
+      int at=0;
+      while (length > 0) {
+        int amt=in.read(result,at,length);
+        if (amt == -1) {
+          throw new RuntimeException(file + "": unexpected EOF"");
+        }
+        at+=amt;
+        length-=amt;
+      }
+      in.close();
+    }
+ catch (    IOException ex) {
+      throw new RuntimeException(file + "": trouble reading"",ex);
+    }
+    return result;
+  }
+  /** 
+ * Returns true if  {@code fileName} names a .zip, .jar, or .apk.
+ */
+  public static boolean hasArchiveSuffix(  String fileName){
+    return fileName.endsWith("".zip"") || fileName.endsWith("".jar"") || fileName.endsWith("".apk"");
+  }
+}",0,Clean Code
+"/** 
+ * @author 郑健楠
+ */
+@EnableAsync @Configuration @PropertySource(value=""classpath:quartz-config.yml"",factory=YamlPropertySourceFactory.class) @ConditionalOnClass({Scheduler.class,SchedulerFactoryBean.class}) @EnableConfigurationProperties({QuartzProperties.class}) public class PigQuartzConfig {
+  private final QuartzProperties properties;
+  private final List<SchedulerFactoryBeanCustomizer> customizers;
+  private final JobDetail[] jobDetails;
+  private final Map<String,Calendar> calendars;
+  private final Trigger[] triggers;
+  private final ApplicationContext applicationContext;
+  public PigQuartzConfig(  QuartzProperties properties,  ObjectProvider<List<SchedulerFactoryBeanCustomizer>> customizers,  ObjectProvider<JobDetail[]> jobDetails,  ObjectProvider<Map<String,Calendar>> calendars,  ObjectProvider<Trigger[]> triggers,  ApplicationContext applicationContext){
+    this.properties=properties;
+    this.customizers=customizers.getIfAvailable();
+    this.jobDetails=jobDetails.getIfAvailable();
+    this.calendars=calendars.getIfAvailable();
+    this.triggers=triggers.getIfAvailable();
+    this.applicationContext=applicationContext;
+  }
+  @Bean @ConditionalOnMissingBean public SchedulerFactoryBean quartzScheduler(){
+    SchedulerFactoryBean schedulerFactoryBean=new SchedulerFactoryBean();
+    schedulerFactoryBean.setJobFactory(new AutowireCapableBeanJobFactory(this.applicationContext.getAutowireCapableBeanFactory()));
+    if (!this.properties.getProperties().isEmpty()) {
+      schedulerFactoryBean.setQuartzProperties(this.asProperties(this.properties.getProperties()));
+    }
+    if (this.jobDetails != null && this.jobDetails.length > 0) {
+      schedulerFactoryBean.setJobDetails(this.jobDetails);
+    }
+    if (this.calendars != null && !this.calendars.isEmpty()) {
+      schedulerFactoryBean.setCalendars(this.calendars);
+    }
+    if (this.triggers != null && this.triggers.length > 0) {
+      schedulerFactoryBean.setTriggers(this.triggers);
+    }
+    this.customize(schedulerFactoryBean);
+    return schedulerFactoryBean;
+  }
+  private Properties asProperties(  Map<String,String> source){
+    Properties properties=new Properties();
+    properties.putAll(source);
+    return properties;
+  }
+  private void customize(  SchedulerFactoryBean schedulerFactoryBean){
+    if (this.customizers != null) {
+      for (      SchedulerFactoryBeanCustomizer customizer : this.customizers) {
+        customizer.customize(schedulerFactoryBean);
+      }
+    }
+  }
+  /** 
+ * 通过SchedulerFactoryBean获取Scheduler的实例
+ * @return
+ */
+  @Bean public Scheduler scheduler(){
+    return quartzScheduler().getScheduler();
+  }
+}",0,Clean Code
+"/** 
+ * blog：http://www.54tianzhisheng.cn/ 微信公众号：zhisheng
+ */
+public class PropertiesConstants {
+  public static final String ZHISHENG=""zhisheng"";
+  public static final String KAFKA_BROKERS=""kafka.brokers"";
+  public static final String DEFAULT_KAFKA_BROKERS=""localhost:9092"";
+  public static final String KAFKA_ZOOKEEPER_CONNECT=""kafka.zookeeper.connect"";
+  public static final String DEFAULT_KAFKA_ZOOKEEPER_CONNECT=""localhost:2181"";
+  public static final String KAFKA_GROUP_ID=""kafka.group.id"";
+  public static final String DEFAULT_KAFKA_GROUP_ID=""zhisheng"";
+  public static final String METRICS_TOPIC=""metrics.topic"";
+  public static final String CONSUMER_FROM_TIME=""consumer.from.time"";
+  public static final String STREAM_PARALLELISM=""stream.parallelism"";
+  public static final String STREAM_SINK_PARALLELISM=""stream.sink.parallelism"";
+  public static final String STREAM_CHECKPOINT_ENABLE=""stream.checkpoint.enable"";
+  public static final String STREAM_CHECKPOINT_DIR=""stream.checkpoint.dir"";
+  public static final String STREAM_CHECKPOINT_TYPE=""stream.checkpoint.type"";
+  public static final String STREAM_CHECKPOINT_INTERVAL=""stream.checkpoint.interval"";
+  public static final String PROPERTIES_FILE_NAME=""/application.properties"";
+  public static final String CHECKPOINT_MEMORY=""memory"";
+  public static final String CHECKPOINT_FS=""fs"";
+  public static final String CHECKPOINT_ROCKETSDB=""rocksdb"";
+  public static final String ELASTICSEARCH_BULK_FLUSH_MAX_ACTIONS=""elasticsearch.bulk.flush.max.actions"";
+  public static final String ELASTICSEARCH_HOSTS=""elasticsearch.hosts"";
+  public static final String MYSQL_DATABASE=""mysql.database"";
+  public static final String MYSQL_HOST=""mysql.host"";
+  public static final String MYSQL_PASSWORD=""mysql.password"";
+  public static final String MYSQL_PORT=""mysql.port"";
+  public static final String MYSQL_USERNAME=""mysql.username"";
+}",0,Clean Code
+"public abstract class AbstractLogger extends Logger {
+  private static final Object DUMMY=new Object();
+  private Cache<String,Object> noFloodCache;
+  public AbstractLogger(){
+    noFloodCache=Caffeine.newBuilder().executor(BlueMap.THREAD_POOL).expireAfterWrite(10,TimeUnit.MINUTES).maximumSize(10000).build();
+  }
+  @Override public void noFloodError(  String key,  String message,  Throwable throwable){
+    if (check(key))     logError(message,throwable);
+  }
+  @Override public void noFloodWarning(  String key,  String message){
+    if (check(key))     logWarning(message);
+  }
+  @Override public void noFloodInfo(  String key,  String message){
+    if (check(key))     logInfo(message);
+  }
+  @Override public void noFloodDebug(  String key,  String message){
+    if (check(key))     logDebug(message);
+  }
+  @Override public void clearNoFloodLog(){
+    noFloodCache.invalidateAll();
+    noFloodCache.cleanUp();
+  }
+  @Override public void removeNoFloodKey(  String key){
+    noFloodCache.invalidate(key);
+  }
+  private boolean check(  String key){
+    if (noFloodCache.getIfPresent(key) == null) {
+      noFloodCache.put(key,DUMMY);
+      return true;
+    }
+    return false;
+  }
+}",0,Clean Code
+"/** 
+ * Built-in  {@code Translator} that provides default TimeSeriesTranslator config process. 
+ */
+public abstract class BaseTimeSeriesTranslator implements Translator<TimeSeriesData,Forecast> {
+  protected int predictionLength;
+  protected int contextLength;
+  protected String freq;
+  private Batchifier batchifier;
+  /** 
+ * Constructs a new  {@code TimeSeriesTranslator} instance with the provided builder.
+ * @param builder the data to build with
+ */
+  protected BaseTimeSeriesTranslator(  BaseBuilder<?> builder){
+    this.batchifier=builder.batchifier;
+    this.freq=builder.freq;
+    this.predictionLength=builder.predictionLength;
+    this.contextLength=builder.contextLength;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public Batchifier getBatchifier(){
+    return batchifier;
+  }
+  /** 
+ * A builder to extend for all classes extend the  {@link BaseTimeSeriesTranslator}.
+ * @param < T > the concrete builder type
+ */
+public abstract static class BaseBuilder<T extends BaseBuilder<T>> {
+    protected Batchifier batchifier=Batchifier.STACK;
+    protected int predictionLength;
+    protected int contextLength;
+    protected String freq;
+    /** 
+ * Sets the  {@link Batchifier} for the {@link Translator}.
+ * @param batchifier the {@link Batchifier} to be set
+ * @return this builder
+ */
+    public T optBachifier(    Batchifier batchifier){
+      this.batchifier=batchifier;
+      return self();
+    }
+    protected abstract T self();
+    protected void validate(){
+    }
+    protected void configPreProcess(    Map<String,?> arguments){
+      this.freq=ArgumentsUtil.stringValue(arguments,""freq"",""D"");
+      this.predictionLength=ArgumentsUtil.intValue(arguments,""prediction_length"");
+      if (predictionLength <= 0) {
+        throw new IllegalArgumentException(""The value of `prediction_length` should be > 0"");
+      }
+      this.contextLength=ArgumentsUtil.intValue(arguments,""context_length"",predictionLength);
+      if (arguments.containsKey(""batchifier"")) {
+        batchifier=Batchifier.fromString((String)arguments.get(""batchifier""));
+      }
+    }
+    protected void configPostProcess(    Map<String,?> arguments){
+    }
+  }
+}",0,Clean Code
+"public class RestaurantProcessTest {
+  RestaurantController restaurantController;
+  @BeforeEach void setup(){
+    RestaurantService restaurantService=new RestaurantService(new RestaurantData());
+    restaurantController=new RestaurantController(restaurantService);
+  }
+  @Test void RestaurantFlowTest(){
+    restaurantController.addRestaurant(TestHelper.buildRestaurant(""REST1"",""Restaurant""));
+    restaurantController.addRestaurant(TestHelper.buildRestaurant(""REST2"",""Restaurant""));
+    restaurantController.addRestaurant(TestHelper.buildRestaurant(""REST3"",""Restaurant 2""));
+    System.out.println(restaurantController.getAllRestaurant());
+    System.out.println(restaurantController.getRestaurantById(""REST2""));
+    System.out.println(restaurantController.getRestaurantsByName(""Restaurant""));
+    System.out.println(restaurantController.getRestaurantsByCity(""CITY""));
+  }
+}",0,Clean Code
+"/** 
+ * File header section of a  {@code .dex} file.
+ */
+public final class HeaderItem extends IndexedItem {
+  /** 
+ * Constructs an instance.
+ */
+  public HeaderItem(){
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public ItemType itemType(){
+    return ItemType.TYPE_HEADER_ITEM;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public int writeSize(){
+    return SizeOf.HEADER_ITEM;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public void addContents(  DexFile file){
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public void writeTo(  DexFile file,  AnnotatedOutput out){
+    int mapOff=file.getMap().getFileOffset();
+    Section firstDataSection=file.getFirstDataSection();
+    Section lastDataSection=file.getLastDataSection();
+    int dataOff=firstDataSection.getFileOffset();
+    int dataSize=lastDataSection.getFileOffset() + lastDataSection.writeSize() - dataOff;
+    String magic=file.getDexOptions().getMagic();
+    if (out.annotates()) {
+      out.annotate(8,""magic: "" + new CstString(magic).toQuoted());
+      out.annotate(4,""checksum"");
+      out.annotate(20,""signature"");
+      out.annotate(4,""file_size:       "" + Hex.u4(file.getFileSize()));
+      out.annotate(4,""header_size:     "" + Hex.u4(SizeOf.HEADER_ITEM));
+      out.annotate(4,""endian_tag:      "" + Hex.u4(DexFormat.ENDIAN_TAG));
+      out.annotate(4,""link_size:       0"");
+      out.annotate(4,""link_off:        0"");
+      out.annotate(4,""map_off:         "" + Hex.u4(mapOff));
+    }
+    for (int i=0; i < 8; i++) {
+      out.writeByte(magic.charAt(i));
+    }
+    out.writeZeroes(24);
+    out.writeInt(file.getFileSize());
+    out.writeInt(SizeOf.HEADER_ITEM);
+    out.writeInt(DexFormat.ENDIAN_TAG);
+    out.writeZeroes(8);
+    out.writeInt(mapOff);
+    file.getStringIds().writeHeaderPart(out);
+    file.getTypeIds().writeHeaderPart(out);
+    file.getProtoIds().writeHeaderPart(out);
+    file.getFieldIds().writeHeaderPart(out);
+    file.getMethodIds().writeHeaderPart(out);
+    file.getClassDefs().writeHeaderPart(out);
+    if (out.annotates()) {
+      out.annotate(4,""data_size:       "" + Hex.u4(dataSize));
+      out.annotate(4,""data_off:        "" + Hex.u4(dataOff));
+    }
+    out.writeInt(dataSize);
+    out.writeInt(dataOff);
+  }
+}",0,Clean Code
+"/** 
+ * 图文混排使图片文字基于中线对齐
+ */
+public class CenteredImageSpan extends ImageSpan {
+  public CenteredImageSpan(  final Drawable drawable){
+    super(drawable);
+  }
+  @Override public int getSize(  Paint paint,  CharSequence text,  int start,  int end,  Paint.FontMetricsInt fm){
+    Drawable d=getDrawable();
+    Rect rect=d.getBounds();
+    if (fm != null) {
+      Paint.FontMetricsInt fmPaint=paint.getFontMetricsInt();
+      int fontHeight=fmPaint.bottom - fmPaint.top;
+      int drHeight=rect.bottom - rect.top;
+      int top=drHeight / 2 - fontHeight / 4;
+      int bottom=drHeight / 2 + fontHeight / 4;
+      fm.ascent=-bottom;
+      fm.top=-bottom;
+      fm.bottom=top;
+      fm.descent=top;
+    }
+    return rect.right;
+  }
+  @Override public void draw(  Canvas canvas,  CharSequence text,  int start,  int end,  float x,  int top,  int y,  int bottom,  Paint paint){
+    Drawable b=getDrawable();
+    canvas.save();
+    int transY;
+    transY=((bottom - top) - b.getBounds().bottom) / 2 + top;
+    canvas.translate(x,transY);
+    b.draw(canvas);
+    canvas.restore();
+  }
+}",0,Clean Code
+"public class TypedArray {
+  /** 
+ * Only for API stubs creation, DO NOT USE! 
+ */
+  TypedArray(){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  protected TypedArray(  Resources resources){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  protected TypedArray(  Resources resources,  int[] data,  int[] indices,  int len){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public boolean getBoolean(  int index,  boolean defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getColor(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public ColorStateList getColorStateList(  int index){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public float getDimension(  int index,  float defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getDimensionPixelOffset(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getDimensionPixelSize(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public Drawable getDrawable(  int index){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public float getFloat(  int index,  float defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public float getFraction(  int index,  int base,  int pbase,  float defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getInt(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getInteger(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getLayoutDimension(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getLayoutDimension(  int index,  String name){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public int getResourceId(  int index,  int defValue){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public Resources getResources(){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public String getString(  int index){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public CharSequence getText(  int index){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public CharSequence[] getTextArray(  int index){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+  public void recycle(){
+    throw new UnsupportedOperationException(""STUB"");
+  }
+}
+",0,Clean Code
+"/** 
+ * @author lengleng
+ * @date 2019/2/1 扩展用户信息
+ */
+public class PigUser extends User implements OAuth2AuthenticatedPrincipal {
+  private static final long serialVersionUID=SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+  /** 
+ * 扩展属性，方便存放oauth 上下文相关信息
+ */
+  private final Map<String,Object> attributes=new HashMap<>();
+  /** 
+ * 用户ID
+ */
+  @Getter @JsonSerialize(using=ToStringSerializer.class) private final Long id;
+  /** 
+ * 部门ID
+ */
+  @Getter @JsonSerialize(using=ToStringSerializer.class) private final Long deptId;
+  /** 
+ * 手机号
+ */
+  @Getter private final String phone;
+  public PigUser(  Long id,  Long deptId,  String username,  String password,  String phone,  boolean enabled,  boolean accountNonExpired,  boolean credentialsNonExpired,  boolean accountNonLocked,  Collection<? extends GrantedAuthority> authorities){
+    super(username,password,enabled,accountNonExpired,credentialsNonExpired,accountNonLocked,authorities);
+    this.id=id;
+    this.deptId=deptId;
+    this.phone=phone;
+  }
+  /** 
+ * Get the OAuth 2.0 token attributes
+ * @return the OAuth 2.0 token attributes
+ */
+  @Override public Map<String,Object> getAttributes(){
+    return this.attributes;
+  }
+  @Override public String getName(){
+    return this.getUsername();
+  }
+}",0,Clean Code
+"public class Tokenor {
+  private static String KEY=""testim"";
+  private static long expiredTime=Long.MAX_VALUE;
+  public static void setKey(  String key){
+    if (!StringUtil.isNullOrEmpty(key)) {
+      KEY=key;
+    }
+  }
+  public static void setExpiredTime(  long expiredTime){
+    Tokenor.expiredTime=expiredTime;
+  }
+  public static String getUserId(  byte[] password){
+    try {
+      String signKey=DES.decryptDES(new String(password));
+      if (signKey.startsWith(KEY + ""|"")) {
+        signKey=signKey.substring(KEY.length() + 1);
+        long timestamp=Long.parseLong(signKey.substring(0,signKey.indexOf('|')));
+        if (expiredTime > 0 && System.currentTimeMillis() - timestamp > expiredTime) {
+          return null;
+        }
+        String id=signKey.substring(signKey.indexOf('|') + 1);
+        return id;
+      }
+    }
+ catch (    Exception e) {
+    }
+    return null;
+  }
+  public static String getToken(  String username){
+    String signKey=KEY + ""|"" + (System.currentTimeMillis())+ ""|""+ username;
+    try {
+      return DES.encryptDES(signKey);
+    }
+ catch (    Exception e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+}",0,Clean Code
+"public class ProductEntity {
+  private int productId;
+  private String productName;
+  private String color;
+  private String diameter;
+  private String style;
+  private String material;
+  private String country;
+  public int getProductId(){
+    return productId;
+  }
+  public void setProductId(  int productId){
+    this.productId=productId;
+  }
+  public String getProductName(){
+    return productName;
+  }
+  public void setProductName(  String productName){
+    this.productName=productName;
+  }
+  public String getColor(){
+    return color;
+  }
+  public void setColor(  String color){
+    this.color=color;
+  }
+  public String getDiameter(){
+    return diameter;
+  }
+  public void setDiameter(  String diameter){
+    this.diameter=diameter;
+  }
+  public String getStyle(){
+    return style;
+  }
+  public void setStyle(  String style){
+    this.style=style;
+  }
+  public String getMaterial(){
+    return material;
+  }
+  public void setMaterial(  String material){
+    this.material=material;
+  }
+  public String getCountry(){
+    return country;
+  }
+  public void setCountry(  String country){
+    this.country=country;
+  }
+  @Override public String toString(){
+    return ""ProductEntity{"" + ""productId="" + productId + "", productName='""+ productName+ '\''+ "", color='""+ color+ '\''+ "", diameter='""+ diameter+ '\''+ "", style='""+ style+ '\''+ "", material='""+ material+ '\''+ "", country='""+ country+ '\''+ '}';
+  }
+}
+public class ProductEntity {
+  private int productId;
+  private String productName;
+  private String color;
+  private String diameter;
+  private String style;
+  private String material;
+  private String country;
+  public int getProductId(){
+    return productId;
+  }
+  public void setProductId(  int productId){
+    this.productId=productId;
+  }
+  public String getProductName(){
+    return productName;
+  }
+  public void setProductName(  String productName){
+    this.productName=productName;
+  }
+  public String getColor(){
+    return color;
+  }
+  public void setColor(  String color){
+    this.color=color;
+  }
+  public String getDiameter(){
+    return diameter;
+  }
+  public void setDiameter(  String diameter){
+    this.diameter=diameter;
+  }
+  public String getStyle(){
+    return style;
+  }
+  public void setStyle(  String style){
+    this.style=style;
+  }
+  public String getMaterial(){
+    return material;
+  }
+  public void setMaterial(  String material){
+    this.material=material;
+  }
+  public String getCountry(){
+    return country;
+  }
+  public void setCountry(  String country){
+    this.country=country;
+  }
+  @Override public String toString(){
+    return ""ProductEntity{"" + ""productId="" + productId + "", productName='""+ productName+ '\''+ "", color='""+ color+ '\''+ "", diameter='""+ diameter+ '\''+ "", style='""+ style+ '\''+ "", material='""+ material+ '\''+ "", country='""+ country+ '\''+ '}';
+  }
+}
+",0,Clean Code
+"/** 
+ * @author leix.xie
+ * @date 2019/5/13 11:39
+ * @describe
+ */
+public class Datagram {
+  private RemotingHeader header;
+  private ByteBuf body;
+  private PayloadHolder holder;
+  public ByteBuf getBody(){
+    return body;
+  }
+  public void setBody(  ByteBuf body){
+    this.body=body;
+  }
+  public void setPayloadHolder(  PayloadHolder holder){
+    this.holder=holder;
+  }
+  public PayloadHolder getHolder(){
+    return holder;
+  }
+  public RemotingHeader getHeader(){
+    return header;
+  }
+  public void setHeader(  RemotingHeader header){
+    this.header=header;
+  }
+  public void writeBody(  ByteBuf out){
+    if (holder == null)     return;
+    holder.writeBody(out);
+  }
+  public void release(){
+    ReferenceCountUtil.safeRelease(body);
+  }
+  @Override public String toString(){
+    return ""Datagram{"" + ""header="" + header + '}';
+  }
+}",0,Clean Code
+"public class MysqlClient {
+  private static String URL=Property.getStrValue(""mysql.url"");
+  private static String NAME=Property.getStrValue(""mysql.name"");
+  private static String PASS=Property.getStrValue(""mysql.pass"");
+  private static Statement stmt;
+static {
+    try {
+      Class.forName(""com.mysql.cj.jdbc.Driver"");
+      Connection conn=DriverManager.getConnection(URL,NAME,PASS);
+      stmt=conn.createStatement();
+    }
+ catch (    ClassNotFoundException e) {
+      e.printStackTrace();
+    }
+catch (    SQLException e) {
+      e.printStackTrace();
+    }
+  }
+  /** 
+ * 根据Id筛选产品
+ * @param id
+ * @return
+ * @throws SQLException
+ */
+  public static ResultSet selectById(  int id) throws SQLException {
+    String sql=String.format(""select  * from product where product_id = %s"",id);
+    return stmt.executeQuery(sql);
+  }
+  public static ResultSet selectUserById(  int id) throws SQLException {
+    String sql=String.format(""select  * from user where user_id = %s"",id);
+    return stmt.executeQuery(sql);
+  }
+  public static void main(  String[] args) throws SQLException {
+    ResultSet resultSet=MysqlClient.selectById(1);
+    while (resultSet.next()) {
+      System.out.println(resultSet.getString(2));
+    }
+  }
+}",0,Clean Code
+"/** 
+ * Wrap an identity key (System.identityHashCode())  so that an object can only be equal() to itself. This is necessary to disambiguate the occasional duplicate identityHashCodes that can occur.
+ */
+final class IDKey {
+  private final Object value;
+  private final int id;
+  /** 
+ * Constructor for IDKey
+ * @param _value The value
+ */
+  public IDKey(  Object _value){
+    id=System.identityHashCode(_value);
+    value=_value;
+  }
+  /** 
+ * returns hashcode - i.e. the system identity hashcode.
+ * @return the hashcode
+ */
+  @Override public int hashCode(){
+    return id;
+  }
+  /** 
+ * checks if instances are equal
+ * @param other The other object to compare to
+ * @return if the instances are for the same object
+ */
+  @Override public boolean equals(  Object other){
+    if (!(other instanceof IDKey)) {
+      return false;
+    }
+    IDKey idKey=(IDKey)other;
+    if (id != idKey.id) {
+      return false;
+    }
+    return value == idKey.value;
+  }
+}
+",0,Clean Code
+"private static final class MyTranslator implements NoBatchifyTranslator<Image,DetectedObjects> {
+  private Map<Integer,String> classes;
+  private int maxBoxes;
+  private float threshold;
+  MyTranslator(){
+    maxBoxes=10;
+    threshold=0.7f;
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public NDList processInput(  TranslatorContext ctx,  Image input){
+    NDArray array=input.toNDArray(ctx.getNDManager(),Image.Flag.COLOR);
+    array=NDImageUtils.resize(array,224);
+    array=array.toType(DataType.UINT8,true);
+    array=array.expandDims(0);
+    return new NDList(array);
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public void prepare(  TranslatorContext ctx) throws IOException {
+    if (classes == null) {
+      classes=loadSynset();
+    }
+  }
+  /** 
+ * {@inheritDoc} 
+ */
+  @Override public DetectedObjects processOutput(  TranslatorContext ctx,  NDList list){
+    int[] classIds=null;
+    float[] probabilities=null;
+    NDArray boundingBoxes=null;
+    for (    NDArray array : list) {
+      if (""detection_boxes"".equals(array.getName())) {
+        boundingBoxes=array.get(0);
+      }
+ else       if (""detection_scores"".equals(array.getName())) {
+        probabilities=array.get(0).toFloatArray();
+      }
+ else       if (""detection_classes"".equals(array.getName())) {
+        classIds=array.get(0).toType(DataType.INT32,true).toIntArray();
+      }
+    }
+    Objects.requireNonNull(classIds);
+    Objects.requireNonNull(probabilities);
+    Objects.requireNonNull(boundingBoxes);
+    List<String> retNames=new ArrayList<>();
+    List<Double> retProbs=new ArrayList<>();
+    List<BoundingBox> retBB=new ArrayList<>();
+    for (int i=0; i < Math.min(classIds.length,maxBoxes); ++i) {
+      int classId=classIds[i];
+      double probability=probabilities[i];
+      if (classId > 0 && probability > threshold) {
+        String className=classes.getOrDefault(classId,""#"" + classId);
+        float[] box=boundingBoxes.get(i).toFloatArray();
+        float yMin=box[0];
+        float xMin=box[1];
+        float yMax=box[2];
+        float xMax=box[3];
+        Rectangle rect=new Rectangle(xMin,yMin,xMax - xMin,yMax - yMin);
+        retNames.add(className);
+        retProbs.add(probability);
+        retBB.add(rect);
+      }
+    }
+    return new DetectedObjects(retNames,retProbs,retBB);
+  }
+}",0,Clean Code
+"@Slf4j public class GetAlarmNotifyData extends RichSourceFunction<Map<String,String>> {
+  private Connection connection=null;
+  private PreparedStatement ps=null;
+  private volatile boolean isRunning=true;
+  private ParameterTool parameterTool;
+  @Override public void open(  Configuration parameters) throws Exception {
+    super.open(parameters);
+    parameterTool=(ParameterTool)(getRuntimeContext().getExecutionConfig().getGlobalJobParameters());
+    String database=parameterTool.get(MYSQL_DATABASE);
+    String host=parameterTool.get(MYSQL_HOST);
+    String password=parameterTool.get(MYSQL_PASSWORD);
+    String port=parameterTool.get(MYSQL_PORT);
+    String username=parameterTool.get(MYSQL_USERNAME);
+    String driver=""com.mysql.jdbc.Driver"";
+    String url=""jdbc:mysql://"" + host + "":""+ port+ ""/""+ database+ ""?useUnicode=true&characterEncoding=UTF-8"";
+    connection=MySQLUtil.getConnection(driver,url,username,password);
+    if (connection != null) {
+      String sql=""select * from alarm_notify"";
+      ps=connection.prepareStatement(sql);
+    }
+  }
+  @Override public void run(  SourceContext<Map<String,String>> ctx) throws Exception {
+    Map<String,String> map=new HashMap<>();
+    while (isRunning) {
+      ResultSet resultSet=ps.executeQuery();
+      while (resultSet.next()) {
+        if (0 == resultSet.getInt(""status"")) {
+          map.put(resultSet.getString(""type"") + resultSet.getString(""type_id""),resultSet.getString(""target_id""));
+        }
+      }
+      log.info(""=======select alarm notify from mysql, size = {}, map = {}"",map.size(),map);
+      ctx.collect(map);
+      map.clear();
+      Thread.sleep(2000 * 60);
+    }
+  }
+  @Override public void cancel(){
+    try {
+      super.close();
+      if (connection != null) {
+        connection.close();
+      }
+      if (ps != null) {
+        ps.close();
+      }
+    }
+ catch (    Exception e) {
+      log.error(""runException:{}"",e);
+    }
+    isRunning=false;
+  }
+}",0,Clean Code
+"/** 
+ * Keeps track of an exception handler setup.
+ */
+private static class ExceptionHandlerSetup {
+  /** 
+ * {@code non-null;} The caught type. 
+ */
+  private Type caughtType;
+  /** 
+ * {@code >= 0;} The label of the exception setup block. 
+ */
+  private int label;
+  /** 
+ * Constructs instance.
+ * @param caughtType {@code non-null;} the caught type
+ * @param label {@code >= 0;} the label
+ */
+  ExceptionHandlerSetup(  Type caughtType,  int label){
+    this.caughtType=caughtType;
+    this.label=label;
+  }
+  /** 
+ * @return {@code non-null;} the caught type
+ */
+  Type getCaughtType(){
+    return caughtType;
+  }
+  /** 
+ * @return {@code >= 0;} the label
+ */
+  public int getLabel(){
+    return label;
+  }
+}",0,Clean Code
