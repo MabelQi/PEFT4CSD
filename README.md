@@ -1,6 +1,6 @@
 # A Comprehensive Evaluation of Parameter-Efficient Fine-Tuning on Method-Level Code Smell Detection
 
-Replication package for our paper, "A Comprehensive Evaluation of Parameter-Efficient Fine-Tuning for Method-Level Code Smell Detection," submitted to TOSEM. In this README, we provide comprehensive instructions on setting up the repository and running the experiments presented in our paper. The code is designed to be easily adapted for further exploration of parameter-efficient fine-tuning methods applied to Large Language Models (LLMs) for other classification tasks.
+Replication package for our paper, "A Comprehensive Evaluation of Parameter-Efficient Fine-Tuning for Code Smell Detection," submitted to TOSEM. In this README, we provide comprehensive instructions on setting up the repository and running the experiments presented in our paper. The code is designed to be easily adapted for further exploration of parameter-efficient fine-tuning methods applied to Large Language Models (LLMs) for other classification tasks.
 
 ## Directory Structure of the Repo
 
@@ -18,7 +18,7 @@ Replication package for our paper, "A Comprehensive Evaluation of Parameter-Effi
 
 - `dataset` folder
 
-  contains the training, validation, and test sets for two types of method-level code smells: *Complex Conditional (CC)* and *Complex Method (CM)*. Additionally, it includes training sets with 100, 200, 500, and 1,000 samples for low-resource scenarios.
+  contains the training, validation, and test sets for two types of method-level code smells: *Complex Conditional (CC)*, *Complex Method (CM)*, and *Data Class (DC)*. Additionally, it includes training sets with 50, 100, 250, and 500 samples for low-resource scenarios.
 
 - `results` folder
 
