@@ -1,8 +1,0 @@
-{
-    "Model": "codebert-base",
-    "Model path": "output/RQ1/CC/codebert-base/prefix_tuning_seed_42/best_model",
-    "Precision": 0.7582320698063398,
-    "Recall": 0.7322558135319812,
-    "F1": 0.7438462858450274,
-    "MCC": 0.4897995486029721
-}

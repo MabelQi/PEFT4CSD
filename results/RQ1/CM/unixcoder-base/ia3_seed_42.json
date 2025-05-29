@@ -1,8 +1,0 @@
-{
-    "Model": "unixcoder-base",
-    "Model path": "output/RQ1/CM/unixcoder-base/ia3_seed_42/best_model",
-    "Precision": 0.8625968665768193,
-    "Recall": 0.8782234327636955,
-    "F1": 0.8694881572587143,
-    "MCC": 0.7406554707447838
-}

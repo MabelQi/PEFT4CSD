@@ -1,8 +1,0 @@
-{
-    "Model": "unixcoder-base",
-    "Model path": "output/RQ1/CC/unixcoder-base/lora_seed_42/best_model",
-    "Precision": 0.8211550245098038,
-    "Recall": 0.6899932938212532,
-    "F1": 0.7274057545244557,
-    "MCC": 0.4940336058766162
-}

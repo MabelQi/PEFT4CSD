@@ -1,8 +1,0 @@
-{
-    "Model": "deepseek-coder-6.7b-base",
-    "Model path": "output/RQ1/CC/deepseek-coder-6.7b-base/prefix_tuning_seed_42/best_model",
-    "Precision": 0.793551658621752,
-    "Recall": 0.7072254544795462,
-    "F1": 0.7370259993834138,
-    "MCC": 0.4932803497854629
-}

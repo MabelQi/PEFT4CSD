@@ -1,8 +1,0 @@
-{
-    "Model": "unixcoder-base",
-    "Model path": "output/RQ1/CC/fft/unixcoder-base/full_fine_tuning_seed_42/best_model",
-    "Precision": 0.6766615492867651,
-    "Recall": 0.6001123738060283,
-    "F1": 0.6169452023647113,
-    "MCC": 0.265977495734874
-}

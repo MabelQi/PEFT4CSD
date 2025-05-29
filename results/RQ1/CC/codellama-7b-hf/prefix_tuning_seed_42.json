@@ -1,8 +1,0 @@
-{
-    "Model": "codellama-7b-hf",
-    "Model path": "output/RQ1/CC/codellama-7b-hf/prefix_tuning_seed_42/best_model",
-    "Precision": 0.7188180418950372,
-    "Recall": 0.7112944737462165,
-    "F1": 0.7149097027740322,
-    "MCC": 0.4300467091300173
-}

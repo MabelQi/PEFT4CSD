@@ -1,8 +1,0 @@
-{
-    "Model": "codellama-7b-hf",
-    "Model path": "output/RQ1/CM/codellama-7b-hf/lora_seed_42/best_model",
-    "Precision": 0.8539188239086458,
-    "Recall": 0.882852655625357,
-    "F1": 0.8646103467329651,
-    "MCC": 0.736203128516113
-}
