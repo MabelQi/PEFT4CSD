@@ -22,7 +22,7 @@ Replication package for our paper, "A Comprehensive Evaluation of Parameter-Effi
 
 - `results` folder
 
-  contains the results of RQ1, RQ2, RQ3, and RQ4. Additionally, the subfolder for RQ4 contains the template for prompt 2 and prompt 3.
+  contains the results of RQ1, RQ2, RQ3, and RQ4. Additionally, the subfolder for RQ4 contains the templates for prompt 2 and prompt 3.
 
 - `requirements.txt`
 
