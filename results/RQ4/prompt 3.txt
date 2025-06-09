@@ -1,0 +1,38 @@
+*****Complex Conditional*****
+Analyze the following Java code to identify whether it suffers from the "Complex Conditional" smell. This smell is characterized by deeply nested, lengthy, or convoluted conditional expressions that hinder readability and maintainability.
+
+Your response must be strictly one word: "Yes" if the smell is present, or "No" if not.
+{code}
+
+
+
+*****Complex Method*****
+Analyze the following Java method to assess if it exhibits the "Complex Method" code smell.
+A method is considered complex if it demonstrates high cyclomatic complexity, such as having many branches, loops, or decision structures.
+Answer with a single word: "Yes" (if complex) or "No" (if not complex).
+{code}
+
+
+
+*****Feature Envy*****
+Examine the following Java code and decide whether it contains the "Feature Envy" code smell.
+
+Definition: A method exhibits Feature Envy when it relies more on members (fields/methods) of other classes than on those of its own class.
+
+Return "Yes" if the code shows this smell, or "No" otherwise.
+
+Code: 
+{code}
+
+
+
+*****Data Class*****
+(1)
+Prompt:
+Analyze the following Java code and decide whether it represents a "Data Class"—a class that only has fields along with basic getter/setter methods and no substantial logic or behavior.
+Reply with only:
+"Yes" – if it contains the "Data Class" smell.
+"No" – if it does not.
+
+{code}
+
