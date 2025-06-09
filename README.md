@@ -18,7 +18,7 @@ Replication package for our paper, "A Comprehensive Evaluation of Parameter-Effi
 
 - `dataset` folder
 
-  contains the training, validation, and test sets for two types of method-level code smells: *Complex Conditional (CC)*, *Complex Method (CM)*, and *Data Class (DC)*. Additionally, it includes training sets with 50, 100, 250, and 500 samples for low-resource scenarios.
+  contains the training, validation, and test sets for four types of code smells at both the method and class level: *Complex Conditional (CC)*, *Complex Method (CM)*, and *Data Class (DC)*. Additionally, it includes training sets with 50, 100, 250, and 500 samples for low-resource scenarios.
 
 - `results` folder
 
