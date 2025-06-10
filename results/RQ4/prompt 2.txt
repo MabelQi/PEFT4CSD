@@ -28,7 +28,6 @@ Respond with "Yes" if the method exhibits Feature Envy, or "No" if it does not. 
 
 
 *****Data Class*****
-(1)
 Prompt:
 You are given a Java class. Determine if it exhibits the "Data Class" code smell.
 Definition: A "Data Class" is a class that mainly consists of fields and simple methods to access or modify them (e.g., getters and setters), without meaningful behavior.

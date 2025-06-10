@@ -1,0 +1,35 @@
+*****Complex Conditional*****
+You are an expert in prompt optimization. Please generate two revised versions of the original prompt provided below:
+
+Given a piece of Java code, determine whether it contains "Complex Conditional" code smell. If it does, return only "Yes", else return "No".\nDefinition of "Complex Conditional": This code smell occurs when a conditional statement is excessively intricate.
+
+{code}
+
+
+
+*****Complex Method*****
+You are an expert in prompt optimization. Please generate two revised versions of the original prompt provided below:
+
+Given a piece of Java code, determine whether it contains "Complex Method" code smell. If it does, return only "Yes", else return "No".\nDefinition of "Complex Method": This code smell occurs when a method exhibits high cyclomatic complexity.
+
+{code}
+
+
+
+*****Feature Envy*****
+You are an expert in prompt optimization. Please generate two revised versions of the original prompt provided below:
+
+Given a piece of Java code, determine whether it contains "Feature Envy" code smell. If it does, return only "Yes", else return "No".\nDefinition of "Feature Envy": This code smell occurs when a method accesses more attributes from other classes than from its own class.
+
+{code}
+
+
+
+*****Data Class*****
+You are an expert in prompt optimization. Please generate two revised versions of the original prompt provided below:
+
+Given a piece of Java code, determine whether it contains "Data Class" code smell. If it does, return only "Yes", else return "No".\nDefinition of "Data Class": This code smell occurs when a class contains only fields and basic methods for accessing them (i.e., getters and setters).
+
+{code}
+
+

@@ -27,7 +27,6 @@ Code:
 
 
 *****Data Class*****
-(1)
 Prompt:
 Analyze the following Java code and decide whether it represents a "Data Class"—a class that only has fields along with basic getter/setter methods and no substantial logic or behavior.
 Reply with only:
